@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ignixip — IP Intelligence</title>
-    <meta name="description" content="Fast, clean IP address lookup. Geolocation, ASN, hosting detection, abuse reputation. No ads, no clutter.">
+    <meta name="description" content="Fast, clean IP address lookup. Geolocation, ASN, hosting detection. No ads, no clutter.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,443 +24,67 @@
             --amber: #fbbf24;
             --red: #f87171;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* Background grid */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        header {
-            position: relative;
-            z-index: 10;
-            padding: 0 24px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(10,15,26,0.8);
-            backdrop-filter: blur(12px);
-            position: sticky;
-            top: 0;
-        }
-
-        .header-inner {
-            max-width: 900px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 56px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-
-        .logo-mark {
-            width: 30px;
-            height: 30px;
-            border-radius: 7px;
-            background: linear-gradient(135deg, var(--blue), var(--blue-dim));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            color: white;
-            font-family: 'JetBrains Mono', monospace;
-            box-shadow: 0 0 16px rgba(59,130,246,0.35);
-        }
-
-        .logo-text {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.5px;
-        }
-
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+        header { z-index: 10; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(10,15,26,0.8); backdrop-filter: blur(12px); position: sticky; top: 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-mark { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
         .logo-text span { color: var(--blue-bright); }
-
-        .header-nav {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            font-size: 13px;
-            color: var(--text-dim);
-        }
-
-        .header-nav a {
-            color: var(--text-dim);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
+        .header-nav { display: flex; align-items: center; gap: 20px; font-size: 13px; }
+        .header-nav a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
         .header-nav a:hover { color: var(--text); }
-
-        /* Hero */
-        .hero {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding: 64px 24px 48px;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(59,130,246,0.3);
-            background: rgba(59,130,246,0.08);
-            font-size: 11px;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--blue-bright);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-
-        .hero h1 {
-            font-size: clamp(28px, 5vw, 42px);
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -1px;
-            line-height: 1.15;
-            margin-bottom: 12px;
-        }
-
-        .hero h1 span {
-            background: linear-gradient(135deg, var(--blue-bright), #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero p {
-            font-size: 15px;
-            color: var(--text-muted);
-            max-width: 480px;
-            margin: 0 auto 36px;
-            line-height: 1.6;
-        }
-
-        /* Search */
-        .search-container {
-            max-width: 580px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            background: var(--surface);
-            border: 1px solid var(--border2);
-            border-radius: 12px;
-            padding: 4px 4px 4px 16px;
-            gap: 8px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .search-box:focus-within {
-            border-color: var(--blue);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-        }
-
-        .search-icon {
-            color: var(--text-dim);
-            font-size: 14px;
-            flex-shrink: 0;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        #ip-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            font-size: 15px;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text);
-            padding: 10px 0;
-            letter-spacing: 0.5px;
-        }
-
+        .hero { position: relative; z-index: 1; text-align: center; padding: 64px 24px 48px; }
+        .hero-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(59,130,246,0.3); background: rgba(59,130,246,0.08); font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--blue-bright); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 20px; }
+        .hero h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 700; color: var(--text); letter-spacing: -1px; line-height: 1.15; margin-bottom: 12px; }
+        .hero h1 span { background: linear-gradient(135deg, var(--blue-bright), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero p { font-size: 15px; color: var(--text-muted); max-width: 480px; margin: 0 auto 36px; line-height: 1.6; }
+        .search-container { max-width: 580px; margin: 0 auto; }
+        .search-box { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 4px 4px 4px 16px; gap: 8px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .search-box:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        .search-icon { color: var(--text-dim); font-size: 14px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+        #ip-input { flex: 1; background: transparent; border: none; outline: none; font-size: 15px; font-family: 'JetBrains Mono', monospace; color: var(--text); padding: 10px 0; letter-spacing: 0.5px; }
         #ip-input::placeholder { color: var(--text-faint); }
-
-        .search-btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            background: linear-gradient(135deg, var(--blue), var(--blue-dim));
-            color: white;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            transition: opacity 0.2s, transform 0.1s;
-            white-space: nowrap;
-        }
-
+        .search-btn { padding: 10px 20px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s; white-space: nowrap; }
         .search-btn:hover { opacity: 0.9; }
-        .search-btn:active { transform: scale(0.98); }
         .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .search-hint {
-            margin-top: 10px;
-            font-size: 12px;
-            color: var(--text-faint);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .search-hint a {
-            color: var(--text-dim);
-            cursor: pointer;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
+        .search-hint { margin-top: 10px; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+        .search-hint a { color: var(--text-dim); cursor: pointer; text-decoration: none; transition: color 0.2s; }
         .search-hint a:hover { color: var(--blue-bright); }
-
-        /* Results */
-        .results {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 24px 64px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* IP Header card */
-        .ip-header {
-            background: linear-gradient(135deg, var(--surface), var(--surface2));
-            border: 1px solid var(--border2);
-            border-radius: 12px;
-            padding: 20px 24px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .ip-address-display {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.5px;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .ip-tags {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .tag {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            font-family: 'JetBrains Mono', monospace;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
+        .results { max-width: 900px; margin: 0 auto; padding: 0 24px 64px; position: relative; z-index: 1; }
+        .ip-header { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border2); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .ip-address-display { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; flex: 1; min-width: 200px; }
+        .ip-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; }
         .tag-hosting { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
-        .tag-vpn { background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
         .tag-proxy { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
-        .tag-residential { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
         .tag-mobile { background: rgba(96,165,250,0.12); color: var(--blue-bright); border: 1px solid rgba(96,165,250,0.25); }
-        .tag-clean { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
-        .tag-unknown { background: rgba(100,116,139,0.12); color: #94a3b8; border: 1px solid rgba(100,116,139,0.25); }
-
-        /* Grid */
-        .results-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        @media (max-width: 640px) {
-            .results-grid { grid-template-columns: 1fr; }
-        }
-
-        .result-card {
-            background: linear-gradient(135deg, var(--surface), var(--surface2));
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px 20px;
-        }
-
-        .result-card.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .card-title {
-            font-size: 11px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'JetBrains Mono', monospace;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card-title::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .data-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 7px 0;
-            border-bottom: 1px solid var(--border);
-            gap: 16px;
-        }
-
+        .tag-residential { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 640px) { .results-grid { grid-template-columns: 1fr; } }
+        .result-card { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+        .card-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .data-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); gap: 16px; }
         .data-row:last-child { border-bottom: none; }
-
-        .data-key {
-            font-size: 12px;
-            color: var(--text-dim);
-            flex-shrink: 0;
-            padding-top: 1px;
-        }
-
-        .data-val {
-            font-size: 13px;
-            color: var(--text);
-            font-family: 'JetBrains Mono', monospace;
-            text-align: right;
-            word-break: break-all;
-        }
-
+        .data-key { font-size: 12px; color: var(--text-dim); flex-shrink: 0; padding-top: 1px; }
+        .data-val { font-size: 13px; color: var(--text); font-family: 'JetBrains Mono', monospace; text-align: right; word-break: break-all; }
         .data-val.muted { color: var(--text-muted); }
         .data-val.green { color: var(--green); }
         .data-val.amber { color: var(--amber); }
         .data-val.red { color: var(--red); }
         .data-val.blue { color: var(--blue-bright); }
-
-        /* Map placeholder */
-        .map-placeholder {
-            height: 160px;
-            background: var(--surface2);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-faint);
-            font-size: 13px;
-            font-family: 'JetBrains Mono', monospace;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 14px;
-        }
-
-        .map-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--blue);
-            box-shadow: 0 0 0 4px rgba(59,130,246,0.2), 0 0 0 8px rgba(59,130,246,0.1);
-            position: absolute;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 4px rgba(59,130,246,0.2), 0 0 0 8px rgba(59,130,246,0.1); }
-            50% { box-shadow: 0 0 0 6px rgba(59,130,246,0.3), 0 0 0 12px rgba(59,130,246,0.1); }
-        }
-
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 48px;
-            color: var(--text-dim);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-        }
-
-        .loading-dots::after {
-            content: '';
-            animation: dots 1.5s infinite;
-        }
-
-        @keyframes dots {
-            0% { content: ''; }
-            33% { content: '.'; }
-            66% { content: '..'; }
-            100% { content: '...'; }
-        }
-
-        /* Error */
-        .error-card {
-            background: rgba(239,68,68,0.08);
-            border: 1px solid rgba(239,68,68,0.2);
-            border-radius: 12px;
-            padding: 20px 24px;
-            color: var(--red);
-            font-size: 14px;
-            text-align: center;
-        }
-
-        /* Hidden */
-        .hidden { display: none; }
-
-        /* Footer */
-        footer {
-            position: relative;
-            z-index: 1;
-            border-top: 1px solid var(--border);
-            padding: 20px 24px;
-            text-align: center;
-            font-size: 12px;
-            color: var(--text-faint);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
+        .loading { text-align: center; padding: 48px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
+        @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+        .error-card { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 20px 24px; color: var(--red); font-size: 14px; text-align: center; }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 20px 24px; text-align: center; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
         footer a { color: var(--text-dim); text-decoration: none; }
         footer a:hover { color: var(--blue-bright); }
-
-        /* Animations */
-        .fade-in {
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
     </style>
 </head>
 <body>
@@ -479,19 +103,18 @@
 </header>
 
 <div class="hero">
-    <div class="hero-badge">⚡ IP Intelligence</div>
+    <div class="hero-badge">&#9889; IP Intelligence</div>
     <h1>Look up any <span>IP address</span></h1>
-    <p>Geolocation, network ownership, hosting detection and abuse reputation. Fast, clean, no clutter.</p>
-
+    <p>Geolocation, network ownership, hosting detection. Fast, clean, no clutter.</p>
     <div class="search-container">
         <div class="search-box">
-            <span class="search-icon">→</span>
+            <span class="search-icon">&#8594;</span>
             <input type="text" id="ip-input" placeholder="Enter IP address or domain..." autocomplete="off" spellcheck="false">
-            <button class="search-btn" onclick="lookupIP()" id="lookup-btn">Look Up</button>
+            <button class="search-btn" id="lookup-btn" onclick="lookupIP()">Look Up</button>
         </div>
         <div class="search-hint">
-            Try: <a onclick="lookupSelf()">your own IP</a> · 
-            <a onclick="setAndLookup('8.8.8.8')">8.8.8.8</a> · 
+            Try: <a onclick="lookupSelf()">your own IP</a> &middot;
+            <a onclick="setAndLookup('8.8.8.8')">8.8.8.8</a> &middot;
             <a onclick="setAndLookup('1.1.1.1')">1.1.1.1</a>
         </div>
     </div>
@@ -500,200 +123,158 @@
 <div class="results" id="results-container"></div>
 
 <footer>
-    <p>ignixip.com · IP intelligence by <a href="https://ignix.co.uk">Ignix</a> · Data via ip-api.com · <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a></p>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <script>
-    const input = document.getElementById('ip-input');
-    const btn = document.getElementById('lookup-btn');
-    const container = document.getElementById('results-container');
+var input = document.getElementById('ip-input');
+var btn = document.getElementById('lookup-btn');
+var container = document.getElementById('results-container');
 
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') lookupIP(); });
+input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') lookupIP();
+});
 
-    function setAndLookup(ip) {
+function setAndLookup(ip) {
+    input.value = ip;
+    lookupIP();
+}
+
+function lookupSelf() {
+    input.value = 'detecting...';
+    btn.disabled = true;
+    fetch('https://api.ipify.org?format=json')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            input.value = d.ip;
+            lookupIP();
+        })
+        .catch(function() {
+            input.value = '';
+            btn.disabled = false;
+        });
+}
+
+function lookupIP() {
+    var query = input.value.trim();
+    if (!query || query === 'detecting...') return;
+
+    btn.disabled = true;
+    btn.textContent = 'Looking up...';
+    container.innerHTML = '<div class="loading"><span class="loading-dots">Querying</span></div>';
+
+    fetch('https://ipinfo.io/' + encodeURIComponent(query) + '/json')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.error) {
+                container.innerHTML = '<div class="error-card">Could not look up "' + query + '" — ' + (d.error.message || 'invalid IP or domain') + '</div>';
+            } else {
+                renderResults(d);
+            }
+            btn.disabled = false;
+            btn.textContent = 'Look Up';
+        })
+        .catch(function() {
+            container.innerHTML = '<div class="error-card">Lookup failed — please check your connection and try again.</div>';
+            btn.disabled = false;
+            btn.textContent = 'Look Up';
+        });
+}
+
+function renderResults(d) {
+    // Parse fields from ipinfo.io response
+    var ip = d.ip || '';
+    var city = d.city || '—';
+    var region = d.region || '—';
+    var country = d.country || '—';
+    var org = d.org || '—';
+    var hostname = d.hostname || '—';
+    var timezone = d.timezone || '—';
+    var postal = d.postal || '—';
+
+    // Parse coordinates
+    var lat = '—', lon = '—', coords = '—';
+    if (d.loc) {
+        var parts = d.loc.split(',');
+        lat = parts[0];
+        lon = parts[1];
+        coords = lat + ', ' + lon;
+    }
+
+    // Parse ASN and org name
+    var asn = '—', asnName = '—';
+    if (org && org !== '—') {
+        var orgParts = org.split(' ');
+        asn = orgParts[0];
+        asnName = orgParts.slice(1).join(' ');
+    }
+
+    // Detect hosting
+    var isHosting = org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider/i.test(org) : false;
+
+    // Country flag
+    var flag = '';
+    if (d.country && d.country.length === 2) {
+        var c = d.country.toUpperCase();
+        flag = String.fromCodePoint(0x1F1E0 + c.charCodeAt(0) - 65) + String.fromCodePoint(0x1F1E0 + c.charCodeAt(1) - 65) + ' ';
+    }
+
+    // Tags
+    var tags = '';
+    if (isHosting) tags += '<span class="tag tag-hosting">Hosting / DC</span>';
+    if (!isHosting) tags += '<span class="tag tag-residential">Residential / Business</span>';
+
+    // Risk
+    var riskLevel = isHosting ? 'Low-Medium — datacenter IP' : 'Low — residential/business';
+    var riskClass = isHosting ? 'amber' : 'green';
+    var commonUse = isHosting ? 'Servers, CDN, cloud services' : 'Home users, offices, businesses';
+
+    container.innerHTML =
+        '<div class="ip-header fade-in">' +
+            '<div class="ip-address-display">' + ip + '</div>' +
+            '<div class="ip-tags">' + tags + '</div>' +
+        '</div>' +
+        '<div class="results-grid fade-in">' +
+            '<div class="result-card">' +
+                '<div class="card-title">Location</div>' +
+                '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + country + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Region</span><span class="data-val muted">' + region + '</span></div>' +
+                '<div class="data-row"><span class="data-key">City</span><span class="data-val muted">' + city + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Postcode</span><span class="data-val muted">' + postal + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Coordinates</span><span class="data-val muted" style="font-size:11px;">' + coords + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Timezone</span><span class="data-val muted">' + timezone + '</span></div>' +
+            '</div>' +
+            '<div class="result-card">' +
+                '<div class="card-title">Network</div>' +
+                '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue">' + asn + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + asnName + '</span></div>' +
+                '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + hostname + '</span></div>' +
+            '</div>' +
+            '<div class="result-card">' +
+                '<div class="card-title">Classification</div>' +
+                '<div class="data-row"><span class="data-key">Hosting / Datacenter</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Yes' : 'No') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Type</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Hosting / Datacenter' : 'Residential / Business') + '</span></div>' +
+            '</div>' +
+            '<div class="result-card">' +
+                '<div class="card-title">Security Context</div>' +
+                '<div class="data-row"><span class="data-key">Risk Indicator</span><span class="data-val ' + riskClass + '">' + riskLevel + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Common Use</span><span class="data-val muted" style="font-size:11px;">' + commonUse + '</span></div>' +
+            '</div>' +
+        '</div>';
+
+    history.pushState({}, '', '?ip=' + encodeURIComponent(ip));
+}
+
+// Check for IP in URL on load
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var ip = params.get('ip');
+    if (ip) {
         input.value = ip;
         lookupIP();
     }
-
-    async function lookupSelf() {
-        input.value = 'detecting...';
-        btn.disabled = true;
-        try {
-            const r = await fetch(`https://ipinfo.io/${encodeURIComponent(query)}/json`);
-            const d = await r.json();
-            input.value = d.ip;
-            lookupIP();
-        } catch {
-            input.value = '';
-            btn.disabled = false;
-        }
-    }
-
-    async function lookupIP() {
-        const query = input.value.trim();
-        if (!query || query === 'detecting...') return;
-
-        btn.disabled = true;
-        btn.textContent = 'Looking up...';
-        container.innerHTML = '<div class="loading"><span class="loading-dots">Querying</span></div>';
-
-        try {
-            const r = await fetch(`https://ipinfo.io/${encodeURIComponent(query)}/json`);
-            const d = await r.json();
-
-            if (d.error) {
-    container.innerHTML = `<div class="error-card">Could not look up "${query}" — ${d.error.message || 'invalid IP or domain'}</div>`;
-} else {
-    // Normalise ipinfo fields to our format
-    const coords = d.loc ? d.loc.split(',') : [null, null];
-    d.lat = parseFloat(coords[0]);
-    d.lon = parseFloat(coords[1]);
-    d.query = d.ip;
-    d.country = d.country;
-    d.regionName = d.region;
-    d.isp = d.org;
-    d.asname = d.org;
-    d.as = d.org;
-    d.reverse = d.hostname || '—';
-    d.hosting = d.org && (d.org.includes('AS') && (d.type === 'hosting' || d.type === 'business'));
-    d.proxy = false;
-    d.mobile = false;
-    renderResults(d);
-}
-        // Determine tags
-        const tags = [];
-        if (d.hosting) tags.push('<span class="tag tag-hosting">Hosting / DC</span>');
-        if (d.proxy) tags.push('<span class="tag tag-proxy">Proxy</span>');
-        if (d.mobile) tags.push('<span class="tag tag-mobile">Mobile</span>');
-        if (!d.hosting && !d.proxy && !d.mobile) tags.push('<span class="tag tag-residential">Residential</span>');
-
-        // Flag emoji
-        const flag = d.countryCode ? 
-            String.fromCodePoint(...[...d.countryCode.toUpperCase()].map(c => 0x1F1E0 + c.charCodeAt(0) - 65)) : '';
-
-        // ASN
-        const asn = d.org ? d.org.split(' ')[0] : '—';
-        const asnName = d.org ? d.org.split(' ').slice(1).join(' ') : '—';
-
-        // Coordinates
-        const coords = (d.lat && d.lon) ? `${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}` : '—';
-
-        container.innerHTML = `
-            <div class="ip-header fade-in">
-                <div class="ip-address-display">${d.query}</div>
-                <div class="ip-tags">${tags.join('')}</div>
-            </div>
-
-            <div class="results-grid fade-in">
-                <div class="result-card">
-                    <div class="card-title">Location</div>
-                    <div class="data-row">
-                        <span class="data-key">Country</span>
-                        <span class="data-val">${flag} ${d.country || '—'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Region</span>
-                        <span class="data-val muted">${d.regionName || '—'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">City</span>
-                        <span class="data-val muted">${d.city || '—'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Postcode</span>
-                        <span class="data-val muted">${d.zip || '—'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Coordinates</span>
-                        <span class="data-val muted" style="font-size:11px;">${coords}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Timezone</span>
-                        <span class="data-val muted">${d.timezone || '—'}</span>
-                    </div>
-                </div>
-
-                <div class="result-card">
-                    <div class="card-title">Network</div>
-                    <div class="data-row">
-                        <span class="data-key">ASN</span>
-                        <span class="data-val blue">${asn}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">AS Name</span>
-                        <span class="data-val muted" style="font-size:11px;">${asnName}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">ISP</span>
-                        <span class="data-val muted" style="font-size:11px;">${d.isp || '—'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Organisation</span>
-                        <span class="data-val muted" style="font-size:11px;">${d.org || '—'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Reverse DNS</span>
-                        <span class="data-val muted" style="font-size:11px;">${d.reverse || '—'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Continent</span>
-                        <span class="data-val muted">${d.continent || '—'}</span>
-                    </div>
-                </div>
-
-                <div class="result-card">
-                    <div class="card-title">Classification</div>
-                    <div class="data-row">
-                        <span class="data-key">Hosting / Datacenter</span>
-                        <span class="data-val ${d.hosting ? 'amber' : 'green'}">${d.hosting ? 'Yes' : 'No'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Proxy / VPN</span>
-                        <span class="data-val ${d.proxy ? 'red' : 'green'}">${d.proxy ? 'Detected' : 'Not detected'}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Mobile Network</span>
-                        <span class="data-val muted">${d.mobile ? 'Yes' : 'No'}</span>
-                    </div>
-                </div>
-
-                <div class="result-card">
-                    <div class="card-title">Security Context</div>
-                    <div class="data-row">
-                        <span class="data-key">Type</span>
-                        <span class="data-val ${d.hosting ? 'amber' : d.proxy ? 'red' : 'green'}">
-                            ${d.hosting ? 'Hosting / Datacenter' : d.proxy ? 'Proxy / VPN' : d.mobile ? 'Mobile ISP' : 'Residential / Business ISP'}
-                        </span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Risk Indicator</span>
-                        <span class="data-val ${(d.hosting || d.proxy) ? 'amber' : 'green'}">
-                            ${d.proxy ? 'Medium — proxy detected' : d.hosting ? 'Low-Medium — datacenter IP' : 'Low — residential/business'}
-                        </span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-key">Common Use</span>
-                        <span class="data-val muted" style="font-size:11px;">
-                            ${d.proxy ? 'VPN, anonymisation, proxying' : d.hosting ? 'Servers, CDN, cloud services, botnets' : d.mobile ? 'Mobile devices, NAT' : 'Home users, offices, businesses'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Update URL
-        history.pushState({}, '', `?ip=${encodeURIComponent(d.query)}`);
-    }
-
-    // Check for IP in URL on load
-    window.addEventListener('load', () => {
-        const params = new URLSearchParams(window.location.search);
-        const ip = params.get('ip');
-        if (ip) {
-            input.value = ip;
-            lookupIP();
-        }
-    });
+});
 </script>
 </body>
 </html>
