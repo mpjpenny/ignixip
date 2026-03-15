@@ -519,7 +519,7 @@
         input.value = 'detecting...';
         btn.disabled = true;
         try {
-            const r = await fetch('https://api.ipify.org?format=json');
+            const r = await fetch(`https://ipinfo.io/${encodeURIComponent(query)}/json`);
             const d = await r.json();
             input.value = d.ip;
             lookupIP();
