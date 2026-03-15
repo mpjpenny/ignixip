@@ -538,10 +538,10 @@
         container.innerHTML = '<div class="loading"><span class="loading-dots">Querying</span></div>';
 
         try {
-            const r = await fetch(`https://ip-api.com/json/${encodeURIComponent(query)}?fields=status,message,continent,continentCode,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,reverse,mobile,proxy,hosting,query`);
+            const r = await fetch(`https://ipwho.is/${encodeURIComponent(query)}`);
             const d = await r.json();
 
-            if (d.status === 'fail') {
+            if (!d.success) {
                 container.innerHTML = `<div class="error-card">Could not look up "${query}" — ${d.message || 'invalid IP or domain'}</div>`;
             } else {
                 renderResults(d);
@@ -567,8 +567,8 @@
             String.fromCodePoint(...[...d.countryCode.toUpperCase()].map(c => 0x1F1E0 + c.charCodeAt(0) - 65)) : '';
 
         // ASN
-        const asn = d.as ? d.as.split(' ')[0] : '—';
-        const asnName = d.asname || d.isp || '—';
+        const asn = d.connection ? d.connection.asn : '—';
+        const asnName = d.connection ? d.connection.org : (d.isp || '—');
 
         // Coordinates
         const coords = (d.lat && d.lon) ? `${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}` : '—';
