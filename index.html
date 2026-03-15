@@ -541,20 +541,25 @@
             const r = await fetch(`https://ipwho.is/${encodeURIComponent(query)}`);
             const d = await r.json();
 
-            if (!d.success) {
-                container.innerHTML = `<div class="error-card">Could not look up "${query}" — ${d.message || 'invalid IP or domain'}</div>`;
-            } else {
-                renderResults(d);
-            }
-        } catch(e) {
-            container.innerHTML = `<div class="error-card">Lookup failed — please check your connection and try again.</div>`;
-        }
-
-        btn.disabled = false;
-        btn.textContent = 'Look Up';
-    }
-
-    function renderResults(d) {
+            if (d.error) {
+    container.innerHTML = `<div class="error-card">Could not look up "${query}" — ${d.error.message || 'invalid IP or domain'}</div>`;
+} else {
+    // Normalise ipinfo fields to our format
+    const coords = d.loc ? d.loc.split(',') : [null, null];
+    d.lat = parseFloat(coords[0]);
+    d.lon = parseFloat(coords[1]);
+    d.query = d.ip;
+    d.country = d.country;
+    d.regionName = d.region;
+    d.isp = d.org;
+    d.asname = d.org;
+    d.as = d.org;
+    d.reverse = d.hostname || '—';
+    d.hosting = d.org && (d.org.includes('AS') && (d.type === 'hosting' || d.type === 'business'));
+    d.proxy = false;
+    d.mobile = false;
+    renderResults(d);
+}
         // Determine tags
         const tags = [];
         if (d.hosting) tags.push('<span class="tag tag-hosting">Hosting / DC</span>');
