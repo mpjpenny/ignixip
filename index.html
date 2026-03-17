@@ -241,7 +241,7 @@ function renderResults(d) {
     }
 
     // Detect hosting
-    var isHosting = org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider/i.test(org) : false;
+    var isHosting = org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider|google|cloudflare|akamai|fastly|cdn/i.test(org) : false;
 
     // Country flag
     var flag = '';
