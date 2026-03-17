@@ -155,6 +155,10 @@ function lookupSelf() {
         });
 }
 
+function isIPAddress(str) {
+    return /^(\d{1,3}\.){3}\d{1,3}$/.test(str);
+}
+
 function lookupIP() {
     var query = input.value.trim();
     if (!query || query === 'detecting...') return;
@@ -163,12 +167,38 @@ function lookupIP() {
     btn.textContent = 'Looking up...';
     container.innerHTML = '<div class="loading"><span class="loading-dots">Querying</span></div>';
 
-    fetch('https://ipinfo.io/' + encodeURIComponent(query) + '/json')
+    if (isIPAddress(query)) {
+        doLookup(query, null);
+    } else {
+        // Resolve domain first via DNS-over-HTTPS
+        fetch('https://dns.google/resolve?name=' + encodeURIComponent(query) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(dns) {
+                if (dns.Answer && dns.Answer.length > 0) {
+                    var ip = dns.Answer[dns.Answer.length - 1].data;
+                    doLookup(ip, query);
+                } else {
+                    container.innerHTML = '<div class="error-card">Could not resolve "' + query + '" — domain not found</div>';
+                    btn.disabled = false;
+                    btn.textContent = 'Look Up';
+                }
+            })
+            .catch(function() {
+                container.innerHTML = '<div class="error-card">DNS resolution failed — please check your connection and try again.</div>';
+                btn.disabled = false;
+                btn.textContent = 'Look Up';
+            });
+    }
+}
+
+function doLookup(ip, originalDomain) {
+    fetch('https://ipinfo.io/' + encodeURIComponent(ip) + '/json')
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (d.error) {
-                container.innerHTML = '<div class="error-card">Could not look up "' + query + '" — ' + (d.error.message || 'invalid IP or domain') + '</div>';
+                container.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
             } else {
+                d.originalDomain = originalDomain;
                 renderResults(d);
             }
             btn.disabled = false;
@@ -184,6 +214,7 @@ function lookupIP() {
 function renderResults(d) {
     // Parse fields from ipinfo.io response
     var ip = d.ip || '';
+    var displayIp = d.originalDomain ? d.originalDomain + ' → ' + ip : ip;
     var city = d.city || '—';
     var region = d.region || '—';
     var country = d.country || '—';
@@ -231,7 +262,7 @@ function renderResults(d) {
 
     container.innerHTML =
         '<div class="ip-header fade-in">' +
-            '<div class="ip-address-display">' + ip + '</div>' +
+            '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:14px;color:#64748b;display:block;margin-bottom:4px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' →</span>' : '') + ip + '</div>' +
             '<div class="ip-tags">' + tags + '</div>' +
         '</div>' +
         '<div class="results-grid fade-in">' +
@@ -263,7 +294,7 @@ function renderResults(d) {
             '</div>' +
         '</div>';
 
-    history.pushState({}, '', '?ip=' + encodeURIComponent(ip));
+    history.pushState({}, '', '?ip=' + encodeURIComponent(d.originalDomain || ip));
 }
 
 // Check for IP in URL on load
