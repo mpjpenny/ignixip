@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ignixip — IP Intelligence</title>
-    <meta name="description" content="Fast, clean IP address lookup. Geolocation, ASN, hosting detection. No ads, no clutter.">
+    <title>ignixip — IP & DNS Intelligence</title>
+    <meta name="description" content="Fast, clean IP address lookup, DNS records and blacklist checking. No ads, no clutter.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
     <style>
         :root {
             --bg: #0a0f1a;
@@ -23,6 +24,7 @@
             --green: #4ade80;
             --amber: #fbbf24;
             --red: #f87171;
+            --purple: #a78bfa;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
@@ -36,58 +38,102 @@
         .header-nav { display: flex; align-items: center; gap: 20px; font-size: 13px; }
         .header-nav a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
         .header-nav a:hover { color: var(--text); }
-        .hero { position: relative; z-index: 1; text-align: center; padding: 64px 24px 48px; }
-        .hero-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(59,130,246,0.3); background: rgba(59,130,246,0.08); font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--blue-bright); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 20px; }
-        .hero h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 700; color: var(--text); letter-spacing: -1px; line-height: 1.15; margin-bottom: 12px; }
+
+        /* Hero */
+        .hero { position: relative; z-index: 1; text-align: center; padding: 48px 24px 36px; }
+        .hero-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(59,130,246,0.3); background: rgba(59,130,246,0.08); font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--blue-bright); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 16px; }
+        .hero h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 700; color: var(--text); letter-spacing: -1px; line-height: 1.15; margin-bottom: 10px; }
         .hero h1 span { background: linear-gradient(135deg, var(--blue-bright), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .hero p { font-size: 15px; color: var(--text-muted); max-width: 480px; margin: 0 auto 36px; line-height: 1.6; }
-        .search-container { max-width: 580px; margin: 0 auto; }
-        .search-box { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 4px 4px 4px 16px; gap: 8px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .hero p { font-size: 14px; color: var(--text-muted); max-width: 480px; margin: 0 auto 28px; line-height: 1.6; }
+
+        /* Tabs */
+        .tabs-container { max-width: 780px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+        .tab-nav { display: flex; gap: 4px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 4px; }
+        .tab-btn { flex: 1; padding: 8px 16px; border-radius: 7px; border: none; background: transparent; color: var(--text-dim); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+        .tab-btn.active { background: var(--surface2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border2); }
+        .tab-btn:hover:not(.active) { color: var(--text-muted); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* Search box */
+        .search-box { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 4px 4px 4px 16px; gap: 8px; transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 10px; }
         .search-box:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
         .search-icon { color: var(--text-dim); font-size: 14px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
-        #ip-input { flex: 1; background: transparent; border: none; outline: none; font-size: 15px; font-family: 'JetBrains Mono', monospace; color: var(--text); padding: 10px 0; letter-spacing: 0.5px; }
-        #ip-input::placeholder { color: var(--text-faint); }
+        .search-input { flex: 1; background: transparent; border: none; outline: none; font-size: 15px; font-family: 'JetBrains Mono', monospace; color: var(--text); padding: 10px 0; letter-spacing: 0.5px; }
+        .search-input::placeholder { color: var(--text-faint); }
         .search-btn { padding: 10px 20px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s; white-space: nowrap; }
         .search-btn:hover { opacity: 0.9; }
         .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .search-hint { margin-top: 10px; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
-        .search-hint a { color: var(--text-dim); cursor: pointer; text-decoration: none; transition: color 0.2s; }
+        .search-hint { font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 20px; }
+        .search-hint a { color: var(--text-dim); cursor: pointer; text-decoration: none; }
         .search-hint a:hover { color: var(--blue-bright); }
-        .results { max-width: 900px; margin: 0 auto; padding: 0 24px 64px; position: relative; z-index: 1; }
-        .ip-header { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border2); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-        .ip-address-display { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; flex: 1; min-width: 200px; }
+
+        /* Results */
+        .results { margin-top: 4px; }
+        .ip-header { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border2); border-radius: 12px; padding: 18px 24px; margin-bottom: 12px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .ip-address-display { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; flex: 1; min-width: 200px; }
         .ip-tags { display: flex; gap: 8px; flex-wrap: wrap; }
         .tag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; }
         .tag-hosting { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
-        .tag-proxy { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
-        .tag-mobile { background: rgba(96,165,250,0.12); color: var(--blue-bright); border: 1px solid rgba(96,165,250,0.25); }
         .tag-residential { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
-        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 640px) { .results-grid { grid-template-columns: 1fr; } }
-        .result-card { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
-        .card-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (max-width: 600px) { .results-grid { grid-template-columns: 1fr; } }
+        .result-card { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+        .card-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-        .data-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); gap: 16px; }
+        .data-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); gap: 12px; }
         .data-row:last-child { border-bottom: none; }
-        .data-key { font-size: 12px; color: var(--text-dim); flex-shrink: 0; padding-top: 1px; }
-        .data-val { font-size: 13px; color: var(--text); font-family: 'JetBrains Mono', monospace; text-align: right; word-break: break-all; }
+        .data-key { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+        .data-val { font-size: 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; text-align: right; word-break: break-all; }
         .data-val.muted { color: var(--text-muted); }
         .data-val.green { color: var(--green); }
         .data-val.amber { color: var(--amber); }
-        .data-val.red { color: var(--red); }
         .data-val.blue { color: var(--blue-bright); }
-        .loading { text-align: center; padding: 48px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .data-val.purple { color: var(--purple); }
+
+        /* DNS results */
+        .dns-section { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; }
+        .dns-type-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-right: 8px; min-width: 44px; text-align: center; }
+        .dns-A { background: rgba(59,130,246,0.15); color: var(--blue-bright); }
+        .dns-MX { background: rgba(167,139,250,0.15); color: var(--purple); }
+        .dns-TXT { background: rgba(251,191,36,0.15); color: var(--amber); }
+        .dns-NS { background: rgba(74,222,128,0.15); color: var(--green); }
+        .dns-CNAME { background: rgba(248,113,113,0.15); color: var(--red); }
+        .dns-record { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+        .dns-record:last-child { border-bottom: none; }
+        .dns-record-data { color: var(--text-muted); flex: 1; word-break: break-all; }
+        .dns-ttl { color: var(--text-faint); font-size: 11px; flex-shrink: 0; }
+        .dns-empty { color: var(--text-faint); font-size: 13px; font-family: 'JetBrains Mono', monospace; padding: 8px 0; }
+
+        /* Blacklist results */
+        .bl-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .bl-stat { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: center; }
+        .bl-stat-num { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; margin-bottom: 4px; }
+        .bl-stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; }
+        .bl-list { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .bl-row { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .bl-row:last-child { border-bottom: none; }
+        .bl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .bl-dot-listed { background: var(--red); box-shadow: 0 0 6px rgba(248,113,113,0.4); }
+        .bl-dot-clean { background: var(--green); }
+        .bl-dot-error { background: var(--text-faint); }
+        .bl-name { font-family: 'JetBrains Mono', monospace; color: var(--text-muted); flex: 1; }
+        .bl-status-listed { color: var(--red); font-family: 'JetBrains Mono', monospace; }
+        .bl-status-clean { color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+
+        /* Loading / error */
+        .loading { text-align: center; padding: 40px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
         .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
         @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
-        .error-card { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 20px 24px; color: var(--red); font-size: 14px; text-align: center; }
+        .error-card { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 18px 22px; color: var(--red); font-size: 14px; text-align: center; }
         .fade-in { animation: fadeIn 0.3s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 20px 24px; text-align: center; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Footer */
+        footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 18px 24px; text-align: center; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-top: 48px; }
         footer a { color: var(--text-dim); text-decoration: none; }
         footer a:hover { color: var(--blue-bright); }
     </style>
-<script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
-<script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
 </head>
 <body>
 
@@ -105,209 +151,340 @@
 </header>
 
 <div class="hero">
-    <div class="hero-badge">&#9889; IP Intelligence</div>
+    <div class="hero-badge">&#9889; IP &amp; DNS Intelligence</div>
     <h1>Look up any <span>IP address</span> or domain</h1>
-    <p>Geolocation, network ownership, hosting detection. Fast, clean, no clutter.</p>
-    <div class="search-container">
+    <p>Geolocation, DNS records and blacklist checking. Fast, clean, no clutter.</p>
+</div>
+
+<div class="tabs-container">
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('ip')">&#8594; IP Lookup</button>
+        <button class="tab-btn" onclick="switchTab('dns')">&#8635; DNS Lookup</button>
+        <button class="tab-btn" onclick="switchTab('bl')">&#9632; Blacklist Check</button>
+    </div>
+
+    <!-- IP Lookup Tab -->
+    <div class="tab-pane active" id="tab-ip">
         <div class="search-box">
             <span class="search-icon">&#8594;</span>
-            <input type="text" id="ip-input" placeholder="Enter IP address or domain..." autocomplete="off" spellcheck="false">
-            <button class="search-btn" id="lookup-btn" onclick="lookupIP()">Look Up</button>
+            <input type="text" id="ip-input" class="search-input" placeholder="Enter IP address or domain..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="ip-btn" onclick="lookupIP()">Look Up</button>
         </div>
         <div class="search-hint">
             Try: <a onclick="lookupSelf()">your own IP</a> &middot;
-            <a onclick="setAndLookup('8.8.8.8')">8.8.8.8</a> &middot;
-            <a onclick="setAndLookup('1.1.1.1')">1.1.1.1</a>
+            <a onclick="setAndLookup('ip', '8.8.8.8')">8.8.8.8</a> &middot;
+            <a onclick="setAndLookup('ip', '1.1.1.1')">1.1.1.1</a>
         </div>
+        <div class="results" id="ip-results"></div>
+    </div>
+
+    <!-- DNS Lookup Tab -->
+    <div class="tab-pane" id="tab-dns">
+        <div class="search-box">
+            <span class="search-icon">&#8635;</span>
+            <input type="text" id="dns-input" class="search-input" placeholder="Enter domain name..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="dns-btn" onclick="lookupDNS()">Look Up</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('dns', 'google.com')">google.com</a> &middot;
+            <a onclick="setAndLookup('dns', 'ignix.co.uk')">ignix.co.uk</a> &middot;
+            <a onclick="setAndLookup('dns', 'cloudflare.com')">cloudflare.com</a>
+        </div>
+        <div class="results" id="dns-results"></div>
+    </div>
+
+    <!-- Blacklist Check Tab -->
+    <div class="tab-pane" id="tab-bl">
+        <div class="search-box">
+            <span class="search-icon">&#9632;</span>
+            <input type="text" id="bl-input" class="search-input" placeholder="Enter IP address..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="bl-btn" onclick="checkBlacklist()">Check</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('bl', '127.0.0.2')">known listed IP</a> &middot;
+            <a onclick="setAndLookup('bl', '8.8.8.8')">8.8.8.8</a>
+        </div>
+        <div class="results" id="bl-results"></div>
     </div>
 </div>
 
-<div class="results" id="results-container"></div>
-
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <script>
-var input = document.getElementById('ip-input');
-var btn = document.getElementById('lookup-btn');
-var container = document.getElementById('results-container');
-
-input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') lookupIP();
-});
-
-function setAndLookup(ip) {
-    input.value = ip;
-    lookupIP();
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+    var btns = document.querySelectorAll('.tab-btn');
+    var idx = {ip:0, dns:1, bl:2}[tab];
+    btns[idx].classList.add('active');
+    history.pushState({}, '', '?tab=' + tab);
 }
+
+function setAndLookup(tab, val) {
+    switchTab(tab);
+    document.getElementById(tab + '-input').value = val;
+    if (tab === 'ip') lookupIP();
+    else if (tab === 'dns') lookupDNS();
+    else checkBlacklist();
+}
+
+// ── IP Lookup ────────────────────────────────────────────────────────────────
+var ipInput = document.getElementById('ip-input');
+var ipBtn = document.getElementById('ip-btn');
+var ipResults = document.getElementById('ip-results');
+
+ipInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupIP(); });
+
+function isIPAddress(str) { return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(str); }
 
 function lookupSelf() {
-    input.value = 'detecting...';
-    btn.disabled = true;
+    ipInput.value = 'detecting...';
+    ipBtn.disabled = true;
+    switchTab('ip');
     fetch('https://api.ipify.org?format=json')
         .then(function(r) { return r.json(); })
-        .then(function(d) {
-            input.value = d.ip;
-            lookupIP();
-        })
-        .catch(function() {
-            input.value = '';
-            btn.disabled = false;
-        });
-}
-
-function isIPAddress(str) {
-    return /^(\d{1,3}\.){3}\d{1,3}$/.test(str);
+        .then(function(d) { ipInput.value = d.ip; lookupIP(); })
+        .catch(function() { ipInput.value = ''; ipBtn.disabled = false; });
 }
 
 function lookupIP() {
-    var query = input.value.trim();
+    var query = ipInput.value.trim();
     if (!query || query === 'detecting...') return;
-
-    btn.disabled = true;
-    btn.textContent = 'Looking up...';
-    container.innerHTML = '<div class="loading"><span class="loading-dots">Querying</span></div>';
-
+    ipBtn.disabled = true;
+    ipBtn.textContent = 'Looking up...';
+    ipResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying</span></div>';
     if (isIPAddress(query)) {
-        doLookup(query, null);
+        doIPLookup(query, null);
     } else {
-        // Resolve domain first via DNS-over-HTTPS
         fetch('https://dns.google/resolve?name=' + encodeURIComponent(query) + '&type=A')
             .then(function(r) { return r.json(); })
             .then(function(dns) {
                 if (dns.Answer && dns.Answer.length > 0) {
-                    var ip = dns.Answer[dns.Answer.length - 1].data;
-                    doLookup(ip, query);
+                    doIPLookup(dns.Answer[dns.Answer.length - 1].data, query);
                 } else {
-                    container.innerHTML = '<div class="error-card">Could not resolve "' + query + '" — domain not found</div>';
-                    btn.disabled = false;
-                    btn.textContent = 'Look Up';
+                    ipResults.innerHTML = '<div class="error-card">Could not resolve "' + query + '" — domain not found</div>';
+                    ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
                 }
             })
             .catch(function() {
-                container.innerHTML = '<div class="error-card">DNS resolution failed — please check your connection and try again.</div>';
-                btn.disabled = false;
-                btn.textContent = 'Look Up';
+                ipResults.innerHTML = '<div class="error-card">DNS resolution failed</div>';
+                ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
             });
     }
 }
 
-function doLookup(ip, originalDomain) {
+function doIPLookup(ip, originalDomain) {
     fetch('https://ipinfo.io/' + encodeURIComponent(ip) + '/json')
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (d.error) {
-                container.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
+                ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
             } else {
                 d.originalDomain = originalDomain;
-                renderResults(d);
+                renderIPResults(d);
             }
-            btn.disabled = false;
-            btn.textContent = 'Look Up';
+            ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
         })
         .catch(function() {
-            container.innerHTML = '<div class="error-card">Lookup failed — please check your connection and try again.</div>';
-            btn.disabled = false;
-            btn.textContent = 'Look Up';
+            ipResults.innerHTML = '<div class="error-card">Lookup failed — check your connection</div>';
+            ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
         });
 }
 
-function renderResults(d) {
-    // Parse fields from ipinfo.io response
+function renderIPResults(d) {
     var ip = d.ip || '';
-    var displayIp = d.originalDomain ? d.originalDomain + ' → ' + ip : ip;
-    var city = d.city || '—';
-    var region = d.region || '—';
-    var country = d.country || '—';
     var org = d.org || '—';
-    var hostname = d.hostname || '—';
-    var timezone = d.timezone || '—';
-    var postal = d.postal || '—';
-
-    // Parse coordinates
-    var lat = '—', lon = '—', coords = '—';
-    if (d.loc) {
-        var parts = d.loc.split(',');
-        lat = parts[0];
-        lon = parts[1];
-        coords = lat + ', ' + lon;
-    }
-
-    // Parse ASN and org name
-    var asn = '—', asnName = '—';
-    if (org && org !== '—') {
-        var orgParts = org.split(' ');
-        asn = orgParts[0];
-        asnName = orgParts.slice(1).join(' ');
-    }
-
-    // Detect hosting
+    var asn = org.split(' ')[0] || '—';
+    var orgName = org.split(' ').slice(1).join(' ') || '—';
     var isHosting = org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider|google|cloudflare|akamai|fastly|cdn/i.test(org) : false;
-
-    // Country flag
     var flag = '';
     if (d.country && d.country.length === 2) {
         var c = d.country.toUpperCase();
         flag = String.fromCodePoint(0x1F1E0 + c.charCodeAt(0) - 65) + String.fromCodePoint(0x1F1E0 + c.charCodeAt(1) - 65) + ' ';
     }
-
-    // Tags
-    var tags = '';
-    if (isHosting) tags += '<span class="tag tag-hosting">Hosting / DC</span>';
-    if (!isHosting) tags += '<span class="tag tag-residential">Residential / Business</span>';
-
-    // Risk
-    var riskLevel = isHosting ? 'Low-Medium — datacenter IP' : 'Low — residential/business';
-    var riskClass = isHosting ? 'amber' : 'green';
-    var commonUse = isHosting ? 'Servers, CDN, cloud services' : 'Home users, offices, businesses';
-
-    container.innerHTML =
+    var coords = d.loc ? d.loc.split(',').map(function(x) { return parseFloat(x).toFixed(4); }).join(', ') : '—';
+    ipResults.innerHTML =
         '<div class="ip-header fade-in">' +
-            '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:14px;color:#64748b;display:block;margin-bottom:4px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' →</span>' : '') + ip + '</div>' +
-            '<div class="ip-tags">' + tags + '</div>' +
+            '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:13px;color:var(--text-dim);display:block;margin-bottom:2px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' \u2192</span>' : '') + ip + '</div>' +
+            '<div class="ip-tags"><span class="tag ' + (isHosting ? 'tag-hosting' : 'tag-residential') + '">' + (isHosting ? 'Hosting / DC' : 'Residential / Business') + '</span></div>' +
         '</div>' +
         '<div class="results-grid fade-in">' +
-            '<div class="result-card">' +
-                '<div class="card-title">Location</div>' +
-                '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + country + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Region</span><span class="data-val muted">' + region + '</span></div>' +
-                '<div class="data-row"><span class="data-key">City</span><span class="data-val muted">' + city + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Postcode</span><span class="data-val muted">' + postal + '</span></div>' +
+            '<div class="result-card"><div class="card-title">Location</div>' +
+                '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + (d.country || '—') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Region</span><span class="data-val muted">' + (d.region || '—') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">City</span><span class="data-val muted">' + (d.city || '—') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Postcode</span><span class="data-val muted">' + (d.postal || '—') + '</span></div>' +
                 '<div class="data-row"><span class="data-key">Coordinates</span><span class="data-val muted" style="font-size:11px;">' + coords + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Timezone</span><span class="data-val muted">' + timezone + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Timezone</span><span class="data-val muted">' + (d.timezone || '—') + '</span></div>' +
             '</div>' +
-            '<div class="result-card">' +
-                '<div class="card-title">Network</div>' +
+            '<div class="result-card"><div class="card-title">Network</div>' +
                 '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue">' + asn + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + asnName + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
                 '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + hostname + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + (d.hostname || '—') + '</span></div>' +
             '</div>' +
-            '<div class="result-card">' +
-                '<div class="card-title">Classification</div>' +
-                '<div class="data-row"><span class="data-key">Hosting / Datacenter</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Yes' : 'No') + '</span></div>' +
+            '<div class="result-card"><div class="card-title">Classification</div>' +
+                '<div class="data-row"><span class="data-key">Hosting / DC</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Yes' : 'No') + '</span></div>' +
                 '<div class="data-row"><span class="data-key">Type</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Hosting / Datacenter' : 'Residential / Business') + '</span></div>' +
             '</div>' +
-            '<div class="result-card">' +
-                '<div class="card-title">Security Context</div>' +
-                '<div class="data-row"><span class="data-key">Risk Indicator</span><span class="data-val ' + riskClass + '">' + riskLevel + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Common Use</span><span class="data-val muted" style="font-size:11px;">' + commonUse + '</span></div>' +
+            '<div class="result-card"><div class="card-title">Security Context</div>' +
+                '<div class="data-row"><span class="data-key">Risk Indicator</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Low-Medium \u2014 datacenter IP' : 'Low \u2014 residential/business') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Common Use</span><span class="data-val muted" style="font-size:11px;">' + (isHosting ? 'Servers, CDN, cloud services' : 'Home users, offices, businesses') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Check Blacklists</span><span class="data-val"><a href="#" onclick="setAndLookup(\'bl\',\'' + ip + '\');return false;" style="color:var(--blue-bright);text-decoration:none;font-size:11px;">Check ' + ip + ' \u2192</a></span></div>' +
             '</div>' +
         '</div>';
-
-    history.pushState({}, '', '?ip=' + encodeURIComponent(d.originalDomain || ip));
+    history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
 }
 
-// Check for IP in URL on load
+// ── DNS Lookup ───────────────────────────────────────────────────────────────
+var dnsInput = document.getElementById('dns-input');
+var dnsBtn = document.getElementById('dns-btn');
+var dnsResults = document.getElementById('dns-results');
+
+dnsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupDNS(); });
+
+function lookupDNS() {
+    var domain = dnsInput.value.trim();
+    if (!domain) return;
+    dnsBtn.disabled = true;
+    dnsBtn.textContent = 'Looking up...';
+    dnsResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying DNS records</span></div>';
+    var types = ['A', 'AAAA', 'MX', 'NS', 'TXT', 'CNAME'];
+    var promises = types.map(function(type) {
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=' + type)
+            .then(function(r) { return r.json(); })
+            .then(function(d) { return { type: type, data: d }; })
+            .catch(function() { return { type: type, data: null }; });
+    });
+    Promise.all(promises).then(function(results) {
+        renderDNSResults(domain, results);
+        dnsBtn.disabled = false;
+        dnsBtn.textContent = 'Look Up';
+        history.pushState({}, '', '?tab=dns&q=' + encodeURIComponent(domain));
+    });
+}
+
+function renderDNSResults(domain, results) {
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + domain + '</div></div>';
+    var hasAny = false;
+    results.forEach(function(r) {
+        if (!r.data || !r.data.Answer || r.data.Answer.length === 0) return;
+        hasAny = true;
+        html += '<div class="dns-section fade-in"><div class="card-title">' + r.type + ' Records</div>';
+        r.data.Answer.forEach(function(rec) {
+            var data = rec.data;
+            if (r.type === 'TXT') data = data.replace(/^"|"$/g, '');
+            html += '<div class="dns-record"><span class="dns-type-badge dns-' + r.type + '">' + r.type + '</span><span class="dns-record-data">' + data + '</span><span class="dns-ttl">TTL ' + rec.TTL + 's</span></div>';
+        });
+        html += '</div>';
+    });
+    if (!hasAny) {
+        html += '<div class="error-card">No DNS records found for "' + domain + '"</div>';
+    }
+    dnsResults.innerHTML = html;
+}
+
+// ── Blacklist Check ──────────────────────────────────────────────────────────
+var blInput = document.getElementById('bl-input');
+var blBtn = document.getElementById('bl-btn');
+var blResults = document.getElementById('bl-results');
+
+blInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') checkBlacklist(); });
+
+var DNSBL_LISTS = [
+    { name: 'Spamhaus ZEN',         host: 'zen.spamhaus.org' },
+    { name: 'Spamhaus SBL',         host: 'sbl.spamhaus.org' },
+    { name: 'Spamhaus XBL',         host: 'xbl.spamhaus.org' },
+    { name: 'Spamhaus PBL',         host: 'pbl.spamhaus.org' },
+    { name: 'Barracuda BRBL',       host: 'b.barracudacentral.org' },
+    { name: 'SpamCop',              host: 'bl.spamcop.net' },
+    { name: 'SORBS SPAM',           host: 'spam.dnsbl.sorbs.net' },
+    { name: 'SORBS HTTP',           host: 'http.dnsbl.sorbs.net' },
+    { name: 'UCEPROTECT L1',        host: 'dnsbl-1.uceprotect.net' },
+    { name: 'UCEPROTECT L2',        host: 'dnsbl-2.uceprotect.net' },
+    { name: 'Abuse.ch SSLBL',       host: 'sslbl.abuse.ch' },
+    { name: 'NordSpam',             host: 'combined.nerd.dk' },
+];
+
+function reverseIP(ip) {
+    return ip.split('.').reverse().join('.');
+}
+
+function checkBlacklist() {
+    var ip = blInput.value.trim();
+    if (!ip || !isIPAddress(ip)) {
+        blResults.innerHTML = '<div class="error-card">Please enter a valid IP address</div>';
+        return;
+    }
+    blBtn.disabled = true;
+    blBtn.textContent = 'Checking...';
+    blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking ' + DNSBL_LISTS.length + ' blacklists</span></div>';
+    var reversed = reverseIP(ip);
+    var promises = DNSBL_LISTS.map(function(list) {
+        var lookup = reversed + '.' + list.host;
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var listed = d.Answer && d.Answer.length > 0;
+                return { name: list.name, listed: listed, status: listed ? 'listed' : 'clean' };
+            })
+            .catch(function() {
+                return { name: list.name, listed: false, status: 'error' };
+            });
+    });
+    Promise.all(promises).then(function(results) {
+        renderBlacklistResults(ip, results);
+        blBtn.disabled = false;
+        blBtn.textContent = 'Check';
+        history.pushState({}, '', '?tab=bl&ip=' + encodeURIComponent(ip));
+    });
+}
+
+function renderBlacklistResults(ip, results) {
+    var listed = results.filter(function(r) { return r.listed; }).length;
+    var clean = results.filter(function(r) { return !r.listed && r.status !== 'error'; }).length;
+    var errors = results.filter(function(r) { return r.status === 'error'; }).length;
+    var listColor = listed > 0 ? 'var(--red)' : 'var(--green)';
+    var html = '<div class="ip-header fade-in">' +
+        '<div class="ip-address-display">' + ip + '</div>' +
+        '<div class="ip-tags"><span class="tag" style="' + (listed > 0 ? 'background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25)' : 'background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.25)') + '">' + (listed > 0 ? listed + ' LISTED' : 'CLEAN') + '</span></div>' +
+    '</div>';
+    html += '<div class="bl-summary fade-in">' +
+        '<div class="bl-stat"><div class="bl-stat-num" style="color:' + listColor + ';">' + listed + '</div><div class="bl-stat-label">Listed</div></div>' +
+        '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--green);">' + clean + '</div><div class="bl-stat-label">Clean</div></div>' +
+        '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--text-dim);">' + results.length + '</div><div class="bl-stat-label">Checked</div></div>' +
+    '</div>';
+    html += '<div class="bl-list fade-in">';
+    results.forEach(function(r) {
+        html += '<div class="bl-row">' +
+            '<div class="bl-dot bl-dot-' + r.status + '"></div>' +
+            '<span class="bl-name">' + r.name + '</span>' +
+            '<span class="' + (r.listed ? 'bl-status-listed' : 'bl-status-clean') + '">' + (r.listed ? 'LISTED' : r.status === 'error' ? 'error' : 'clean') + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+    blResults.innerHTML = html;
+}
+
+// ── Page load ────────────────────────────────────────────────────────────────
 window.addEventListener('load', function() {
     var params = new URLSearchParams(window.location.search);
-    var ip = params.get('ip');
-    if (ip) {
-        input.value = ip;
-        lookupIP();
-    } else {
-        lookupSelf();
+    var tab = params.get('tab') || 'ip';
+    switchTab(tab);
+    if (tab === 'ip') {
+        var ip = params.get('ip');
+        if (ip) { ipInput.value = ip; lookupIP(); }
+        else { lookupSelf(); }
+    } else if (tab === 'dns') {
+        var q = params.get('q');
+        if (q) { dnsInput.value = q; lookupDNS(); }
+    } else if (tab === 'bl') {
+        var blip = params.get('ip');
+        if (blip) { blInput.value = blip; checkBlacklist(); }
     }
 });
 </script>
