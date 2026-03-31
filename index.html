@@ -422,8 +422,17 @@ function checkBlacklist() {
     }
     blBtn.disabled = true;
     blBtn.textContent = 'Checking...';
-    blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking ' + DNSBL_LISTS.length + ' blacklists</span></div>';
+    blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking blacklists</span></div>';
     var reversed = reverseIP(ip);
+
+    // AbuseIPDB check
+    var abusePromise = fetch('https://api.abuseipdb.com/api/v2/check?ipAddress=' + encodeURIComponent(ip) + '&maxAgeInDays=90', {
+        headers: {
+            'Key': '6e61e3b9a2a74b6516bcda317ef09c56633fe01f79aa161116d432f2611beda493981f2db62b8d90',
+            'Accept': 'application/json'
+        }
+    }).then(function(r) { return r.json(); }).catch(function() { return null; });
+
     var promises = DNSBL_LISTS.map(function(list) {
         var lookup = reversed + '.' + list.host;
         return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
@@ -436,20 +445,41 @@ function checkBlacklist() {
                 return { name: list.name, listed: false, status: 'error' };
             });
     });
-    Promise.all(promises).then(function(results) {
-        renderBlacklistResults(ip, results);
+    Promise.all([abusePromise, Promise.all(promises)]).then(function(combined) {
+        var abuseData = combined[0];
+        var results = combined[1];
+        renderBlacklistResults(ip, results, abuseData);
         blBtn.disabled = false;
         blBtn.textContent = 'Check';
         history.pushState({}, '', '?tab=bl&ip=' + encodeURIComponent(ip));
     });
 }
 
-function renderBlacklistResults(ip, results) {
+function renderBlacklistResults(ip, results, abuseData) {
+    // AbuseIPDB card
+    var abuseHtml = '';
+    if (abuseData && abuseData.data) {
+        var d = abuseData.data;
+        var score = d.abuseConfidenceScore || 0;
+        var scoreColor = score >= 50 ? 'var(--red)' : score >= 10 ? 'var(--amber)' : 'var(--green)';
+        var scoreLabel = score >= 50 ? 'High Risk' : score >= 10 ? 'Suspicious' : 'Clean';
+        var lastReported = d.lastReportedAt ? new Date(d.lastReportedAt).toLocaleDateString('en-GB') : 'Never';
+        abuseHtml = '<div class="result-card fade-in" style="margin-bottom:10px;">' +
+            '<div class="card-title">AbuseIPDB</div>' +
+            '<div class="data-row"><span class="data-key">Confidence Score</span><span class="data-val" style="color:' + scoreColor + ';font-size:20px;font-weight:700;">' + score + '%</span></div>' +
+            '<div class="data-row"><span class="data-key">Risk Level</span><span class="data-val" style="color:' + scoreColor + ';">' + scoreLabel + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Total Reports</span><span class="data-val">' + (d.totalReports || 0) + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Last Reported</span><span class="data-val muted">' + lastReported + '</span></div>' +
+            '<div class="data-row"><span class="data-key">ISP</span><span class="data-val muted" style="font-size:11px;">' + (d.isp || '—') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Usage Type</span><span class="data-val muted">' + (d.usageType || '—') + '</span></div>' +
+        '</div>';
+    }
+
     var listed = results.filter(function(r) { return r.listed; }).length;
     var clean = results.filter(function(r) { return !r.listed && r.status !== 'error'; }).length;
     var errors = results.filter(function(r) { return r.status === 'error'; }).length;
     var listColor = listed > 0 ? 'var(--red)' : 'var(--green)';
-    var html = '<div class="ip-header fade-in">' +
+    var html = abuseHtml + '<div class="ip-header fade-in">' +
         '<div class="ip-address-display">' + ip + '</div>' +
         '<div class="ip-tags"><span class="tag" style="' + (listed > 0 ? 'background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25)' : 'background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.25)') + '">' + (listed > 0 ? listed + ' LISTED' : 'CLEAN') + '</span></div>' +
     '</div>';
