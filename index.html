@@ -451,7 +451,10 @@ function lookupDNS() {
         fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
             .then(function(r) { return r.json(); })
             .then(function(certs) { renderCerts(domain, certs); })
-            .catch(function() {});
+            .catch(function(e) {
+                var el = document.getElementById('dns-results');
+                if (el) el.innerHTML += '<div class="dns-section fade-in"><div class="card-title">SSL / TLS Certificates</div><div class="dns-empty">Certificate data unavailable</div></div>';
+            });
     });
 }
 
