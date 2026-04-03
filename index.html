@@ -351,6 +351,8 @@ function doIPLookup(ip, originalDomain) {
     var vpnPromise = fetch('https://portal.ignix.co.uk/api/vpnapi/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
+    var rdapPromise = fetch('https://rdap.org/ip/' + encodeURIComponent(ip)).then(function(r) { return r.json(); }).catch(function() { return null; });
+
     fetch('https://ipinfo.io/' + encodeURIComponent(ip) + '/json')
         .then(function(r) { return r.json(); })
         .then(function(d) {
@@ -358,7 +360,7 @@ function doIPLookup(ip, originalDomain) {
                 ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
             } else {
                 d.originalDomain = originalDomain;
-                vpnPromise.then(function(vpn) { renderIPResults(d, vpn); });
+                Promise.all([vpnPromise, rdapPromise]).then(function(extra) { renderIPResults(d, extra[0], extra[1]); });
             }
             ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
         })
@@ -368,7 +370,7 @@ function doIPLookup(ip, originalDomain) {
         });
 }
 
-function renderIPResults(d, vpnData) {
+function renderIPResults(d, vpnData, rdapData) {
     var ip = d.ip || '';
     var org = d.org || '—';
     var asn = org.split(' ')[0] || '—';
