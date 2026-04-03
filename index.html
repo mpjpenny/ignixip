@@ -452,6 +452,10 @@ dnsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookup
 function lookupDNS() {
     var domain = dnsInput.value.trim();
     if (!domain) return;
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(domain)) {
+        dnsResults.innerHTML = '<div class="error-card">DNS lookup is for domain names. For IP addresses use the IP Lookup tab.</div>';
+        return;
+    }
     dnsBtn.disabled = true;
     dnsBtn.textContent = 'Looking up...';
     dnsResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying DNS records</span></div>';
