@@ -471,6 +471,9 @@ function lookupDNS() {
         dnsBtn.disabled = false;
         dnsBtn.textContent = 'Look Up';
         history.pushState({}, '', '?tab=dns&q=' + encodeURIComponent(domain));
+        // Clear any previous cert results
+        var prevCerts = document.querySelectorAll('.cert-section');
+        prevCerts.forEach(function(el) { el.remove(); });
         // Fetch SSL certificates from crt.sh
         fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
             .then(function(r) { return r.json(); })
