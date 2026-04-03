@@ -173,6 +173,7 @@
         <button class="tab-btn active" onclick="switchTab('ip')">&#8594; IP Lookup</button>
         <button class="tab-btn" onclick="switchTab('dns')">&#8635; DNS Lookup</button>
         <button class="tab-btn" onclick="switchTab('bl')">&#9632; Blacklist Check</button>
+        <button class="tab-btn" onclick="switchTab('whois')">&#9432; WHOIS</button>
     </div>
 
     <!-- IP Lookup Tab -->
@@ -203,6 +204,21 @@
             <a onclick="setAndLookup('dns', 'cloudflare.com')">cloudflare.com</a>
         </div>
         <div class="results" id="dns-results"></div>
+    </div>
+
+    <!-- WHOIS Tab -->
+    <div class="tab-pane" id="tab-whois">
+        <div class="search-box">
+            <span class="search-icon">&#9432;</span>
+            <input type="text" id="whois-input" class="search-input" placeholder="Enter IP address or CIDR..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="whois-btn" onclick="lookupWHOIS()">Look Up</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('whois', '8.8.8.8')">8.8.8.8</a> &middot;
+            <a onclick="setAndLookup('whois', '1.1.1.1')">1.1.1.1</a> &middot;
+            <a onclick="setAndLookup('whois', '185.220.101.34')">185.220.101.34</a>
+        </div>
+        <div class="results" id="whois-results"></div>
     </div>
 
     <!-- Blacklist Check Tab -->
@@ -272,7 +288,7 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + tab).classList.add('active');
     var btns = document.querySelectorAll('.tab-btn');
-    var idx = {ip:0, dns:1, bl:2}[tab];
+    var idx = {ip:0, dns:1, bl:2, whois:3}[tab];
     btns[idx].classList.add('active');
     history.pushState({}, '', '?tab=' + tab);
 }
@@ -562,6 +578,112 @@ function renderBlacklistResults(ip, results, abuseData) {
     blResults.innerHTML = html;
 }
 
+// ── WHOIS Lookup ────────────────────────────────────────────────────────────
+var whoisInput = document.getElementById('whois-input');
+var whoisBtn = document.getElementById('whois-btn');
+var whoisResults = document.getElementById('whois-results');
+
+whoisInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupWHOIS(); });
+
+function lookupWHOIS() {
+    var query = whoisInput.value.trim();
+    if (!query) return;
+    whoisBtn.disabled = true;
+    whoisBtn.textContent = 'Looking up...';
+    whoisResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying RDAP</span></div>';
+    fetch('https://rdap.org/ip/' + encodeURIComponent(query))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            renderWHOIS(query, d);
+            whoisBtn.disabled = false;
+            whoisBtn.textContent = 'Look Up';
+            history.pushState({}, '', '?tab=whois&ip=' + encodeURIComponent(query));
+        })
+        .catch(function() {
+            whoisResults.innerHTML = '<div class="error-card">WHOIS lookup failed — please check the IP and try again.</div>';
+            whoisBtn.disabled = false;
+            whoisBtn.textContent = 'Look Up';
+        });
+}
+
+function getVcard(entity, field) {
+    try {
+        var vcard = entity.vcardArray[1];
+        for (var i = 0; i < vcard.length; i++) {
+            if (vcard[i][0] === field) return vcard[i][3] || '';
+        }
+    } catch(e) {}
+    return '';
+}
+
+function getEntityByRole(entities, role) {
+    if (!entities) return null;
+    for (var i = 0; i < entities.length; i++) {
+        if (entities[i].roles && entities[i].roles.indexOf(role) >= 0) return entities[i];
+        // Check nested entities
+        if (entities[i].entities) {
+            var nested = getEntityByRole(entities[i].entities, role);
+            if (nested) return nested;
+        }
+    }
+    return null;
+}
+
+function getEvent(events, action) {
+    if (!events) return '—';
+    for (var i = 0; i < events.length; i++) {
+        if (events[i].eventAction === action) {
+            return new Date(events[i].eventDate).toLocaleDateString('en-GB');
+        }
+    }
+    return '—';
+}
+
+function renderWHOIS(query, d) {
+    var registrant = getEntityByRole(d.entities, 'registrant');
+    var abuse = getEntityByRole(d.entities, 'abuse');
+    var name = d.name || '—';
+    var network = (d.startAddress && d.endAddress) ? d.startAddress + ' — ' + d.endAddress : '—';
+    var cidr = (d.cidr0_cidrs && d.cidr0_cidrs.length > 0) ? d.cidr0_cidrs[0].v4prefix + '/' + d.cidr0_cidrs[0].length : '—';
+    var registered = getEvent(d.events, 'registration');
+    var lastChanged = getEvent(d.events, 'last changed');
+    var status = (d.status && d.status.length > 0) ? d.status.join(', ') : '—';
+    var type = d.type || '—';
+    var registrantName = registrant ? getVcard(registrant, 'fn') : '—';
+    var registrantAddr = registrant ? (registrant.vcardArray ? (function() {
+        try { var a = registrant.vcardArray[1]; for(var i=0;i<a.length;i++) { if(a[i][0]==='adr') return a[i][1].label || '—'; } } catch(e) {} return '—';
+    })() : '—') : '—';
+    var abuseEmail = abuse ? getVcard(abuse, 'email') : '—';
+    var abusePhone = abuse ? getVcard(abuse, 'tel') : '—';
+
+    // Determine registry from port43
+    var registry = d.port43 ? d.port43.replace('whois.', '').replace('.net', '').replace('.org', '').toUpperCase() : '—';
+
+    whoisResults.innerHTML =
+        '<div class="ip-header fade-in"><div class="ip-address-display">' + query + '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">' + name + '</span></div></div>' +
+        '<div class="results-grid fade-in">' +
+            '<div class="result-card"><div class="card-title">Network</div>' +
+                '<div class="data-row"><span class="data-key">Name</span><span class="data-val">' + name + '</span></div>' +
+                '<div class="data-row"><span class="data-key">CIDR</span><span class="data-val blue">' + cidr + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Range</span><span class="data-val muted" style="font-size:11px;">' + network + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Type</span><span class="data-val muted">' + type + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Status</span><span class="data-val green">' + status + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Registry</span><span class="data-val muted">' + registry + '</span></div>' +
+            '</div>' +
+            '<div class="result-card"><div class="card-title">Registrant</div>' +
+                '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val">' + registrantName + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Address</span><span class="data-val muted" style="font-size:11px;text-align:right;white-space:pre-line;">' + registrantAddr.replace(/
+/g, ', ') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Registered</span><span class="data-val muted">' + registered + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Last Changed</span><span class="data-val muted">' + lastChanged + '</span></div>' +
+            '</div>' +
+            '<div class="result-card"><div class="card-title">Abuse Contact</div>' +
+                '<div class="data-row"><span class="data-key">Email</span><span class="data-val blue" style="font-size:11px;">' + (abuseEmail !== '—' ? '<a href="mailto:' + abuseEmail + '" style="color:var(--blue-bright);text-decoration:none;">' + abuseEmail + '</a>' : '—') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Phone</span><span class="data-val muted">' + abusePhone + '</span></div>' +
+            '</div>' +
+        '</div>';
+}
+
 // ── Page load ────────────────────────────────────────────────────────────────
 window.addEventListener('load', function() {
     var params = new URLSearchParams(window.location.search);
@@ -577,6 +699,9 @@ window.addEventListener('load', function() {
     } else if (tab === 'bl') {
         var blip = params.get('ip');
         if (blip) { blInput.value = blip; checkBlacklist(); }
+    } else if (tab === 'whois') {
+        var whoisip = params.get('ip');
+        if (whoisip) { whoisInput.value = whoisip; lookupWHOIS(); }
     }
 });
 </script>
