@@ -355,7 +355,8 @@ function renderIPResults(d, vpnData) {
     var org = d.org || '—';
     var asn = org.split(' ')[0] || '—';
     var orgName = org.split(' ').slice(1).join(' ') || '—';
-    var isHosting = org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider|google|cloudflare|akamai|fastly|cdn/i.test(org) : false;
+    var isTor = vpnData && vpnData.security && vpnData.security.tor;
+    var isHosting = isTor || (org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider|google|cloudflare|akamai|fastly|cdn/i.test(org) : false);
     var flag = '';
     if (d.country && d.country.length === 2) {
         var c = d.country.toUpperCase();
@@ -391,6 +392,14 @@ function renderIPResults(d, vpnData) {
                 '<div class="data-row"><span class="data-key">Common Use</span><span class="data-val muted" style="font-size:11px;">' + (isHosting ? 'Servers, CDN, cloud services' : 'Home users, offices, businesses') + '</span></div>' +
                 '<div class="data-row"><span class="data-key">Check Blacklists</span><span class="data-val"><a href="#" onclick="setAndLookup(\'bl\',\'' + ip + '\');return false;" style="color:var(--blue-bright);text-decoration:none;font-size:11px;">Check ' + ip + ' \u2192</a></span></div>' +
             '</div>' +
+            (vpnData && vpnData.security ?
+                '<div class="result-card fade-in"><div class="card-title">Threat Intelligence</div>' +
+                '<div class="data-row"><span class="data-key">VPN</span><span class="data-val ' + (vpnData.security.vpn ? 'amber' : 'green') + '">' + (vpnData.security.vpn ? 'Detected' : 'No') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Proxy</span><span class="data-val ' + (vpnData.security.proxy ? 'amber' : 'green') + '">' + (vpnData.security.proxy ? 'Detected' : 'No') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Tor</span><span class="data-val ' + (vpnData.security.tor ? 'red' : 'green') + '">' + (vpnData.security.tor ? 'Detected' : 'No') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Relay</span><span class="data-val ' + (vpnData.security.relay ? 'amber' : 'green') + '">' + (vpnData.security.relay ? 'Detected' : 'No') + '</span></div>' +
+                '</div>'
+            : '') +
         '</div>';
     history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
 }
