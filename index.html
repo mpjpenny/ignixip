@@ -672,8 +672,7 @@ function renderWHOIS(query, d) {
             '</div>' +
             '<div class="result-card"><div class="card-title">Registrant</div>' +
                 '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val">' + registrantName + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Address</span><span class="data-val muted" style="font-size:11px;text-align:right;white-space:pre-line;">' + registrantAddr.replace(/
-/g, ', ') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Address</span><span class="data-val muted" style="font-size:11px;text-align:right;white-space:pre-line;">' + registrantAddr.replace(/\n/g, ', ') + '</span></div>' +
                 '<div class="data-row"><span class="data-key">Registered</span><span class="data-val muted">' + registered + '</span></div>' +
                 '<div class="data-row"><span class="data-key">Last Changed</span><span class="data-val muted">' + lastChanged + '</span></div>' +
             '</div>' +
