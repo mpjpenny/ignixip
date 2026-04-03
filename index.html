@@ -16,6 +16,8 @@
     <meta name="twitter:description" content="Look up any IP address or domain. Geolocation, DNS records, blacklist checking. Free and fast.">
     <link rel="canonical" href="https://ignixip.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
     <style>
         :root {
@@ -161,6 +163,22 @@
         .error-card { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 18px 22px; color: var(--red); font-size: 14px; text-align: center; }
         .fade-in { animation: fadeIn 0.3s ease forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Map */
+        .map-container { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; height: 200px; }
+        .map-container .leaflet-control-attribution { font-size: 9px; background: rgba(10,15,26,0.8) !important; color: var(--text-faint) !important; }
+        .map-container .leaflet-control-attribution a { color: var(--text-dim) !important; }
+        .map-container .leaflet-control-zoom a { background: var(--surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
+
+        /* Action bar */
+        .action-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.2s; }
+        .action-btn:hover { border-color: var(--blue); color: var(--text); background: var(--surface2); }
+        .action-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        /* Toast notification */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 18px; font-size: 13px; font-family: 'JetBrains Mono', monospace; color: var(--green); z-index: 1000; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+        .toast.show { transform: translateY(0); opacity: 1; }
 
         /* Footer */
         footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 18px 24px; text-align: center; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-top: 48px; }
@@ -332,6 +350,8 @@
 <footer>
     ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
+
+<div id="toast" class="toast"></div>
 
 <script>
 // ── DNSBL list (shared by IP Lookup risk score and Blacklist tab) ────────────
@@ -578,6 +598,116 @@ function renderRiskPanel(risk, ip) {
     return html;
 }
 
+// ── Toast notification ──────────────────────────────────────────────────────
+function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ── Store last lookup data for export ───────────────────────────────────────
+var lastLookupData = null;
+
+// ── Export as JSON ──────────────────────────────────────────────────────────
+function exportJSON() {
+    if (!lastLookupData) return;
+    var json = JSON.stringify(lastLookupData, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ignixip-' + (lastLookupData.ip || 'report') + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('JSON exported');
+}
+
+// ── Copy to clipboard ───────────────────────────────────────────────────────
+function copyReport() {
+    if (!lastLookupData) return;
+    var ld = lastLookupData;
+    var lines = [
+        'ignixip Report — ' + ld.ip,
+        '═══════════════════════════════════════',
+        '',
+        'Risk Score:     ' + ld.risk.score + '/100 (' + ld.risk.label + ')',
+        'Risk Factors:   ' + ld.risk.factors.map(function(f) { return f.label; }).join(', '),
+        '',
+        '── Location ──',
+        'Country:        ' + (ld.country || '—'),
+        'Region:         ' + (ld.region || '—'),
+        'City:           ' + (ld.city || '—'),
+        'Coordinates:    ' + (ld.loc || '—'),
+        'Timezone:       ' + (ld.timezone || '—'),
+        '',
+        '── Network ──',
+        'ASN:            ' + (ld.asn || '—'),
+        'Organisation:   ' + (ld.org || '—'),
+        'Hostname:       ' + (ld.hostname || '—'),
+        'Prefix:         ' + (ld.prefix || '—'),
+        '',
+        '── Threat Intelligence ──',
+        'VPN:            ' + (ld.vpn ? 'Detected' : 'No'),
+        'Proxy:          ' + (ld.proxy ? 'Detected' : 'No'),
+        'Tor:            ' + (ld.tor ? 'Detected' : 'No'),
+        'Relay:          ' + (ld.relay ? 'Detected' : 'No'),
+        'Type:           ' + (ld.isHosting ? 'Hosting / Datacenter' : 'Residential / Business'),
+        '',
+        '── AbuseIPDB ──',
+        'Confidence:     ' + (ld.abuseConfidence !== undefined ? ld.abuseConfidence + '%' : 'N/A'),
+        'Total Reports:  ' + (ld.abuseReports !== undefined ? ld.abuseReports : 'N/A'),
+        'Last Reported:  ' + (ld.abuseLastReported || 'N/A'),
+        '',
+        '── Blacklists ──',
+        'Listed:         ' + ld.blacklistListed + ' of ' + ld.blacklistTotal,
+    ];
+    if (ld.blacklistNames && ld.blacklistNames.length > 0) {
+        lines.push('Listed On:      ' + ld.blacklistNames.join(', '));
+    }
+    lines.push('');
+    lines.push('Generated by ignixip.com — ' + new Date().toLocaleString('en-GB'));
+    var text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(function() { showToast('Report copied to clipboard'); });
+}
+
+// ── Abuse Report Generator ──────────────────────────────────────────────────
+function generateAbuseReport() {
+    if (!lastLookupData) return;
+    var ld = lastLookupData;
+    var subject = 'Abuse Report — ' + ld.ip;
+    var body = 'Dear Abuse Team,\n\n' +
+        'I am writing to report potentially malicious activity from the following IP address:\n\n' +
+        'IP Address: ' + ld.ip + '\n' +
+        'ASN: ' + (ld.asn || 'Unknown') + '\n' +
+        'Organisation: ' + (ld.org || 'Unknown') + '\n' +
+        'Hostname: ' + (ld.hostname || 'Unknown') + '\n' +
+        'Location: ' + [ld.city, ld.region, ld.country].filter(Boolean).join(', ') + '\n\n' +
+        '── Risk Assessment (via ignixip.com) ──\n' +
+        'Risk Score: ' + ld.risk.score + '/100 (' + ld.risk.label + ')\n' +
+        'Risk Factors: ' + ld.risk.factors.map(function(f) { return f.label; }).join(', ') + '\n';
+    if (ld.abuseConfidence !== undefined) {
+        body += 'AbuseIPDB Confidence: ' + ld.abuseConfidence + '% (' + ld.abuseReports + ' reports)\n';
+    }
+    if (ld.blacklistListed > 0) {
+        body += 'Blacklisted On: ' + ld.blacklistNames.join(', ') + '\n';
+    }
+    if (ld.vpn || ld.proxy || ld.tor) {
+        body += 'Detection Flags: ' + [ld.vpn ? 'VPN' : '', ld.proxy ? 'Proxy' : '', ld.tor ? 'Tor' : ''].filter(Boolean).join(', ') + '\n';
+    }
+    body += '\n── Observed Activity ──\n' +
+        '[Please describe the malicious activity you observed, including dates, times, and any relevant log entries.]\n\n' +
+        'Please investigate and take appropriate action.\n\n' +
+        'Regards,\n[Your Name]\n\n' +
+        '---\nReport generated by ignixip.com';
+
+    // Open mailto with abuse contact if available
+    var mailto = ld.abuseEmail && ld.abuseEmail !== '—' ? ld.abuseEmail : '';
+    var mailtoLink = 'mailto:' + encodeURIComponent(mailto) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    window.open(mailtoLink, '_self');
+    showToast('Abuse report opened in email');
+}
+
 function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
     var ip = d.ip || '';
     var org = d.org || '—';
@@ -595,17 +725,69 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
     // Calculate risk score
     var risk = calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults);
 
+    // Get abuse email from RDAP
+    var abuseEntity = rdapData ? getEntityByRole(rdapData.entities || [], 'abuse') : null;
+    var abuseEmail = abuseEntity ? getVcard(abuseEntity, 'email') : '—';
+
+    // Blacklist stats
+    var listedCount = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).length : 0;
+    var listedNames = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).map(function(r) { return r.name; }) : [];
+
+    // Store for export
+    lastLookupData = {
+        ip: ip,
+        originalDomain: d.originalDomain || null,
+        country: d.country || null,
+        region: d.region || null,
+        city: d.city || null,
+        postal: d.postal || null,
+        loc: d.loc || null,
+        timezone: d.timezone || null,
+        asn: asn,
+        org: org,
+        orgName: orgName,
+        hostname: d.hostname || null,
+        prefix: (rdapData && rdapData.cidr0_cidrs && rdapData.cidr0_cidrs.length > 0) ? rdapData.cidr0_cidrs[0].v4prefix + '/' + rdapData.cidr0_cidrs[0].length : null,
+        isHosting: isHosting,
+        vpn: vpnData && vpnData.security ? vpnData.security.vpn : false,
+        proxy: vpnData && vpnData.security ? vpnData.security.proxy : false,
+        tor: vpnData && vpnData.security ? vpnData.security.tor : false,
+        relay: vpnData && vpnData.security ? vpnData.security.relay : false,
+        abuseConfidence: abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : undefined,
+        abuseReports: abuseData && abuseData.data ? (abuseData.data.totalReports || 0) : undefined,
+        abuseLastReported: abuseData && abuseData.data && abuseData.data.lastReportedAt ? new Date(abuseData.data.lastReportedAt).toLocaleDateString('en-GB') : null,
+        abuseEmail: abuseEmail,
+        blacklistListed: listedCount,
+        blacklistTotal: dnsblResults ? dnsblResults.length : 0,
+        blacklistNames: listedNames,
+        risk: { score: risk.score, label: risk.label, factors: risk.factors },
+        timestamp: new Date().toISOString()
+    };
+
     // Build output
     var html = '';
 
     // Risk panel (top)
     html += renderRiskPanel(risk, ip);
 
+    // Action bar
+    html += '<div class="action-bar fade-in">';
+    html += '<button class="action-btn" onclick="copyReport()"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy Report</button>';
+    html += '<button class="action-btn" onclick="exportJSON()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON</button>';
+    html += '<button class="action-btn" onclick="generateAbuseReport()"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Report Abuse</button>';
+    html += '<button class="action-btn" onclick="copyShareLink()"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Share Link</button>';
+    html += '</div>';
+
     // IP header
     html += '<div class="ip-header fade-in">' +
             '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:13px;color:var(--text-dim);display:block;margin-bottom:2px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' \u2192</span>' : '') + ip + '</div>' +
             '<div class="ip-tags"><span class="tag ' + (isHosting ? 'tag-hosting' : 'tag-residential') + '">' + (isHosting ? 'Hosting / DC' : 'Residential / Business') + '</span></div>' +
         '</div>';
+
+    // Map
+    if (d.loc) {
+        html += '<div class="map-container fade-in" id="ip-map"></div>';
+    }
 
     // Results grid
     html += '<div class="results-grid fade-in">';
@@ -627,6 +809,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
         '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
         '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
         '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + (d.hostname || '—') + '</span></div>' +
+        (abuseEmail !== '—' ? '<div class="data-row"><span class="data-key">Abuse Contact</span><span class="data-val blue" style="font-size:11px;"><a href="mailto:' + abuseEmail + '" style="color:var(--blue-bright);text-decoration:none;">' + abuseEmail + '</a></span></div>' : '') +
     '</div>';
 
     // Threat Intelligence card (VPN/Proxy/Tor)
@@ -658,8 +841,6 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
 
     // Blacklist summary card
     if (dnsblResults) {
-        var listedCount = dnsblResults.filter(function(r) { return r.listed; }).length;
-        var listedNames = dnsblResults.filter(function(r) { return r.listed; }).map(function(r) { return r.name; });
         html += '<div class="result-card"><div class="card-title">Blacklists</div>' +
             '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + (listedCount > 0 ? 'red' : 'green') + '">' + (listedCount > 0 ? listedCount + ' listed' : 'Clean') + '</span></div>' +
             '<div class="data-row"><span class="data-key">Checked</span><span class="data-val muted">' + dnsblResults.length + ' DNSBLs</span></div>';
@@ -674,6 +855,31 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
 
     ipResults.innerHTML = html;
     history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
+
+    // Initialize map after DOM update
+    if (d.loc) {
+        var parts = d.loc.split(',');
+        var lat = parseFloat(parts[0]);
+        var lng = parseFloat(parts[1]);
+        setTimeout(function() {
+            var mapEl = document.getElementById('ip-map');
+            if (mapEl && mapEl._leaflet_id) return; // already initialized
+            var map = L.map('ip-map', { zoomControl: true, scrollWheelZoom: false, dragging: true, attributionControl: true }).setView([lat, lng], 10);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
+                maxZoom: 18
+            }).addTo(map);
+            var marker = L.circleMarker([lat, lng], { radius: 8, fillColor: '#3b82f6', color: '#1d4ed8', weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+            marker.bindPopup('<span style="font-family:JetBrains Mono,monospace;font-size:12px;">' + ip + '<br>' + [d.city, d.country].filter(Boolean).join(', ') + '</span>');
+        }, 100);
+    }
+}
+
+// ── Share link ──────────────────────────────────────────────────────────────
+function copyShareLink() {
+    if (!lastLookupData) return;
+    var url = 'https://ignixip.com/?tab=ip&ip=' + encodeURIComponent(lastLookupData.originalDomain || lastLookupData.ip);
+    navigator.clipboard.writeText(url).then(function() { showToast('Link copied to clipboard'); });
 }
 
 // ── DNS Lookup ───────────────────────────────────────────────────────────────
