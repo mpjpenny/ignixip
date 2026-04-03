@@ -175,6 +175,7 @@
         <button class="tab-btn" onclick="switchTab('bl')">&#9632; Blacklist Check</button>
         <button class="tab-btn" onclick="switchTab('whois')">&#9432; WHOIS</button>
         <button class="tab-btn" onclick="switchTab('asn')">&#9671; ASN</button>
+        <button class="tab-btn" onclick="switchTab('tools')">&#9874; Network Tools</button>
     </div>
 
     <!-- IP Lookup Tab -->
@@ -207,6 +208,22 @@
         <div class="results" id="dns-results"></div>
     </div>
 
+
+
+    <!-- Network Tools Tab -->
+    <div class="tab-pane" id="tab-tools">
+        <div class="search-box">
+            <span class="search-icon">&#9874;</span>
+            <input type="text" id="tools-input" class="search-input" placeholder="Enter IP address..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="tools-btn" onclick="runTools()">Run</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('tools', '8.8.8.8')">8.8.8.8</a> &middot;
+            <a onclick="setAndLookup('tools', '1.1.1.1')">1.1.1.1</a> &middot;
+            <a onclick="setAndLookup('tools', '185.220.101.34')">185.220.101.34</a>
+        </div>
+        <div class="results" id="tools-results"></div>
+    </div>
 
     <!-- ASN Tab -->
     <div class="tab-pane" id="tab-asn">
@@ -305,7 +322,7 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + tab).classList.add('active');
     var btns = document.querySelectorAll('.tab-btn');
-    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4}[tab];
+    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5}[tab];
     btns[idx].classList.add('active');
     history.pushState({}, '', '?tab=' + tab);
 }
@@ -755,6 +772,90 @@ function renderWHOIS(query, d) {
 }
 
 
+
+var toolsInput = document.getElementById('tools-input');
+var toolsBtn = document.getElementById('tools-btn');
+var toolsResults = document.getElementById('tools-results');
+
+toolsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') runTools(); });
+
+function runTools() {
+    var ip = toolsInput.value.trim();
+    if (!ip || !/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+        toolsResults.innerHTML = '<div class="error-card">Please enter a valid IP address</div>';
+        return;
+    }
+    toolsBtn.disabled = true;
+    toolsBtn.textContent = 'Running...';
+    toolsResults.innerHTML = '<div class="loading"><span class="loading-dots">Running ping and port scan</span></div>';
+    history.pushState({}, '', '?tab=tools&ip=' + encodeURIComponent(ip));
+
+    var pingPromise = fetch('https://tools.ignixip.com/ping/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var scanPromise = fetch('https://tools.ignixip.com/scan/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    Promise.all([pingPromise, scanPromise]).then(function(res) {
+        renderTools(ip, res[0], res[1]);
+        toolsBtn.disabled = false;
+        toolsBtn.textContent = 'Run';
+    });
+}
+
+function renderTools(ip, ping, scan) {
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + ip + '</div></div>';
+    html += '<div class="results-grid fade-in">';
+
+    // Ping card
+    if (ping) {
+        var alive = ping.alive;
+        var s = ping.stats || {};
+        html += '<div class="result-card"><div class="card-title">Ping</div>';
+        html += '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + (alive ? 'green' : 'red') + '">' + (alive ? 'Reachable' : 'Unreachable') + '</span></div>';
+        if (s.rtt_avg !== undefined) {
+            html += '<div class="data-row"><span class="data-key">Avg RTT</span><span class="data-val">' + s.rtt_avg.toFixed(2) + ' ms</span></div>';
+            html += '<div class="data-row"><span class="data-key">Min RTT</span><span class="data-val muted">' + s.rtt_min.toFixed(2) + ' ms</span></div>';
+            html += '<div class="data-row"><span class="data-key">Max RTT</span><span class="data-val muted">' + s.rtt_max.toFixed(2) + ' ms</span></div>';
+        }
+        if (s.loss !== undefined) {
+            html += '<div class="data-row"><span class="data-key">Packet Loss</span><span class="data-val ' + (s.loss > 0 ? 'amber' : 'green') + '">' + s.loss + '%</span></div>';
+        }
+        html += '<div class="data-row"><span class="data-key">Packets</span><span class="data-val muted">' + (s.transmitted || 4) + ' sent / ' + (s.received || 0) + ' received</span></div>';
+        html += '</div>';
+    }
+
+    // Port scan card
+    if (scan) {
+        html += '<div class="result-card"><div class="card-title">Port Scan</div>';
+        html += '<div class="data-row"><span class="data-key">Host Status</span><span class="data-val ' + (scan.alive ? 'green' : 'red') + '">' + (scan.alive ? 'Up' : 'Down') + '</span></div>';
+        html += '<div class="data-row"><span class="data-key">Ports Scanned</span><span class="data-val muted">' + (scan.scanned || 23) + ' common ports</span></div>';
+        html += '<div class="data-row"><span class="data-key">Open Ports</span><span class="data-val ' + (scan.ports && scan.ports.length > 0 ? 'amber' : 'green') + '">' + (scan.ports ? scan.ports.length : 0) + '</span></div>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // Open ports detail
+    if (scan && scan.ports && scan.ports.length > 0) {
+        html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Open Ports</div>';
+        for (var i = 0; i < scan.ports.length; i++) {
+            var p = scan.ports[i];
+            html += '<div class="dns-record">';
+            html += '<span class="dns-type-badge dns-A" style="min-width:48px;">' + p.port + '</span>';
+            html += '<span class="dns-record-data"><span style="color:var(--text);">' + p.service + '</span></span>';
+            html += '<span class="dns-ttl" style="color:var(--amber);">open</span>';
+            html += '</div>';
+        }
+        html += '</div>';
+    } else if (scan && scan.ports && scan.ports.length === 0) {
+        html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Open Ports</div>';
+        html += '<div class="dns-empty">No open ports found on scanned ports</div>';
+        html += '</div>';
+    }
+
+    toolsResults.innerHTML = html;
+}
+
 var asnInput = document.getElementById('asn-input');
 var asnBtn = document.getElementById('asn-btn');
 var asnResults = document.getElementById('asn-results');
@@ -856,6 +957,9 @@ window.addEventListener('load', function() {
     } else if (tab === 'asn') {
         var asnq = params.get('asn');
         if (asnq) { asnInput.value = asnq; lookupASN(); }
+    } else if (tab === 'tools') {
+        var toolsip = params.get('ip');
+        if (toolsip) { toolsInput.value = toolsip; runTools(); }
     }
 });
 </script>
