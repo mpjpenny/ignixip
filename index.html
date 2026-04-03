@@ -399,6 +399,7 @@ function renderIPResults(d, vpnData, rdapData) {
             '</div>' +
             '<div class="result-card"><div class="card-title">Network</div>' +
                 '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue">' + asn + '</span></div>' +
+                (rdapData && rdapData.cidr0_cidrs && rdapData.cidr0_cidrs.length > 0 ? '<div class="data-row"><span class="data-key">Prefix</span><span class="data-val muted">' + rdapData.cidr0_cidrs[0].v4prefix + '/' + rdapData.cidr0_cidrs[0].length + '</span></div>' : '') +
                 '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
                 '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
                 '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + (d.hostname || '—') + '</span></div>' +
