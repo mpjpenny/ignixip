@@ -174,6 +174,7 @@
         <button class="tab-btn" onclick="switchTab('dns')">&#8635; DNS Lookup</button>
         <button class="tab-btn" onclick="switchTab('bl')">&#9632; Blacklist Check</button>
         <button class="tab-btn" onclick="switchTab('whois')">&#9432; WHOIS</button>
+        <button class="tab-btn" onclick="switchTab('asn')">&#9671; ASN</button>
     </div>
 
     <!-- IP Lookup Tab -->
@@ -204,6 +205,22 @@
             <a onclick="setAndLookup('dns', 'cloudflare.com')">cloudflare.com</a>
         </div>
         <div class="results" id="dns-results"></div>
+    </div>
+
+
+    <!-- ASN Tab -->
+    <div class="tab-pane" id="tab-asn">
+        <div class="search-box">
+            <span class="search-icon">&#9671;</span>
+            <input type="text" id="asn-input" class="search-input" placeholder="Enter ASN e.g. AS15169 or 15169..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="asn-btn" onclick="lookupASN()">Look Up</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('asn', 'AS15169')">AS15169 Google</a> &middot;
+            <a onclick="setAndLookup('asn', 'AS13335')">AS13335 Cloudflare</a> &middot;
+            <a onclick="setAndLookup('asn', 'AS16509')">AS16509 Amazon</a>
+        </div>
+        <div class="results" id="asn-results"></div>
     </div>
 
     <!-- WHOIS Tab -->
@@ -288,7 +305,7 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + tab).classList.add('active');
     var btns = document.querySelectorAll('.tab-btn');
-    var idx = {ip:0, dns:1, bl:2, whois:3}[tab];
+    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4}[tab];
     btns[idx].classList.add('active');
     history.pushState({}, '', '?tab=' + tab);
 }
@@ -730,6 +747,87 @@ function renderWHOIS(query, d) {
         '</div>';
 }
 
+
+var asnInput = document.getElementById('asn-input');
+var asnBtn = document.getElementById('asn-btn');
+var asnResults = document.getElementById('asn-results');
+
+asnInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupASN(); });
+
+function lookupASN() {
+    var raw = asnInput.value.trim();
+    var num = raw.replace(/^AS/i, '');
+    if (!num) return;
+    asnBtn.disabled = true;
+    asnBtn.textContent = 'Looking up...';
+    asnResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying ASN data</span></div>';
+    var rdapUrl = 'https://rdap.org/autnum/' + encodeURIComponent(num);
+    var htUrl = 'https://api.hackertarget.com/aslookup/?q=AS' + encodeURIComponent(num);
+    Promise.all([
+        fetch(rdapUrl).then(function(r) { return r.json(); }).catch(function() { return null; }),
+        fetch(htUrl).then(function(r) { return r.text(); }).catch(function() { return null; })
+    ]).then(function(res) {
+        renderASN('AS' + num, res[0], res[1]);
+        asnBtn.disabled = false;
+        asnBtn.textContent = 'Look Up';
+        history.pushState({}, '', '?tab=asn&asn=AS' + encodeURIComponent(num));
+    });
+}
+
+function renderASN(asn, rdap, prefixText) {
+    if (!rdap && !prefixText) {
+        asnResults.innerHTML = '<div class="error-card">ASN lookup failed</div>';
+        return;
+    }
+    var name = rdap ? (rdap.name || 'Unknown') : 'Unknown';
+    var registrant = rdap ? getEntityByRole(rdap.entities, 'registrant') : null;
+    var abuse = rdap ? getEntityByRole(rdap.entities, 'abuse') : null;
+    var orgName = registrant ? getVcard(registrant, 'fn') : 'Unknown';
+    var abuseEmail = abuse ? getVcard(abuse, 'email') : '';
+    var registered = rdap ? getEvent(rdap.events, 'registration') : '';
+    var status = rdap && rdap.status ? rdap.status.join(', ') : '';
+    var registry = rdap && rdap.port43 ? rdap.port43.replace('whois.','').replace('.net','').replace('.org','').toUpperCase() : '';
+    var prefixes = [];
+    if (prefixText) {
+        var lines = prefixText.split('\n');
+        for (var i = 1; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (line && line.indexOf('/') > 0 && !line.startsWith('"')) {
+                prefixes.push(line);
+            }
+        }
+    }
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + asn;
+    html += '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">' + name + '</span></div></div>';
+    html += '<div class="results-grid fade-in">';
+    html += '<div class="result-card"><div class="card-title">ASN Details</div>';
+    html += '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue">' + asn + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Name</span><span class="data-val">' + name + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val">' + orgName + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Registry</span><span class="data-val muted">' + registry + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Registered</span><span class="data-val muted">' + registered + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Status</span><span class="data-val green">' + status + '</span></div>';
+    html += '</div>';
+    html += '<div class="result-card"><div class="card-title">Abuse Contact</div>';
+    if (abuseEmail) {
+        html += '<div class="data-row"><span class="data-key">Email</span><span class="data-val blue" style="font-size:11px;"><a href="mailto:' + abuseEmail + '" style="color:var(--blue-bright);text-decoration:none;">' + abuseEmail + '</a></span></div>';
+    }
+    html += '<div class="data-row"><span class="data-key">Prefixes</span><span class="data-val">' + prefixes.length + ' announced</span></div>';
+    html += '</div></div>';
+    if (prefixes.length > 0) {
+        html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Announced Prefixes (' + prefixes.length + ')</div>';
+        var show = prefixes.slice(0, 50);
+        for (var j = 0; j < show.length; j++) {
+            html += '<div class="dns-record"><span class="dns-type-badge dns-NS" style="min-width:48px;">IPv4</span><span class="dns-record-data">' + show[j] + '</span></div>';
+        }
+        if (prefixes.length > 50) {
+            html += '<div class="dns-empty" style="padding:8px 0;">... and ' + (prefixes.length - 50) + ' more</div>';
+        }
+        html += '</div>';
+    }
+    asnResults.innerHTML = html;
+}
+
 // ── Page load ────────────────────────────────────────────────────────────────
 window.addEventListener('load', function() {
     var params = new URLSearchParams(window.location.search);
@@ -748,6 +846,9 @@ window.addEventListener('load', function() {
     } else if (tab === 'whois') {
         var whoisip = params.get('ip');
         if (whoisip) { whoisInput.value = whoisip; lookupWHOIS(); }
+    } else if (tab === 'asn') {
+        var asnq = params.get('asn');
+        if (asnq) { asnInput.value = asnq; lookupASN(); }
     }
 });
 </script>
