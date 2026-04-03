@@ -447,6 +447,11 @@ function lookupDNS() {
         dnsBtn.disabled = false;
         dnsBtn.textContent = 'Look Up';
         history.pushState({}, '', '?tab=dns&q=' + encodeURIComponent(domain));
+        // Fetch SSL certificates from crt.sh
+        fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
+            .then(function(r) { return r.json(); })
+            .then(function(certs) { renderCerts(domain, certs); })
+            .catch(function() {});
     });
 }
 
@@ -468,6 +473,42 @@ function renderDNSResults(domain, results) {
         html += '<div class="error-card">No DNS records found for "' + domain + '"</div>';
     }
     dnsResults.innerHTML = html;
+}
+
+// ── SSL Certificates ─────────────────────────────────────────────────────────
+function renderCerts(domain, certs) {
+    if (!certs || certs.length === 0) return;
+    // Deduplicate by serial number, sort by date descending, take top 10
+    var seen = {};
+    var unique = [];
+    certs.sort(function(a, b) { return new Date(b.not_before) - new Date(a.not_before); });
+    for (var i = 0; i < certs.length; i++) {
+        var key = certs[i].serial_number;
+        if (!seen[key]) {
+            seen[key] = true;
+            unique.push(certs[i]);
+            if (unique.length >= 8) break;
+        }
+    }
+    var html = '<div class="dns-section fade-in"><div class="card-title">SSL / TLS Certificates (recent)</div>';
+    for (var j = 0; j < unique.length; j++) {
+        var c = unique[j];
+        var name = c.common_name || c.name_value || '—';
+        var issuer = c.issuer_name ? c.issuer_name.replace(/.*CN=/, '').replace(/,.*/, '') : '—';
+        var from = c.not_before ? new Date(c.not_before).toLocaleDateString('en-GB') : '—';
+        var to = c.not_after ? new Date(c.not_after).toLocaleDateString('en-GB') : '—';
+        var expired = c.not_after && new Date(c.not_after) < new Date();
+        html += '<div class="dns-record" style="flex-wrap:wrap;gap:6px;">' +
+            '<span class="dns-type-badge dns-A" style="background:rgba(167,139,250,0.15);color:#a78bfa;min-width:32px;">SSL</span>' +
+            '<span class="dns-record-data" style="flex:1;min-width:200px;">' +
+                '<span style="color:var(--text);">' + name + '</span>' +
+                '<span style="color:var(--text-faint);margin-left:8px;font-size:11px;">' + issuer + '</span>' +
+            '</span>' +
+            '<span class="dns-ttl" style="color:' + (expired ? 'var(--red)' : 'var(--green)') + ';">' + from + ' → ' + to + '</span>' +
+        '</div>';
+    }
+    html += '</div>';
+    document.getElementById('dns-results').innerHTML += html;
 }
 
 // ── Blacklist Check ──────────────────────────────────────────────────────────
