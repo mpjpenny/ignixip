@@ -99,9 +99,30 @@
         .data-val.green { color: var(--green); }
         .data-val.red { color: var(--red); }
         .data-val.amber { color: var(--amber); }
-        .data-val.amber { color: var(--amber); }
         .data-val.blue { color: var(--blue-bright); }
         .data-val.purple { color: var(--purple); }
+
+        /* Risk Score Panel */
+        .risk-panel { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border2); border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+        .risk-gauge { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+        .risk-gauge svg { transform: rotate(-90deg); width: 90px; height: 90px; }
+        .risk-gauge-bg { fill: none; stroke: var(--border2); stroke-width: 6; }
+        .risk-gauge-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease, stroke 0.5s ease; }
+        .risk-gauge-score { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; }
+        .risk-info { flex: 1; min-width: 200px; }
+        .risk-label { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .risk-summary { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+        .risk-factors { display: flex; flex-wrap: wrap; gap: 6px; }
+        .risk-factor { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .risk-factor-red { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+        .risk-factor-amber { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+        .risk-factor-green { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+        .risk-factor-blue { background: rgba(59,130,246,0.12); color: var(--blue-bright); border: 1px solid rgba(59,130,246,0.25); }
+        .risk-cta { margin-top: 10px; font-size: 12px; color: var(--text-faint); }
+        .risk-cta a { color: var(--blue-bright); text-decoration: none; }
+        .risk-cta a:hover { text-decoration: underline; }
+        @keyframes pulseCritical { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .risk-panel-critical { border-color: rgba(248,113,113,0.4); animation: pulseCritical 2s ease infinite; }
 
         /* DNS results */
         .dns-section { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; }
@@ -208,8 +229,6 @@
         <div class="results" id="dns-results"></div>
     </div>
 
-
-
     <!-- Network Tools Tab -->
     <div class="tab-pane" id="tab-tools">
         <div class="search-box">
@@ -270,7 +289,6 @@
     </div>
 </div>
 
-
         <!-- SEO Content Section -->
         <section style="max-width:780px;margin:48px auto 0;padding:0 24px;">
             <div style="border-top:1px solid #1e293b;padding-top:40px;">
@@ -316,6 +334,22 @@
 </footer>
 
 <script>
+// ── DNSBL list (shared by IP Lookup risk score and Blacklist tab) ────────────
+var DNSBL_LISTS = [
+    { name: 'Spamhaus ZEN',         host: 'zen.spamhaus.org' },
+    { name: 'Spamhaus SBL',         host: 'sbl.spamhaus.org' },
+    { name: 'Spamhaus XBL',         host: 'xbl.spamhaus.org' },
+    { name: 'Spamhaus PBL',         host: 'pbl.spamhaus.org' },
+    { name: 'Barracuda BRBL',       host: 'b.barracudacentral.org' },
+    { name: 'SpamCop',              host: 'bl.spamcop.net' },
+    { name: 'SORBS SPAM',           host: 'spam.dnsbl.sorbs.net' },
+    { name: 'SORBS HTTP',           host: 'http.dnsbl.sorbs.net' },
+    { name: 'UCEPROTECT L1',        host: 'dnsbl-1.uceprotect.net' },
+    { name: 'UCEPROTECT L2',        host: 'dnsbl-2.uceprotect.net' },
+    { name: 'Abuse.ch SSLBL',       host: 'sslbl.abuse.ch' },
+    { name: 'NordSpam',             host: 'combined.nerd.dk' },
+];
+
 // ── Tab switching ────────────────────────────────────────────────────────────
 function switchTab(tab) {
     document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
@@ -332,6 +366,9 @@ function setAndLookup(tab, val) {
     document.getElementById(tab + '-input').value = val;
     if (tab === 'ip') lookupIP();
     else if (tab === 'dns') lookupDNS();
+    else if (tab === 'tools') runTools();
+    else if (tab === 'asn') lookupASN();
+    else if (tab === 'whois') lookupWHOIS();
     else checkBlacklist();
 }
 
@@ -343,6 +380,8 @@ var ipResults = document.getElementById('ip-results');
 ipInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupIP(); });
 
 function isIPAddress(str) { return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(str); }
+
+function reverseIP(ip) { return ip.split('.').reverse().join('.'); }
 
 function lookupSelf() {
     ipInput.value = 'detecting...';
@@ -359,7 +398,7 @@ function lookupIP() {
     if (!query || query === 'detecting...') return;
     ipBtn.disabled = true;
     ipBtn.textContent = 'Looking up...';
-    ipResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying</span></div>';
+    ipResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying IP intelligence</span></div>';
     if (isIPAddress(query)) {
         doIPLookup(query, null);
     } else {
@@ -381,11 +420,27 @@ function lookupIP() {
 }
 
 function doIPLookup(ip, originalDomain) {
-    // Fetch vpnapi security data in parallel
+    // Fetch all data sources in parallel
     var vpnPromise = fetch('https://portal.ignix.co.uk/api/vpnapi/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
-    var rdapPromise = fetch('https://rdap.org/ip/' + encodeURIComponent(ip)).then(function(r) { return r.json(); }).catch(function() { return null; });
+    var rdapPromise = fetch('https://rdap.org/ip/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // DNSBL checks
+    var reversed = reverseIP(ip);
+    var dnsblPromise = Promise.all(DNSBL_LISTS.map(function(list) {
+        var lookup = reversed + '.' + list.host;
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                return { name: list.name, listed: !!(d.Answer && d.Answer.length > 0) };
+            })
+            .catch(function() { return { name: list.name, listed: false }; });
+    }));
 
     fetch('https://ipinfo.io/' + encodeURIComponent(ip) + '/json')
         .then(function(r) { return r.json(); })
@@ -394,7 +449,9 @@ function doIPLookup(ip, originalDomain) {
                 ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
             } else {
                 d.originalDomain = originalDomain;
-                Promise.all([vpnPromise, rdapPromise]).then(function(extra) { renderIPResults(d, extra[0], extra[1]); });
+                Promise.all([vpnPromise, rdapPromise, abusePromise, dnsblPromise]).then(function(extra) {
+                    renderIPResults(d, extra[0], extra[1], extra[2], extra[3]);
+                });
             }
             ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
         })
@@ -404,7 +461,124 @@ function doIPLookup(ip, originalDomain) {
         });
 }
 
-function renderIPResults(d, vpnData, rdapData) {
+// ── Risk Score Calculation ───────────────────────────────────────────────────
+function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults) {
+    var score = 0;
+    var factors = [];
+
+    // Tor detection
+    if (vpnData && vpnData.security && vpnData.security.tor) {
+        score += 40;
+        factors.push({ label: 'Tor exit node', level: 'red' });
+    }
+
+    // AbuseIPDB
+    if (abuseData && abuseData.data) {
+        var confidence = abuseData.data.abuseConfidenceScore || 0;
+        var reports = abuseData.data.totalReports || 0;
+        if (confidence >= 50) {
+            score += 35;
+            factors.push({ label: 'AbuseIPDB ' + confidence + '%', level: 'red' });
+        } else if (confidence >= 10) {
+            score += 20;
+            factors.push({ label: 'AbuseIPDB ' + confidence + '%', level: 'amber' });
+        } else if (confidence >= 1) {
+            score += 5;
+            factors.push({ label: 'AbuseIPDB ' + confidence + '%', level: 'amber' });
+        } else if (reports === 0) {
+            factors.push({ label: 'No abuse reports', level: 'green' });
+        }
+    }
+
+    // Blacklist hits
+    if (dnsblResults) {
+        var listedCount = dnsblResults.filter(function(r) { return r.listed; }).length;
+        if (listedCount >= 3) {
+            score += 30;
+            factors.push({ label: listedCount + ' blacklists', level: 'red' });
+        } else if (listedCount >= 1) {
+            score += 15;
+            factors.push({ label: listedCount + ' blacklist' + (listedCount > 1 ? 's' : ''), level: 'amber' });
+        } else {
+            factors.push({ label: '0 blacklists', level: 'green' });
+        }
+    }
+
+    // VPN / Proxy / Relay
+    if (vpnData && vpnData.security) {
+        if (vpnData.security.vpn) {
+            score += 15;
+            factors.push({ label: 'VPN detected', level: 'amber' });
+        }
+        if (vpnData.security.proxy) {
+            score += 15;
+            factors.push({ label: 'Proxy detected', level: 'amber' });
+        }
+        if (vpnData.security.relay) {
+            score += 10;
+            factors.push({ label: 'Relay detected', level: 'amber' });
+        }
+    }
+
+    // Hosting / DC
+    if (isHosting) {
+        score += 5;
+        factors.push({ label: 'Hosting / DC', level: 'blue' });
+    }
+
+    // Cap at 100
+    if (score > 100) score = 100;
+
+    // Determine level
+    var level, label, color, summary;
+    if (score >= 70) {
+        level = 'critical'; label = 'Critical'; color = '#ef4444';
+        summary = 'Multiple high-risk indicators detected. This IP shows strong signs of malicious activity.';
+    } else if (score >= 40) {
+        level = 'high'; label = 'High'; color = '#f87171';
+        summary = 'Significant risk indicators present. This IP warrants investigation.';
+    } else if (score >= 16) {
+        level = 'medium'; label = 'Medium'; color = '#fbbf24';
+        summary = 'Some risk indicators detected. Context-dependent — may be benign.';
+    } else {
+        level = 'low'; label = 'Low'; color = '#4ade80';
+        summary = 'No significant risk indicators. This IP appears clean across all checks.';
+    }
+
+    return { score: score, level: level, label: label, color: color, summary: summary, factors: factors };
+}
+
+function renderRiskPanel(risk, ip) {
+    var circumference = 2 * Math.PI * 38;
+    var offset = circumference - (risk.score / 100) * circumference;
+    var panelClass = 'risk-panel fade-in' + (risk.level === 'critical' ? ' risk-panel-critical' : '');
+
+    var html = '<div class="' + panelClass + '">';
+    // SVG gauge
+    html += '<div class="risk-gauge">';
+    html += '<svg viewBox="0 0 90 90"><circle class="risk-gauge-bg" cx="45" cy="45" r="38"/>';
+    html += '<circle class="risk-gauge-fill" cx="45" cy="45" r="38" stroke="' + risk.color + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/></svg>';
+    html += '<div class="risk-gauge-score" style="color:' + risk.color + ';">' + risk.score + '</div>';
+    html += '</div>';
+    // Info
+    html += '<div class="risk-info">';
+    html += '<div class="risk-label" style="color:' + risk.color + ';">' + risk.label + ' Risk</div>';
+    html += '<div class="risk-summary">' + risk.summary + '</div>';
+    html += '<div class="risk-factors">';
+    for (var i = 0; i < risk.factors.length; i++) {
+        var f = risk.factors[i];
+        html += '<span class="risk-factor risk-factor-' + f.level + '">' + f.label + '</span>';
+    }
+    html += '</div>';
+    // CTA for medium/high/critical
+    if (risk.score >= 16) {
+        html += '<div class="risk-cta">Seeing this IP on your network? <a href="https://ignix.co.uk" target="_blank">Get 24/7 AI-powered monitoring \u2192</a></div>';
+    }
+    html += '</div></div>';
+    return html;
+}
+
+function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
     var ip = d.ip || '';
     var org = d.org || '—';
     var asn = org.split(' ')[0] || '—';
@@ -417,45 +591,88 @@ function renderIPResults(d, vpnData, rdapData) {
         flag = String.fromCodePoint(0x1F1E0 + c.charCodeAt(0) - 65) + String.fromCodePoint(0x1F1E0 + c.charCodeAt(1) - 65) + ' ';
     }
     var coords = d.loc ? d.loc.split(',').map(function(x) { return parseFloat(x).toFixed(4); }).join(', ') : '—';
-    ipResults.innerHTML =
-        '<div class="ip-header fade-in">' +
+
+    // Calculate risk score
+    var risk = calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults);
+
+    // Build output
+    var html = '';
+
+    // Risk panel (top)
+    html += renderRiskPanel(risk, ip);
+
+    // IP header
+    html += '<div class="ip-header fade-in">' +
             '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:13px;color:var(--text-dim);display:block;margin-bottom:2px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' \u2192</span>' : '') + ip + '</div>' +
             '<div class="ip-tags"><span class="tag ' + (isHosting ? 'tag-hosting' : 'tag-residential') + '">' + (isHosting ? 'Hosting / DC' : 'Residential / Business') + '</span></div>' +
-        '</div>' +
-        '<div class="results-grid fade-in">' +
-            '<div class="result-card"><div class="card-title">Location</div>' +
-                '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + (d.country || '—') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Region</span><span class="data-val muted">' + (d.region || '—') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">City</span><span class="data-val muted">' + (d.city || '—') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Postcode</span><span class="data-val muted">' + (d.postal || '—') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Coordinates</span><span class="data-val muted" style="font-size:11px;">' + coords + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Timezone</span><span class="data-val muted">' + (d.timezone || '—') + '</span></div>' +
-            '</div>' +
-            '<div class="result-card"><div class="card-title">Network</div>' +
-                '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue">' + asn + '</span></div>' +
-                (rdapData && rdapData.cidr0_cidrs && rdapData.cidr0_cidrs.length > 0 ? '<div class="data-row"><span class="data-key">Prefix</span><span class="data-val muted">' + rdapData.cidr0_cidrs[0].v4prefix + '/' + rdapData.cidr0_cidrs[0].length + '</span></div>' : '') +
-                '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
-                '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + (d.hostname || '—') + '</span></div>' +
-            '</div>' +
-            '<div class="result-card"><div class="card-title">Classification</div>' +
-                '<div class="data-row"><span class="data-key">Hosting / DC</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Yes' : 'No') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Type</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Hosting / Datacenter' : 'Residential / Business') + '</span></div>' +
-            '</div>' +
-            '<div class="result-card"><div class="card-title">Security Context</div>' +
-                '<div class="data-row"><span class="data-key">Risk Indicator</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Low-Medium \u2014 datacenter IP' : 'Low \u2014 residential/business') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Common Use</span><span class="data-val muted" style="font-size:11px;">' + (isHosting ? 'Servers, CDN, cloud services' : 'Home users, offices, businesses') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Check Blacklists</span><span class="data-val"><a href="#" onclick="setAndLookup(\'bl\',\'' + ip + '\');return false;" style="color:var(--blue-bright);text-decoration:none;font-size:11px;">Check ' + ip + ' \u2192</a></span></div>' +
-            '</div>' +
-            (vpnData && vpnData.security ?
-                '<div class="result-card fade-in"><div class="card-title">Threat Intelligence</div>' +
-                '<div class="data-row"><span class="data-key">VPN</span><span class="data-val ' + (vpnData.security.vpn ? 'amber' : 'green') + '">' + (vpnData.security.vpn ? 'Detected' : 'No') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Proxy</span><span class="data-val ' + (vpnData.security.proxy ? 'amber' : 'green') + '">' + (vpnData.security.proxy ? 'Detected' : 'No') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Tor</span><span class="data-val ' + (vpnData.security.tor ? 'red' : 'green') + '">' + (vpnData.security.tor ? 'Detected' : 'No') + '</span></div>' +
-                '<div class="data-row"><span class="data-key">Relay</span><span class="data-val ' + (vpnData.security.relay ? 'amber' : 'green') + '">' + (vpnData.security.relay ? 'Detected' : 'No') + '</span></div>' +
-                '</div>'
-            : '') +
         '</div>';
+
+    // Results grid
+    html += '<div class="results-grid fade-in">';
+
+    // Location card
+    html += '<div class="result-card"><div class="card-title">Location</div>' +
+        '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + (d.country || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Region</span><span class="data-val muted">' + (d.region || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">City</span><span class="data-val muted">' + (d.city || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Postcode</span><span class="data-val muted">' + (d.postal || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Coordinates</span><span class="data-val muted" style="font-size:11px;">' + coords + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Timezone</span><span class="data-val muted">' + (d.timezone || '—') + '</span></div>' +
+    '</div>';
+
+    // Network card
+    html += '<div class="result-card"><div class="card-title">Network</div>' +
+        '<div class="data-row"><span class="data-key">ASN</span><span class="data-val"><a href="#" onclick="setAndLookup(\'asn\',\'' + asn + '\');return false;" style="color:var(--blue-bright);text-decoration:none;">' + asn + '</a></span></div>' +
+        (rdapData && rdapData.cidr0_cidrs && rdapData.cidr0_cidrs.length > 0 ? '<div class="data-row"><span class="data-key">Prefix</span><span class="data-val muted">' + rdapData.cidr0_cidrs[0].v4prefix + '/' + rdapData.cidr0_cidrs[0].length + '</span></div>' : '') +
+        '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
+        '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + (d.hostname || '—') + '</span></div>' +
+    '</div>';
+
+    // Threat Intelligence card (VPN/Proxy/Tor)
+    if (vpnData && vpnData.security) {
+        html += '<div class="result-card"><div class="card-title">Threat Intelligence</div>' +
+            '<div class="data-row"><span class="data-key">VPN</span><span class="data-val ' + (vpnData.security.vpn ? 'amber' : 'green') + '">' + (vpnData.security.vpn ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Proxy</span><span class="data-val ' + (vpnData.security.proxy ? 'amber' : 'green') + '">' + (vpnData.security.proxy ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Tor</span><span class="data-val ' + (vpnData.security.tor ? 'red' : 'green') + '">' + (vpnData.security.tor ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Relay</span><span class="data-val ' + (vpnData.security.relay ? 'amber' : 'green') + '">' + (vpnData.security.relay ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Type</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Hosting / Datacenter' : 'Residential / Business') + '</span></div>' +
+        '</div>';
+    }
+
+    // AbuseIPDB card
+    if (abuseData && abuseData.data) {
+        var ad = abuseData.data;
+        var abuseScore = ad.abuseConfidenceScore || 0;
+        var abuseColor = abuseScore >= 50 ? 'red' : abuseScore >= 10 ? 'amber' : 'green';
+        var abuseLabel = abuseScore >= 50 ? 'High Risk' : abuseScore >= 10 ? 'Suspicious' : 'Clean';
+        var lastReported = ad.lastReportedAt ? new Date(ad.lastReportedAt).toLocaleDateString('en-GB') : 'Never';
+        html += '<div class="result-card"><div class="card-title">AbuseIPDB</div>' +
+            '<div class="data-row"><span class="data-key">Confidence</span><span class="data-val ' + abuseColor + '" style="font-size:18px;font-weight:700;">' + abuseScore + '%</span></div>' +
+            '<div class="data-row"><span class="data-key">Risk Level</span><span class="data-val ' + abuseColor + '">' + abuseLabel + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Reports</span><span class="data-val">' + (ad.totalReports || 0) + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Last Reported</span><span class="data-val muted">' + lastReported + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Usage Type</span><span class="data-val muted">' + (ad.usageType || '—') + '</span></div>' +
+        '</div>';
+    }
+
+    // Blacklist summary card
+    if (dnsblResults) {
+        var listedCount = dnsblResults.filter(function(r) { return r.listed; }).length;
+        var listedNames = dnsblResults.filter(function(r) { return r.listed; }).map(function(r) { return r.name; });
+        html += '<div class="result-card"><div class="card-title">Blacklists</div>' +
+            '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + (listedCount > 0 ? 'red' : 'green') + '">' + (listedCount > 0 ? listedCount + ' listed' : 'Clean') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Checked</span><span class="data-val muted">' + dnsblResults.length + ' DNSBLs</span></div>';
+        if (listedCount > 0) {
+            html += '<div class="data-row"><span class="data-key">Listed On</span><span class="data-val red" style="font-size:11px;text-align:right;">' + listedNames.join(', ') + '</span></div>';
+        }
+        html += '<div class="data-row"><span class="data-key">Full Check</span><span class="data-val"><a href="#" onclick="setAndLookup(\'bl\',\'' + ip + '\');return false;" style="color:var(--blue-bright);text-decoration:none;font-size:11px;">Detailed blacklist check \u2192</a></span></div>';
+        html += '</div>';
+    }
+
+    html += '</div>'; // close results-grid
+
+    ipResults.innerHTML = html;
     history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
 }
 
@@ -488,10 +705,8 @@ function lookupDNS() {
         dnsBtn.disabled = false;
         dnsBtn.textContent = 'Look Up';
         history.pushState({}, '', '?tab=dns&q=' + encodeURIComponent(domain));
-        // Clear any previous cert results
         var prevCerts = document.querySelectorAll('.cert-section');
         prevCerts.forEach(function(el) { el.remove(); });
-        // Fetch SSL certificates from crt.sh
         fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
             .then(function(r) { return r.json(); })
             .then(function(certs) { renderCerts(domain, certs); })
@@ -525,7 +740,6 @@ function renderDNSResults(domain, results) {
 // ── SSL Certificates ─────────────────────────────────────────────────────────
 function renderCerts(domain, certs) {
     if (!certs || certs.length === 0) return;
-    // Deduplicate by serial number, sort by date descending, take top 10
     var seen = {};
     var unique = [];
     certs.sort(function(a, b) { return new Date(b.not_before) - new Date(a.not_before); });
@@ -565,25 +779,6 @@ var blResults = document.getElementById('bl-results');
 
 blInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') checkBlacklist(); });
 
-var DNSBL_LISTS = [
-    { name: 'Spamhaus ZEN',         host: 'zen.spamhaus.org' },
-    { name: 'Spamhaus SBL',         host: 'sbl.spamhaus.org' },
-    { name: 'Spamhaus XBL',         host: 'xbl.spamhaus.org' },
-    { name: 'Spamhaus PBL',         host: 'pbl.spamhaus.org' },
-    { name: 'Barracuda BRBL',       host: 'b.barracudacentral.org' },
-    { name: 'SpamCop',              host: 'bl.spamcop.net' },
-    { name: 'SORBS SPAM',           host: 'spam.dnsbl.sorbs.net' },
-    { name: 'SORBS HTTP',           host: 'http.dnsbl.sorbs.net' },
-    { name: 'UCEPROTECT L1',        host: 'dnsbl-1.uceprotect.net' },
-    { name: 'UCEPROTECT L2',        host: 'dnsbl-2.uceprotect.net' },
-    { name: 'Abuse.ch SSLBL',       host: 'sslbl.abuse.ch' },
-    { name: 'NordSpam',             host: 'combined.nerd.dk' },
-];
-
-function reverseIP(ip) {
-    return ip.split('.').reverse().join('.');
-}
-
 function checkBlacklist() {
     var ip = blInput.value.trim();
     if (!ip || !isIPAddress(ip)) {
@@ -595,7 +790,6 @@ function checkBlacklist() {
     blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking blacklists</span></div>';
     var reversed = reverseIP(ip);
 
-    // AbuseIPDB check
     var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
@@ -622,7 +816,6 @@ function checkBlacklist() {
 }
 
 function renderBlacklistResults(ip, results, abuseData) {
-    // AbuseIPDB card
     var abuseHtml = '';
     if (abuseData && abuseData.data) {
         var d = abuseData.data;
@@ -708,7 +901,6 @@ function getEntityByRole(entities, role) {
     if (!entities) return null;
     for (var i = 0; i < entities.length; i++) {
         if (entities[i].roles && entities[i].roles.indexOf(role) >= 0) return entities[i];
-        // Check nested entities
         if (entities[i].entities) {
             var nested = getEntityByRole(entities[i].entities, role);
             if (nested) return nested;
@@ -743,8 +935,6 @@ function renderWHOIS(query, d) {
     })() : '—') : '—';
     var abuseEmail = abuse ? getVcard(abuse, 'email') : '—';
     var abusePhone = abuse ? getVcard(abuse, 'tel') : '—';
-
-    // Determine registry from port43
     var registry = d.port43 ? d.port43.replace('whois.', '').replace('.net', '').replace('.org', '').toUpperCase() : '—';
 
     whoisResults.innerHTML =
@@ -771,8 +961,7 @@ function renderWHOIS(query, d) {
         '</div>';
 }
 
-
-
+// ── Network Tools ───────────────────────────────────────────────────────────
 var toolsInput = document.getElementById('tools-input');
 var toolsBtn = document.getElementById('tools-btn');
 var toolsResults = document.getElementById('tools-results');
@@ -807,7 +996,6 @@ function renderTools(ip, ping, scan) {
     var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + ip + '</div></div>';
     html += '<div class="results-grid fade-in">';
 
-    // Ping card
     if (ping) {
         var alive = ping.alive;
         var s = ping.stats || {};
@@ -825,7 +1013,6 @@ function renderTools(ip, ping, scan) {
         html += '</div>';
     }
 
-    // Port scan card
     if (scan) {
         html += '<div class="result-card"><div class="card-title">Port Scan</div>';
         html += '<div class="data-row"><span class="data-key">Host Status</span><span class="data-val ' + (scan.alive ? 'green' : 'red') + '">' + (scan.alive ? 'Up' : 'Down') + '</span></div>';
@@ -835,7 +1022,6 @@ function renderTools(ip, ping, scan) {
     }
     html += '</div>';
 
-    // Open ports detail
     if (scan && scan.ports && scan.ports.length > 0) {
         html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Open Ports</div>';
         for (var i = 0; i < scan.ports.length; i++) {
@@ -856,6 +1042,7 @@ function renderTools(ip, ping, scan) {
     toolsResults.innerHTML = html;
 }
 
+// ── ASN Lookup ──────────────────────────────────────────────────────────────
 var asnInput = document.getElementById('asn-input');
 var asnBtn = document.getElementById('asn-btn');
 var asnResults = document.getElementById('asn-results');
