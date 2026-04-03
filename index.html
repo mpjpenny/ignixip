@@ -414,7 +414,7 @@ function renderIPResults(d, vpnData, rdapData) {
                 '<div class="data-row"><span class="data-key">Timezone</span><span class="data-val muted">' + (d.timezone || '—') + '</span></div>' +
             '</div>' +
             '<div class="result-card"><div class="card-title">Network</div>' +
-                '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue"><a href="#" onclick="setAndLookup('asn','' + asn + '');return false;" style="color:var(--blue-bright);text-decoration:none;">' + asn + '</a></span></div>' +
+                '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue"><span style="color:var(--blue-bright);cursor:pointer;" onclick="setAndLookup(&quot;asn&quot;,this.dataset.asn)" data-asn="' + asn + '">' + asn + '</span></span></div>' +
                 (rdapData && rdapData.cidr0_cidrs && rdapData.cidr0_cidrs.length > 0 ? '<div class="data-row"><span class="data-key">Prefix</span><span class="data-val muted">' + rdapData.cidr0_cidrs[0].v4prefix + '/' + rdapData.cidr0_cidrs[0].length + '</span></div>' : '') +
                 '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
                 '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
