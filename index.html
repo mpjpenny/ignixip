@@ -1167,7 +1167,8 @@ function renderBlacklistResults(ip, results, abuseData) {
     var hasXBL = listedNames.indexOf('Spamhaus XBL') >= 0;
     var hasAbuse = listedNames.indexOf('Abuse.ch SSLBL') >= 0;
     var abuseScore = abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : 0;
-    var pblOnly = listed === 1 && hasPBL;
+    var zenAndPblOnly = listedNames.every(function(n) { return n === 'Spamhaus PBL' || n === 'Spamhaus ZEN'; });
+    var pblOnly = zenAndPblOnly && hasPBL;
 
     if (listed === 0 && abuseScore < 10) {
         advice = '<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
