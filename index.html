@@ -786,8 +786,9 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
 
     // Map
     if (d.loc) {
-        html += '<div class="map-container fade-in" id="ip-map"></div>';
-    }
+    html += '<div class="map-container fade-in" id="ip-map"></div>';
+    html += '<div style="font-size:11px;color:var(--text-faint);font-family:JetBrains Mono,monospace;margin-top:-6px;margin-bottom:12px;text-align:right;">Location is approximate — based on ISP registration, not physical address</div>';	 
+}
 
     // Results grid
     html += '<div class="results-grid fade-in">';
