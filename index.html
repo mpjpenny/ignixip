@@ -524,6 +524,31 @@ function doIPLookup(ip, originalDomain) {
             .catch(function() { return { name: list.name, listed: false }; });
     }));
 
+    // Reverse DNS (PTR) lookup
+    var ptrName = reversed + '.in-addr.arpa';
+    var ptrPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(ptrName) + '&type=PTR')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.Answer && d.Answer.length > 0) {
+                var ptr = d.Answer[0].data.replace(/\.$/, '');
+                // Forward-confirm: check if PTR hostname resolves back to this IP
+                return fetch('https://dns.google/resolve?name=' + encodeURIComponent(ptr) + '&type=A')
+                    .then(function(r2) { return r2.json(); })
+                    .then(function(fwd) {
+                        var confirmed = false;
+                        if (fwd.Answer) {
+                            for (var i = 0; i < fwd.Answer.length; i++) {
+                                if (fwd.Answer[i].data === ip) { confirmed = true; break; }
+                            }
+                        }
+                        return { ptr: ptr, confirmed: confirmed };
+                    })
+                    .catch(function() { return { ptr: ptr, confirmed: false }; });
+            }
+            return { ptr: null, confirmed: false };
+        })
+        .catch(function() { return { ptr: null, confirmed: false }; });
+
     fetch('https://ipinfo.io/' + encodeURIComponent(ip) + '/json')
         .then(function(r) { return r.json(); })
         .then(function(d) {
@@ -531,8 +556,8 @@ function doIPLookup(ip, originalDomain) {
                 ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
             } else {
                 d.originalDomain = originalDomain;
-                Promise.all([vpnPromise, rdapPromise, abusePromise, dnsblPromise]).then(function(extra) {
-                    renderIPResults(d, extra[0], extra[1], extra[2], extra[3]);
+                Promise.all([vpnPromise, rdapPromise, abusePromise, dnsblPromise, ptrPromise]).then(function(extra) {
+                    renderIPResults(d, extra[0], extra[1], extra[2], extra[3], extra[4]);
                 });
             }
             ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
@@ -707,6 +732,7 @@ function copyReport() {
         'ASN:            ' + (ld.asn || '—'),
         'Organisation:   ' + (ld.org || '—'),
         'Hostname:       ' + (ld.hostname || '—'),
+        'Reverse DNS:    ' + (ld.reverseDns || 'No PTR record') + (ld.reverseDnsConfirmed ? ' (forward-confirmed)' : ''),
         'Prefix:         ' + (ld.prefix || '—'),
         '',
         '── Threat Intelligence ──',
@@ -770,7 +796,7 @@ function generateAbuseReport() {
     showToast('Abuse report opened in email');
 }
 
-function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
+function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData) {
     var ip = d.ip || '';
     var org = d.org || '—';
     var asn = org.split(' ')[0] || '—';
@@ -819,6 +845,8 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
         abuseReports: abuseData && abuseData.data ? (abuseData.data.totalReports || 0) : undefined,
         abuseLastReported: abuseData && abuseData.data && abuseData.data.lastReportedAt ? new Date(abuseData.data.lastReportedAt).toLocaleDateString('en-GB') : null,
         abuseEmail: abuseEmail,
+        reverseDns: ptrData && ptrData.ptr ? ptrData.ptr : null,
+        reverseDnsConfirmed: ptrData ? ptrData.confirmed : false,
         blacklistListed: listedCount,
         blacklistTotal: dnsblResults ? dnsblResults.length : 0,
         blacklistNames: listedNames,
@@ -871,6 +899,11 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults) {
         '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
         '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
         '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + (d.hostname || '—') + '</span></div>' +
+        (ptrData && ptrData.ptr ?
+            '<div class="data-row"><span class="data-key">Reverse DNS</span><span class="data-val muted" style="font-size:11px;">' + ptrData.ptr +
+            (ptrData.confirmed ? ' <span style="color:var(--green);font-size:10px;">&#10003; FCrDNS</span>' : ' <span style="color:var(--amber);font-size:10px;">&#9888; no forward match</span>') +
+            '</span></div>' :
+            '<div class="data-row"><span class="data-key">Reverse DNS</span><span class="data-val muted" style="font-size:11px;">No PTR record</span></div>') +
         (abuseEmail !== '—' ? '<div class="data-row"><span class="data-key">Abuse Contact</span><span class="data-val blue" style="font-size:11px;"><a href="mailto:' + abuseEmail + '" style="color:var(--blue-bright);text-decoration:none;">' + abuseEmail + '</a></span></div>' : '') +
     '</div>';
 
