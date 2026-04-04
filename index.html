@@ -1157,6 +1157,44 @@ function renderBlacklistResults(ip, results, abuseData) {
         '</div>';
     });
     html += '</div>';
+
+    // Contextual advice based on results
+    var advice = '';
+    var listedNames = results.filter(function(r) { return r.listed; }).map(function(r) { return r.name; });
+    var hasPBL = listedNames.indexOf('Spamhaus PBL') >= 0;
+    var hasSBL = listedNames.indexOf('Spamhaus SBL') >= 0;
+    var hasXBL = listedNames.indexOf('Spamhaus XBL') >= 0;
+    var hasAbuse = listedNames.indexOf('Abuse.ch SSLBL') >= 0;
+    var abuseScore = abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : 0;
+    var pblOnly = listed === 1 && hasPBL;
+
+    if (listed === 0 && abuseScore < 10) {
+        advice = '<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:6px;">&#10003; Clean</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP is not listed on any checked blacklists and has no significant abuse reports. No action required.</p></div>';
+    } else if (pblOnly) {
+        advice = '<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:6px;">&#8505; PBL listing — no concern</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP is only listed on the Spamhaus PBL (Policy Block List). This is completely normal for residential and business IPs — it means your ISP does not allow direct email sending from this connection. This is standard policy, not a security issue. No action needed.</p></div>';
+    } else if (hasSBL || hasXBL || hasAbuse) {
+        advice = '<div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:6px;">&#9888; Significant listing — investigation recommended</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">' +
+            (hasSBL ? 'This IP is on the Spamhaus SBL, which means it has been specifically identified as a spam source. ' : '') +
+            (hasXBL ? 'This IP is on the Spamhaus XBL, which indicates it is associated with malware, botnets, or exploited devices. Check your network for infected devices. ' : '') +
+            (hasAbuse ? 'This IP is on the Abuse.ch SSLBL, which is associated with malware command-and-control infrastructure. ' : '') +
+            '<a href="/guide.html#delist" style="color:var(--blue-bright);text-decoration:none;">Read our delisting guide \u2192</a></p></div>';
+    } else if (listed >= 3 || abuseScore >= 50) {
+        advice = '<div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:6px;">&#9888; Multiple listings — action recommended</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP appears on multiple blacklists' + (abuseScore >= 50 ? ' and has a high AbuseIPDB score (' + abuseScore + '%)' : '') + ', suggesting a significant reputation problem. If this is your IP, investigate for compromised devices or accounts. <a href="/guide.html#delist" style="color:var(--blue-bright);text-decoration:none;">Read our delisting guide \u2192</a></p></div>';
+    } else if (listed >= 1) {
+        advice = '<div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--amber);font-weight:600;margin-bottom:6px;">&#8505; Minor listing</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP appears on ' + listed + ' blacklist' + (listed > 1 ? 's' : '') + '. This may be due to a previous user of this IP address (common with dynamic IPs) or a temporary issue. Most reputation-based listings auto-expire within days to weeks if the activity stops. <a href="/guide.html" style="color:var(--blue-bright);text-decoration:none;">Learn more \u2192</a></p></div>';
+    }
+    html += advice;
+
     blResults.innerHTML = html;
 }
 

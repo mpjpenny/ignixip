@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Blacklist Guide — What It Means & How to Get Delisted | ignixip</title>
+    <meta name="description" content="Found your IP on a blacklist? Learn what it means, whether to worry, and step-by-step instructions for removing your IP from Spamhaus, Barracuda, SpamCop and other DNSBLs.">
+    <meta name="keywords" content="IP blacklist removal, delist IP, Spamhaus removal, blacklist check, DNSBL removal, IP reputation, email blacklist">
+    <meta name="author" content="Ignix">
+    <meta property="og:title" content="IP Blacklist Guide — What It Means & How to Get Delisted">
+    <meta property="og:description" content="Found your IP on a blacklist? Learn what it means, whether to worry, and how to get delisted.">
+    <meta property="og:url" content="https://ignixip.com/guide.html">
+    <meta property="og:type" content="article">
+    <link rel="canonical" href="https://ignixip.com/guide.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <style>
+        :root {
+            --bg: #0a0f1a;
+            --surface: #111827;
+            --surface2: #1a2332;
+            --border: #1e293b;
+            --border2: #334155;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --text-faint: #475569;
+            --blue: #3b82f6;
+            --blue-bright: #60a5fa;
+            --blue-dim: #1d4ed8;
+            --green: #4ade80;
+            --amber: #fbbf24;
+            --red: #f87171;
+            --purple: #a78bfa;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+        header { z-index: 10; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(10,15,26,0.8); backdrop-filter: blur(12px); position: sticky; top: 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-mark { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+        .logo-text span { color: var(--blue-bright); }
+        .header-nav { display: flex; align-items: center; gap: 20px; font-size: 13px; }
+        .header-nav a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+        .header-nav a:hover { color: var(--text); }
+        .content { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+        .content h1 { font-size: clamp(24px, 4vw, 32px); font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 16px; }
+        .content h1 span { background: linear-gradient(135deg, var(--blue-bright), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .content .subtitle { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 40px; }
+        .content h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 48px; margin-bottom: 16px; letter-spacing: -0.3px; }
+        .content h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-top: 32px; margin-bottom: 12px; }
+        .content p { font-size: 14px; color: var(--text-muted); line-height: 1.8; margin-bottom: 16px; }
+        .content a { color: var(--blue-bright); text-decoration: none; }
+        .content a:hover { text-decoration: underline; }
+        .content strong { color: var(--text); }
+        .card { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
+        .card-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
+        .card p { margin-bottom: 8px; }
+        .card p:last-child { margin-bottom: 0; }
+        .severity-low { border-left: 3px solid var(--green); }
+        .severity-low .card-label { color: var(--green); }
+        .severity-medium { border-left: 3px solid var(--amber); }
+        .severity-medium .card-label { color: var(--amber); }
+        .severity-high { border-left: 3px solid var(--red); }
+        .severity-high .card-label { color: var(--red); }
+        .step { display: flex; gap: 16px; margin-bottom: 20px; }
+        .step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--blue-bright); flex-shrink: 0; }
+        .step-content { flex: 1; }
+        .step-content p { margin-bottom: 6px; }
+        .delist-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
+        .delist-table th { text-align: left; padding: 10px 14px; font-size: 11px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); border-bottom: 1px solid var(--border2); }
+        .delist-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
+        .delist-table td:first-child { color: var(--text); font-weight: 500; white-space: nowrap; }
+        .delist-table a { color: var(--blue-bright); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+        .cta-box { background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.03)); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px; padding: 24px; text-align: center; margin-top: 40px; }
+        .cta-box h3 { color: var(--text); margin-bottom: 8px; margin-top: 0; }
+        .cta-box p { color: var(--text-muted); margin-bottom: 16px; }
+        .cta-btn { display: inline-block; padding: 12px 28px; border-radius: 8px; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: white; text-decoration: none; font-weight: 600; font-size: 14px; }
+        .cta-btn:hover { opacity: 0.9; text-decoration: none; }
+        .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 40px; }
+        .toc-title { font-size: 12px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
+        .toc a { display: block; font-size: 13px; color: var(--text-muted); text-decoration: none; padding: 4px 0; }
+        .toc a:hover { color: var(--blue-bright); }
+        footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 18px 24px; text-align: center; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-top: 48px; }
+        footer a { color: var(--text-dim); text-decoration: none; }
+        footer a:hover { color: var(--blue-bright); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo">
+            <div class="logo-mark">IX</div>
+            <span class="logo-text">ignix<span>ip</span></span>
+        </a>
+        <nav class="header-nav">
+            <a href="/">Lookup Tool</a>
+            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
+            <a href="mailto:hello@ignix.co.uk">Contact</a>
+        </nav>
+    </div>
+</header>
+
+<div class="content">
+
+    <h1>Your IP is on a <span>blacklist</span> — now what?</h1>
+    <p class="subtitle">Finding your IP address on a blacklist can be alarming, but it doesn't always mean something is wrong. This guide explains what blacklists are, what the different types mean, and exactly what to do about it.</p>
+
+    <div class="toc">
+        <div class="toc-title">In this guide</div>
+        <a href="#what">What is an IP blacklist?</a>
+        <a href="#types">Types of blacklists — and which ones matter</a>
+        <a href="#worry">When to worry (and when not to)</a>
+        <a href="#how">How IPs get listed</a>
+        <a href="#delist">How to get delisted — step by step</a>
+        <a href="#providers">Delisting by provider</a>
+        <a href="#prevent">How to prevent future listings</a>
+        <a href="#check">Check your IP now</a>
+    </div>
+
+    <h2 id="what">What is an IP blacklist?</h2>
+    <p>An IP blacklist (also called a DNSBL — DNS-based blackhole list) is a real-time database of IP addresses that have been associated with spam, malware, or other malicious activity. Email servers, firewalls, and security systems query these lists to decide whether to accept or block traffic from a particular IP.</p>
+    <p>There are dozens of blacklists, each maintained by a different organisation with different criteria. Being listed on one doesn't necessarily mean the same thing as being listed on another.</p>
+
+    <h2 id="types">Types of blacklists — and which ones matter</h2>
+    <p>Not all blacklist listings are equal. Understanding the type of listing tells you whether you need to take action.</p>
+
+    <div class="card severity-low">
+        <div class="card-label">Low concern — Policy lists</div>
+        <p><strong>Spamhaus PBL (Policy Block List)</strong> — This is the most common listing for residential and business IPs. It simply means your ISP has declared that your IP range should not be sending email directly. This is completely normal and is not a security concern. Almost every home broadband connection is on the PBL. No action needed.</p>
+    </div>
+
+    <div class="card severity-medium">
+        <div class="card-label">Medium concern — Reputation lists</div>
+        <p><strong>Barracuda BRBL, SpamCop, SORBS, UCEPROTECT, NordSpam</strong> — These lists track IPs that have been observed sending spam or suspicious traffic. Listings can happen because of infected devices on your network, a compromised email account, or sometimes because a previous user of your IP address (common with dynamic IPs) was involved in spam. These listings usually expire automatically within days to weeks if the activity stops.</p>
+    </div>
+
+    <div class="card severity-high">
+        <div class="card-label">High concern — Threat lists</div>
+        <p><strong>Spamhaus SBL (Spam Block List)</strong> — Direct listing for verified spam sources. This means Spamhaus has specifically identified this IP as a spam source. Requires investigation and manual delisting.</p>
+        <p><strong>Spamhaus XBL (Exploits Block List)</strong> — Listed because the IP is associated with malware, botnets, or exploited devices. This typically means a device on your network is infected. Investigate immediately.</p>
+        <p><strong>Abuse.ch SSLBL</strong> — Associated with SSL certificates used by malware command-and-control servers. Serious — indicates active malware infrastructure.</p>
+    </div>
+
+    <h2 id="worry">When to worry (and when not to)</h2>
+
+    <h3>Don't worry if...</h3>
+    <p>You're only listed on Spamhaus PBL — this is normal for any non-mail-server IP. You're on one or two reputation lists with a low AbuseIPDB score — your IP might have been dynamically assigned to someone who sent spam before you got it. The listing appeared and disappeared within a day or two — many lists auto-expire.</p>
+
+    <h3>Investigate if...</h3>
+    <p>You're listed on SBL, XBL, or Abuse.ch — these indicate real security problems. Your AbuseIPDB confidence score is above 25% — multiple people have reported your IP. You're listed on three or more separate blacklists simultaneously — this suggests genuine malicious activity. The listing persists for more than a week — something is still actively wrong.</p>
+
+    <h3>Act immediately if...</h3>
+    <p>You're running a mail server and it's on the SBL — your email is being blocked. You see XBL listings — a device on your network is likely compromised. Your business IP is listed and you're noticing email delivery failures, blocked website access, or client complaints.</p>
+
+    <h2 id="how">How IPs get listed</h2>
+    <p>Understanding why an IP ends up on a blacklist helps you fix the problem and prevent recurrence.</p>
+    <p><strong>Infected devices</strong> — the most common cause for business networks. A laptop, IoT device, or server on your network is infected with malware and is sending spam or participating in a botnet without anyone knowing. This is exactly what network monitoring tools like <a href="https://ignix.co.uk">Ignix</a> are designed to detect.</p>
+    <p><strong>Compromised email accounts</strong> — an employee's email password has been stolen (often via phishing) and their account is being used to send spam. Check your email server logs for unusual sending patterns.</p>
+    <p><strong>Open relays or misconfigured services</strong> — a mail server, proxy, or DNS resolver is misconfigured and being exploited by third parties to send spam or amplify attacks.</p>
+    <p><strong>Previous IP user</strong> — if your ISP uses dynamic IP assignment, you might inherit an IP that was previously used by someone involved in spam. This is common and usually resolves on its own.</p>
+    <p><strong>Shared hosting</strong> — if you're on shared web hosting, another customer on the same server could be responsible for the listing.</p>
+
+    <h2 id="delist">How to get delisted — step by step</h2>
+
+    <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+            <p><strong>Identify the problem</strong></p>
+            <p>Before requesting delisting, find and fix what caused the listing. Delisting without fixing the root cause will just result in being listed again. Check your network for infected devices, compromised accounts, or misconfigured services.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+            <p><strong>Fix the problem</strong></p>
+            <p>Remove malware, change compromised passwords, close open relays, or contact your ISP if the issue is upstream. Make sure the malicious traffic has actually stopped — blacklist operators can see if activity continues.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+            <p><strong>Request delisting</strong></p>
+            <p>Each blacklist has its own removal process. Some auto-expire, others require a manual request. See the provider-specific instructions below. Be honest in your request — explain what happened and what you've done to fix it.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+            <p><strong>Monitor</strong></p>
+            <p>After delisting, keep checking your IP periodically with <a href="/?tab=bl">ignixip Blacklist Check</a> to make sure you don't get listed again. If you do, the underlying problem wasn't fully resolved.</p>
+        </div>
+    </div>
+
+    <h2 id="providers">Delisting by provider</h2>
+
+    <div style="background:linear-gradient(135deg, var(--surface), var(--surface2)); border:1px solid var(--border); border-radius:12px; overflow-x:auto;">
+    <table class="delist-table">
+        <thead>
+            <tr><th>Blacklist</th><th>Auto-expire?</th><th>Removal process</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Spamhaus SBL</td>
+                <td>No</td>
+                <td>Submit removal request at <a href="https://check.spamhaus.org" target="_blank">check.spamhaus.org</a></td>
+            </tr>
+            <tr>
+                <td>Spamhaus XBL</td>
+                <td>Yes (when fixed)</td>
+                <td>Fix the infected device — auto-delists. Or request at <a href="https://check.spamhaus.org" target="_blank">check.spamhaus.org</a></td>
+            </tr>
+            <tr>
+                <td>Spamhaus PBL</td>
+                <td>N/A</td>
+                <td>Policy list — not a blacklist. Your ISP manages it. No action needed unless you run a legitimate mail server.</td>
+            </tr>
+            <tr>
+                <td>Barracuda BRBL</td>
+                <td>Yes (12–48 hrs)</td>
+                <td>Request at <a href="https://www.barracudacentral.org/lookups/lookup-reputation" target="_blank">barracudacentral.org</a></td>
+            </tr>
+            <tr>
+                <td>SpamCop</td>
+                <td>Yes (24–48 hrs)</td>
+                <td>Auto-expires when reports stop. No manual removal available.</td>
+            </tr>
+            <tr>
+                <td>SORBS</td>
+                <td>Yes (48 hrs)</td>
+                <td>Auto-expires. Or request at <a href="http://www.intrusiondetection.com/support-delist.html" target="_blank">sorbs.net</a></td>
+            </tr>
+            <tr>
+                <td>UCEPROTECT L1</td>
+                <td>Yes (7 days)</td>
+                <td>Auto-expires 7 days after last offence. Paid express delisting available (not recommended).</td>
+            </tr>
+            <tr>
+                <td>UCEPROTECT L2</td>
+                <td>Yes (7 days)</td>
+                <td>IP range listing — contact your ISP. Auto-expires.</td>
+            </tr>
+            <tr>
+                <td>Abuse.ch SSLBL</td>
+                <td>Varies</td>
+                <td>Contact <a href="https://sslbl.abuse.ch" target="_blank">abuse.ch</a> — requires demonstrating the malware infrastructure is removed.</td>
+            </tr>
+            <tr>
+                <td>NordSpam</td>
+                <td>Yes</td>
+                <td>Auto-expires when activity stops.</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <h2 id="prevent">How to prevent future listings</h2>
+    <p><strong>Keep devices updated</strong> — unpatched operating systems and firmware are the primary way malware gets onto networks. This includes routers, IoT devices, and printers — not just computers.</p>
+    <p><strong>Use strong, unique passwords</strong> — compromised email accounts are a major source of blacklistings. Use a password manager and enable two-factor authentication.</p>
+    <p><strong>Monitor your network traffic</strong> — most blacklist-worthy activity happens without anyone noticing. A device sending spam at 3am won't show up until the IP is listed and email starts bouncing. Continuous monitoring catches this early.</p>
+    <p><strong>Configure your mail server properly</strong> — if you run your own mail server, ensure SPF, DKIM, and DMARC records are correctly set up. Don't run an open relay.</p>
+    <p><strong>Check regularly</strong> — use <a href="/?tab=bl">ignixip Blacklist Check</a> periodically to catch listings before they cause problems.</p>
+
+    <div class="cta-box" id="check">
+        <h3>Check your IP now</h3>
+        <p>ignixip checks your IP against 12 major blacklists plus AbuseIPDB — free, instant, no signup required.</p>
+        <a href="/?tab=bl" class="cta-btn">Check Blacklists</a>
+    </div>
+
+    <div class="cta-box" style="background:linear-gradient(135deg, rgba(74,222,128,0.06), rgba(74,222,128,0.02)); border-color:rgba(74,222,128,0.2); margin-top:16px;">
+        <h3>Worried about what's happening on your network?</h3>
+        <p>Ignix monitors your network traffic 24/7 using AI, detects threats in minutes, and sends you plain-English alerts. Nothing to install on your computers — we watch at the firewall level.</p>
+        <a href="https://ignix.co.uk" target="_blank" class="cta-btn" style="background:linear-gradient(135deg, #4ade80, #16a34a);">Learn about Ignix monitoring</a>
+    </div>
+
+</div>
+
+<footer>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; <a href="/">Lookup Tool</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+</footer>
+
+</body>
+</html>
