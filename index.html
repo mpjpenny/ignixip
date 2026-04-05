@@ -319,8 +319,7 @@
         </div>
         <div class="search-hint">
             Try: <a onclick="setAndLookup('bl', '127.0.0.2')">known listed IP</a> &middot;
-            <a onclick="setAndLookup('bl', '8.8.8.8')">8.8.8.8</a> &middot;
-            <a href="/guide.html">Blacklist guide</a>
+            <a onclick="setAndLookup('bl', '8.8.8.8')">8.8.8.8</a>
         </div>
         <div class="results" id="bl-results"></div>
     </div>
@@ -409,7 +408,7 @@
         </section>
 
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <div id="toast" class="toast"></div>
@@ -1167,8 +1166,7 @@ function renderBlacklistResults(ip, results, abuseData) {
     var hasXBL = listedNames.indexOf('Spamhaus XBL') >= 0;
     var hasAbuse = listedNames.indexOf('Abuse.ch SSLBL') >= 0;
     var abuseScore = abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : 0;
-    var zenAndPblOnly = listedNames.every(function(n) { return n === 'Spamhaus PBL' || n === 'Spamhaus ZEN'; });
-    var pblOnly = zenAndPblOnly && hasPBL;
+    var pblOnly = listed === 1 && hasPBL;
 
     if (listed === 0 && abuseScore < 10) {
         advice = '<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
