@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ignixip — Threat Intelligence Dashboard</title>
+    <meta name="description" content="Live threat intelligence from ignixip.com — see aggregated IP risk data, blacklisted networks, and global threat distribution.">
+    <link rel="canonical" href="https://ignixip.com/threats.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <style>
+        :root { --bg:#0a0f1a; --surface:#111827; --surface2:#1a2332; --border:#1e293b; --border2:#334155; --text:#e2e8f0; --text-muted:#94a3b8; --text-dim:#64748b; --text-faint:#475569; --blue:#3b82f6; --blue-bright:#60a5fa; --blue-dim:#1d4ed8; --green:#4ade80; --amber:#fbbf24; --red:#f87171; --purple:#a78bfa; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+        header { z-index:10; padding:0 24px; border-bottom:1px solid var(--border); background:rgba(10,15,26,0.8); backdrop-filter:blur(12px); position:sticky; top:0; }
+        .header-inner { max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .logo-mark { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; font-family:'JetBrains Mono',monospace; box-shadow:0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.5px; }
+        .logo-text span { color:var(--blue-bright); }
+        .header-nav { display:flex; align-items:center; gap:20px; font-size:13px; }
+        .header-nav a { color:var(--text-dim); text-decoration:none; transition:color 0.2s; }
+        .header-nav a:hover { color:var(--text); }
+        .content { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:36px 24px 60px; }
+        .page-title { font-size:clamp(22px,3.5vw,30px); font-weight:700; letter-spacing:-0.5px; margin-bottom:6px; }
+        .page-title span { background:linear-gradient(135deg,var(--blue-bright),#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .page-subtitle { font-size:14px; color:var(--text-muted); margin-bottom:28px; }
+        .live-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green); margin-right:6px; animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+        .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+        @media(max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } }
+        .stat-card { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center; }
+        .stat-num { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; line-height:1; margin-bottom:4px; }
+        .stat-label { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-family:'JetBrains Mono',monospace; }
+        .section-title { font-size:13px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-family:'JetBrains Mono',monospace; margin:24px 0 12px; display:flex; align-items:center; gap:10px; }
+        .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+        .map-container { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border); border-radius:12px; overflow:hidden; height:340px; margin-bottom:20px; }
+        .map-container .leaflet-control-attribution { font-size:9px; background:rgba(10,15,26,0.8)!important; color:var(--text-faint)!important; }
+        .map-container .leaflet-control-attribution a { color:var(--text-dim)!important; }
+        .map-container .leaflet-control-zoom a { background:var(--surface)!important; color:var(--text)!important; border-color:var(--border)!important; }
+        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        @media(max-width:600px) { .two-col { grid-template-columns:1fr; } }
+        .panel { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+        .panel-title { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-family:'JetBrains Mono',monospace; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+        .panel-title::after { content:''; flex:1; height:1px; background:var(--border); }
+        .bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:12px; }
+        .bar-label { width:50px; text-align:right; color:var(--text-dim); font-family:'JetBrains Mono',monospace; flex-shrink:0; }
+        .bar-track { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+        .bar-fill { height:100%; border-radius:3px; background:var(--blue); transition:width 1s ease; }
+        .bar-count { width:30px; font-family:'JetBrains Mono',monospace; color:var(--text-faint); font-size:11px; }
+        .bl-item { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
+        .bl-item:last-child { border-bottom:none; }
+        .bl-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .bl-ip { font-family:'JetBrains Mono',monospace; color:var(--blue-bright); cursor:pointer; text-decoration:none; }
+        .bl-ip:hover { text-decoration:underline; }
+        .bl-detail { color:var(--text-faint); font-family:'JetBrains Mono',monospace; flex:1; text-align:right; }
+        .empty-state { text-align:center; padding:30px; color:var(--text-faint); font-size:13px; font-family:'JetBrains Mono',monospace; }
+        .loading { text-align:center; padding:40px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:13px; }
+        .loading-dots::after { content:''; animation:dots 1.5s infinite; }
+        @keyframes dots { 0%{content:'';} 33%{content:'.';} 66%{content:'..';} 100%{content:'...';} }
+        .cta-box { background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(59,130,246,0.03)); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:20px; text-align:center; margin-top:24px; }
+        .cta-box p { font-size:13px; color:var(--text-muted); margin-bottom:12px; }
+        .cta-btn { display:inline-block; padding:10px 24px; border-radius:8px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); color:white; text-decoration:none; font-weight:600; font-size:13px; }
+        footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:18px 24px; text-align:center; font-size:12px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:48px; }
+        footer a { color:var(--text-dim); text-decoration:none; }
+        footer a:hover { color:var(--blue-bright); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo">
+            <div class="logo-mark">IX</div>
+            <span class="logo-text">ignix<span>ip</span></span>
+        </a>
+        <nav class="header-nav">
+            <a href="/">Lookup Tool</a>
+            <a href="/guide.html">Blacklist Guide</a>
+            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
+        </nav>
+    </div>
+</header>
+
+<div class="content">
+    <h1 class="page-title"><span class="live-dot"></span>Threat <span>Intelligence</span> Dashboard</h1>
+    <p class="page-subtitle">Aggregated IP intelligence from ignixip.com lookups — updated in real time.</p>
+
+    <div id="dashboard-content">
+        <div class="loading"><span class="loading-dots">Loading threat data</span></div>
+    </div>
+</div>
+
+<footer>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; <a href="/">Lookup Tool</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+</footer>
+
+<script>
+var TOOLS_API = 'https://tools.ignixip.com';
+
+function loadDashboard() {
+    fetch(TOOLS_API + '/stats')
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderDashboard(data); })
+        .catch(function() {
+            document.getElementById('dashboard-content').innerHTML =
+                '<div class="empty-state">Could not load threat data — please try again later.</div>';
+        });
+}
+
+function renderDashboard(d) {
+    var totalLookups = d.total_lookups || 0;
+    var totalUnique = d.total_unique_ips || 0;
+    var rb = d.risk_breakdown || {};
+    var highCount = rb.high || 0;
+    var medCount = rb.medium || 0;
+    var lowCount = rb.low || 0;
+
+    var html = '';
+
+    // Stats cards
+    html += '<div class="stats-grid">';
+    html += '<div class="stat-card"><div class="stat-num" style="color:var(--text);">' + totalLookups + '</div><div class="stat-label">Total Lookups</div></div>';
+    html += '<div class="stat-card"><div class="stat-num" style="color:var(--blue-bright);">' + totalUnique + '</div><div class="stat-label">Unique IPs</div></div>';
+    html += '<div class="stat-card"><div class="stat-num" style="color:var(--red);">' + highCount + '</div><div class="stat-label">High Risk</div></div>';
+    html += '<div class="stat-card"><div class="stat-num" style="color:var(--green);">' + (d.total_users || 0) + '</div><div class="stat-label">Registered Users</div></div>';
+    html += '</div>';
+
+    // Map
+    html += '<div class="section-title">Global Distribution</div>';
+    html += '<div class="map-container" id="threat-map"></div>';
+
+    // Two column layout
+    html += '<div class="two-col">';
+
+    // Top countries
+    html += '<div class="panel"><div class="panel-title">Top Countries</div>';
+    if (d.top_countries && d.top_countries.length > 0) {
+        var maxCount = d.top_countries[0].count;
+        for (var i = 0; i < d.top_countries.length && i < 10; i++) {
+            var tc = d.top_countries[i];
+            var pct = Math.round((tc.count / maxCount) * 100);
+            var flag = '';
+            if (tc.country && tc.country.length === 2) {
+                var c = tc.country.toUpperCase();
+                flag = String.fromCodePoint(0x1F1E0 + c.charCodeAt(0) - 65) + String.fromCodePoint(0x1F1E0 + c.charCodeAt(1) - 65) + ' ';
+            }
+            html += '<div class="bar-row">';
+            html += '<span class="bar-label">' + flag + tc.country + '</span>';
+            html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div>';
+            html += '<span class="bar-count">' + tc.count + '</span>';
+            html += '</div>';
+        }
+    } else {
+        html += '<div class="empty-state">No data yet — lookups will appear here.</div>';
+    }
+    html += '</div>';
+
+    // Risk breakdown
+    html += '<div class="panel"><div class="panel-title">Risk Breakdown</div>';
+    var totalRisk = highCount + medCount + lowCount;
+    if (totalRisk > 0) {
+        var highPct = Math.round((highCount / totalRisk) * 100);
+        var medPct = Math.round((medCount / totalRisk) * 100);
+        var lowPct = Math.round((lowCount / totalRisk) * 100);
+        html += '<div class="bar-row"><span class="bar-label" style="color:var(--red);">High</span>';
+        html += '<div class="bar-track"><div class="bar-fill" style="width:' + highPct + '%;background:var(--red);"></div></div>';
+        html += '<span class="bar-count">' + highCount + '</span></div>';
+        html += '<div class="bar-row"><span class="bar-label" style="color:var(--amber);">Med</span>';
+        html += '<div class="bar-track"><div class="bar-fill" style="width:' + medPct + '%;background:var(--amber);"></div></div>';
+        html += '<span class="bar-count">' + medCount + '</span></div>';
+        html += '<div class="bar-row"><span class="bar-label" style="color:var(--green);">Low</span>';
+        html += '<div class="bar-track"><div class="bar-fill" style="width:' + lowPct + '%;background:var(--green);"></div></div>';
+        html += '<span class="bar-count">' + lowCount + '</span></div>';
+
+        // Top orgs
+        if (d.top_orgs && d.top_orgs.length > 0) {
+            html += '<div style="margin-top:16px;"><div class="panel-title">Top Networks</div>';
+            for (var j = 0; j < d.top_orgs.length && j < 5; j++) {
+                var to = d.top_orgs[j];
+                var orgName = to.org.length > 28 ? to.org.substring(0, 28) + '...' : to.org;
+                html += '<div class="bar-row"><span class="bar-label" style="width:auto;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + to.org + '">' + orgName + '</span>';
+                html += '<span class="bar-count">' + to.count + '</span></div>';
+            }
+            html += '</div>';
+        }
+    } else {
+        html += '<div class="empty-state">No data yet</div>';
+    }
+    html += '</div>';
+
+    html += '</div>'; // close two-col
+
+    // Blacklisted IPs
+    if (d.blacklisted && d.blacklisted.length > 0) {
+        html += '<div class="section-title">Blacklisted IPs Detected</div>';
+        html += '<div class="panel">';
+        for (var k = 0; k < d.blacklisted.length; k++) {
+            var bl = d.blacklisted[k];
+            var blColor = (bl.risk_score || 0) >= 40 ? 'var(--red)' : 'var(--amber)';
+            html += '<div class="bl-item">';
+            html += '<div class="bl-dot" style="background:' + blColor + ';"></div>';
+            html += '<a class="bl-ip" href="/?tab=ip&ip=' + encodeURIComponent(bl.ip) + '">' + bl.ip + '</a>';
+            html += '<span style="color:var(--text-faint);font-size:11px;">' + (bl.country || '') + '</span>';
+            html += '<span class="bl-detail">' + (bl.bl_count || 0) + ' lists</span>';
+            html += '</div>';
+        }
+        html += '</div>';
+    }
+
+    // CTA
+    html += '<div class="cta-box">';
+    html += '<p>Check any IP address against blacklists, get risk scoring, and export results — free.</p>';
+    html += '<a href="/" class="cta-btn">Look Up an IP Address</a>';
+    html += '</div>';
+
+    document.getElementById('dashboard-content').innerHTML = html;
+
+    // Render map
+    setTimeout(function() {
+        var mapEl = document.getElementById('threat-map');
+        if (!mapEl) return;
+        var map = L.map('threat-map', { zoomControl: true, scrollWheelZoom: false }).setView([30, 0], 2);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
+            maxZoom: 18
+        }).addTo(map);
+
+        if (d.map_points && d.map_points.length > 0) {
+            for (var m = 0; m < d.map_points.length; m++) {
+                var pt = d.map_points[m];
+                var dotColor = pt.risk_label === 'High' || pt.risk_label === 'Critical' ? '#f87171' :
+                               pt.risk_label === 'Medium' ? '#fbbf24' : '#3b82f6';
+                var dotSize = pt.risk_score >= 40 ? 7 : pt.risk_score >= 16 ? 5 : 3;
+                L.circleMarker([pt.lat, pt.lng], {
+                    radius: dotSize,
+                    fillColor: dotColor,
+                    color: dotColor,
+                    weight: 1,
+                    opacity: 0.7,
+                    fillOpacity: 0.5
+                }).addTo(map);
+            }
+        }
+    }, 200);
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

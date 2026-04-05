@@ -408,7 +408,7 @@
         </section>
 
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="https://github.com/mpjpenny/ignixip-cli">CLI Tool</a> &middot; <a href="https://github.com/mpjpenny/ignixip-extension">Chrome Extension</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <div id="toast" class="toast"></div>
@@ -959,6 +959,35 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
 
     ipResults.innerHTML = html;
     history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
+
+    // Log lookup to tools server for stats (fire and forget)
+    try {
+        fetch('https://tools.ignixip.com/log-lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ip: ip,
+                risk_score: risk.score,
+                risk_label: risk.label,
+                country: d.country || '',
+                org: d.org || '',
+                cache_data: {
+                    ip: ip,
+                    country: d.country || '',
+                    region: d.region || '',
+                    city: d.city || '',
+                    org: d.org || '',
+                    hostname: d.hostname || '',
+                    loc: d.loc || '',
+                    is_hosting: isHosting,
+                    blacklist_count: listedCount,
+                    blacklist_names: listedNames,
+                    risk_score: risk.score,
+                    risk_label: risk.label
+                }
+            })
+        }).catch(function() {});
+    } catch(e) {}
 
     // Initialize map after DOM update — prefer ipapi.co coords for accuracy
     var mapLat, mapLng, hasCoords = false;
