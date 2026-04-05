@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ignixip API — IP Intelligence for Developers</title>
+    <meta name="description" content="Free API for IP geolocation, risk scoring, and blacklist checking. Bulk lookups, JSON responses, no complex setup.">
+    <link rel="canonical" href="https://ignixip.com/api.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <style>
+        :root { --bg:#0a0f1a; --surface:#111827; --surface2:#1a2332; --border:#1e293b; --border2:#334155; --text:#e2e8f0; --text-muted:#94a3b8; --text-dim:#64748b; --text-faint:#475569; --blue:#3b82f6; --blue-bright:#60a5fa; --blue-dim:#1d4ed8; --green:#4ade80; --amber:#fbbf24; --red:#f87171; --purple:#a78bfa; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+        header { z-index:10; padding:0 24px; border-bottom:1px solid var(--border); background:rgba(10,15,26,0.8); backdrop-filter:blur(12px); position:sticky; top:0; }
+        .header-inner { max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .logo-mark { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; font-family:'JetBrains Mono',monospace; box-shadow:0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.5px; }
+        .logo-text span { color:var(--blue-bright); }
+        .header-nav { display:flex; align-items:center; gap:20px; font-size:13px; }
+        .header-nav a { color:var(--text-dim); text-decoration:none; transition:color 0.2s; }
+        .header-nav a:hover { color:var(--text); }
+        .content { position:relative; z-index:1; max-width:720px; margin:0 auto; padding:48px 24px 80px; }
+        h1 { font-size:clamp(24px,4vw,32px); font-weight:700; letter-spacing:-0.5px; line-height:1.2; margin-bottom:16px; }
+        h1 span { background:linear-gradient(135deg,var(--blue-bright),#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .subtitle { font-size:15px; color:var(--text-muted); line-height:1.7; margin-bottom:36px; }
+        h2 { font-size:18px; font-weight:700; color:var(--text); margin-top:40px; margin-bottom:14px; letter-spacing:-0.3px; }
+        h3 { font-size:15px; font-weight:600; color:var(--text); margin-top:28px; margin-bottom:10px; }
+        p { font-size:14px; color:var(--text-muted); line-height:1.8; margin-bottom:14px; }
+        a { color:var(--blue-bright); text-decoration:none; }
+        a:hover { text-decoration:underline; }
+        code { font-family:'JetBrains Mono',monospace; font-size:13px; background:var(--surface); padding:2px 6px; border-radius:4px; color:var(--blue-bright); }
+        .code-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin:12px 0 20px; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.7; color:var(--text-muted); }
+        .code-block .comment { color:var(--text-faint); }
+        .code-block .string { color:var(--green); }
+        .code-block .key { color:var(--purple); }
+        .code-block .method { color:var(--amber); }
+        .endpoint { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin:16px 0; }
+        .endpoint-method { display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.5px; margin-right:10px; }
+        .method-get { background:rgba(74,222,128,0.12); color:var(--green); border:1px solid rgba(74,222,128,0.25); }
+        .method-post { background:rgba(59,130,246,0.12); color:var(--blue-bright); border:1px solid rgba(59,130,246,0.25); }
+        .endpoint-path { font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--text); }
+        .endpoint-desc { font-size:13px; color:var(--text-muted); margin-top:8px; line-height:1.6; }
+        .param-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+        .param-table th { text-align:left; padding:8px 12px; font-size:10px; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); border-bottom:1px solid var(--border2); }
+        .param-table td { padding:8px 12px; border-bottom:1px solid var(--border); color:var(--text-muted); vertical-align:top; }
+        .param-table td:first-child { font-family:'JetBrains Mono',monospace; color:var(--text); font-size:12px; white-space:nowrap; }
+        .param-table td code { font-size:11px; }
+        .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; font-family:'JetBrains Mono',monospace; text-transform:uppercase; }
+        .badge-required { background:rgba(248,113,113,0.12); color:var(--red); }
+        .badge-optional { background:rgba(74,222,128,0.12); color:var(--green); }
+        .tier-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:16px 0 24px; }
+        @media(max-width:600px) { .tier-grid { grid-template-columns:1fr; } }
+        .tier-card { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center; }
+        .tier-card h4 { font-size:14px; color:var(--text); margin-bottom:4px; }
+        .tier-price { font-size:24px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--blue-bright); margin-bottom:8px; }
+        .tier-price span { font-size:13px; color:var(--text-dim); font-weight:400; }
+        .tier-features { font-size:12px; color:var(--text-muted); line-height:1.8; }
+        .tier-card-highlight { border-color:rgba(59,130,246,0.4); }
+        .toc { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 24px; margin-bottom:36px; }
+        .toc-title { font-size:12px; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:12px; }
+        .toc a { display:block; font-size:13px; color:var(--text-muted); text-decoration:none; padding:4px 0; }
+        .toc a:hover { color:var(--blue-bright); }
+        footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:18px 24px; text-align:center; font-size:12px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:48px; }
+        footer a { color:var(--text-dim); text-decoration:none; }
+        footer a:hover { color:var(--blue-bright); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo">
+            <div class="logo-mark">IX</div>
+            <span class="logo-text">ignix<span>ip</span></span>
+        </a>
+        <nav class="header-nav">
+            <a href="/">Lookup Tool</a>
+            <a href="/threats.html">Threats</a>
+            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
+        </nav>
+    </div>
+</header>
+
+<div class="content">
+
+    <h1>ignixip <span>API</span></h1>
+    <p class="subtitle">IP intelligence for your applications. Geolocation, risk scoring, blacklist checking, and network tools — all via a simple JSON API. Free to start, no complex setup.</p>
+
+    <div class="toc">
+        <div class="toc-title">Contents</div>
+        <a href="#quickstart">Quick Start</a>
+        <a href="#auth">Authentication</a>
+        <a href="#endpoints">Endpoints</a>
+        <a href="#bulk">Bulk Lookup</a>
+        <a href="#tools">Network Tools</a>
+        <a href="#stats">Public Stats</a>
+        <a href="#limits">Rate Limits &amp; Plans</a>
+        <a href="#cli">CLI &amp; Extension</a>
+    </div>
+
+    <h2 id="quickstart">Quick Start</h2>
+    <p>No API key required for basic network tools. Register a free account to unlock bulk lookups.</p>
+
+    <div class="code-block">
+        <span class="comment"># Ping an IP</span><br>
+        curl https://tools.ignixip.com/ping/8.8.8.8<br>
+        <br>
+        <span class="comment"># Port scan</span><br>
+        curl https://tools.ignixip.com/scan/8.8.8.8<br>
+        <br>
+        <span class="comment"># Health check</span><br>
+        curl https://tools.ignixip.com/health
+    </div>
+
+    <h2 id="auth">Authentication</h2>
+    <p>Register with your email to get an API token. No password needed — we send a verification link.</p>
+
+    <div class="code-block">
+        <span class="comment"># Register</span><br>
+        curl -X POST https://tools.ignixip.com/register \<br>
+        &nbsp;&nbsp;-H <span class="string">"Content-Type: application/json"</span> \<br>
+        &nbsp;&nbsp;-d <span class="string">'{"email": "you@example.com"}'</span><br>
+        <br>
+        <span class="comment"># After verifying email, use your token:</span><br>
+        curl https://tools.ignixip.com/user/status \<br>
+        &nbsp;&nbsp;-H <span class="string">"Authorization: Bearer YOUR_TOKEN"</span>
+    </div>
+
+    <p>Tokens are valid for 90 days. If your token expires, simply register again with the same email — you'll receive a new token immediately without re-verification.</p>
+
+    <h2 id="endpoints">Endpoints</h2>
+    <p>Base URL: <code>https://tools.ignixip.com</code></p>
+
+    <h3>Ping</h3>
+    <div class="endpoint">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/ping/{ip}</span>
+        <div class="endpoint-desc">ICMP ping with RTT statistics. No authentication required.</div>
+    </div>
+    <div class="code-block">
+        <span class="comment">// Response</span><br>
+        {<br>
+        &nbsp;&nbsp;<span class="key">"ip"</span>: <span class="string">"8.8.8.8"</span>,<br>
+        &nbsp;&nbsp;<span class="key">"alive"</span>: true,<br>
+        &nbsp;&nbsp;<span class="key">"stats"</span>: {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"rtt_avg"</span>: 12.34,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"rtt_min"</span>: 11.2,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"rtt_max"</span>: 14.1,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"loss"</span>: 0,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"transmitted"</span>: 4,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"received"</span>: 4<br>
+        &nbsp;&nbsp;}<br>
+        }
+    </div>
+
+    <h3>Port Scan</h3>
+    <div class="endpoint">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/scan/{ip}</span>
+        <div class="endpoint-desc">Scan 23 common ports using nmap. No authentication required.</div>
+    </div>
+    <div class="code-block">
+        <span class="comment">// Response</span><br>
+        {<br>
+        &nbsp;&nbsp;<span class="key">"ip"</span>: <span class="string">"8.8.8.8"</span>,<br>
+        &nbsp;&nbsp;<span class="key">"alive"</span>: true,<br>
+        &nbsp;&nbsp;<span class="key">"ports"</span>: [<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;{ <span class="key">"port"</span>: 443, <span class="key">"state"</span>: <span class="string">"open"</span>, <span class="key">"service"</span>: <span class="string">"https"</span> }<br>
+        &nbsp;&nbsp;],<br>
+        &nbsp;&nbsp;<span class="key">"scanned"</span>: 23<br>
+        }
+    </div>
+
+    <p>Ports scanned: 21, 22, 23, 25, 53, 80, 110, 143, 443, 445, 993, 995, 1433, 1521, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 8888, 27017</p>
+
+    <h3 id="bulk">Bulk IP Lookup</h3>
+    <div class="endpoint">
+        <span class="endpoint-method method-post">POST</span>
+        <span class="endpoint-path">/bulk-lookup</span>
+        <div class="endpoint-desc">Look up multiple IPs at once. Returns geolocation, risk score, and blacklist status for each. Requires authentication.</div>
+    </div>
+
+    <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>ips</td><td><code>string[]</code> <span class="badge badge-required">required</span></td><td>Array of IP addresses (max 25)</td></tr>
+        </tbody>
+    </table>
+
+    <div class="code-block">
+        <span class="comment"># Request</span><br>
+        curl -X POST https://tools.ignixip.com/bulk-lookup \<br>
+        &nbsp;&nbsp;-H <span class="string">"Content-Type: application/json"</span> \<br>
+        &nbsp;&nbsp;-H <span class="string">"Authorization: Bearer YOUR_TOKEN"</span> \<br>
+        &nbsp;&nbsp;-d <span class="string">'{"ips": ["8.8.8.8", "1.1.1.1", "185.220.101.34"]}'</span>
+    </div>
+
+    <div class="code-block">
+        <span class="comment">// Response</span><br>
+        {<br>
+        &nbsp;&nbsp;<span class="key">"results"</span>: [<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;{<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"ip"</span>: <span class="string">"8.8.8.8"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"country"</span>: <span class="string">"US"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"city"</span>: <span class="string">"Mountain View"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"org"</span>: <span class="string">"AS15169 Google LLC"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"is_hosting"</span>: true,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"risk_score"</span>: 5,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"risk_label"</span>: <span class="string">"Low"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"blacklist_count"</span>: 0,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"blacklist_names"</span>: []<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;],<br>
+        &nbsp;&nbsp;<span class="key">"total"</span>: 1,<br>
+        &nbsp;&nbsp;<span class="key">"invalid"</span>: [],<br>
+        &nbsp;&nbsp;<span class="key">"cached_note"</span>: <span class="string">"Results may be cached for up to 24 hours"</span><br>
+        }
+    </div>
+
+    <h3>User Status</h3>
+    <div class="endpoint">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/user/status</span>
+        <div class="endpoint-desc">Check your account status and usage. Requires authentication.</div>
+    </div>
+
+    <h3>Lookup History</h3>
+    <div class="endpoint">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/user/history?limit=100</span>
+        <div class="endpoint-desc">Your recent lookup history with risk scores. Requires authentication.</div>
+    </div>
+
+    <h3 id="stats">Public Stats</h3>
+    <div class="endpoint">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/stats</span>
+        <div class="endpoint-desc">Aggregated threat intelligence data. No authentication required. Powers the <a href="/threats.html">Threats Dashboard</a>.</div>
+    </div>
+
+    <h3 id="tools">Health Check</h3>
+    <div class="endpoint">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/health</span>
+        <div class="endpoint-desc">Service status check. No authentication required.</div>
+    </div>
+
+    <h2 id="limits">Rate Limits &amp; Plans</h2>
+    <p>All endpoints are rate-limited to prevent abuse. Private IP addresses and localhost are rejected.</p>
+
+    <div class="tier-grid">
+        <div class="tier-card">
+            <h4>Free</h4>
+            <div class="tier-price">£0<span>/mo</span></div>
+            <div class="tier-features">
+                Ping &amp; port scan<br>
+                10 requests/min<br>
+                No bulk access
+            </div>
+        </div>
+        <div class="tier-card tier-card-highlight">
+            <h4>Registered</h4>
+            <div class="tier-price">£0<span>/mo</span></div>
+            <div class="tier-features">
+                Everything in Free<br>
+                Bulk lookup (25 IPs)<br>
+                5 bulk lookups/day<br>
+                Lookup history
+            </div>
+        </div>
+        <div class="tier-card">
+            <h4>Pro</h4>
+            <div class="tier-price">Soon<span></span></div>
+            <div class="tier-features">
+                Higher bulk limits<br>
+                API key access<br>
+                Priority support<br>
+                <a href="mailto:hello@ignix.co.uk">Contact us</a>
+            </div>
+        </div>
+    </div>
+
+    <h2 id="cli">CLI &amp; Browser Extension</h2>
+    <p>Use ignixip from your terminal or browser — no API integration needed.</p>
+
+    <h3>CLI Tool</h3>
+    <div class="code-block">
+        <span class="comment"># Install</span><br>
+        curl -o ignixip https://raw.githubusercontent.com/mpjpenny/ignixip-cli/master/ignixip<br>
+        chmod +x ignixip && sudo mv ignixip /usr/local/bin/<br>
+        <br>
+        <span class="comment"># Usage</span><br>
+        ignixip 8.8.8.8<br>
+        ignixip --bulk firewall.log -o csv<br>
+        ignixip --self
+    </div>
+    <p>Source: <a href="https://github.com/mpjpenny/ignixip-cli">github.com/mpjpenny/ignixip-cli</a></p>
+
+    <h3>Chrome Extension</h3>
+    <p>Right-click any IP address on any webpage to look it up instantly. Quick popup lookup from the toolbar.</p>
+    <p>Source: <a href="https://github.com/mpjpenny/ignixip-extension">github.com/mpjpenny/ignixip-extension</a></p>
+
+    <h2>Errors</h2>
+    <p>All endpoints return JSON. Errors include an <code>error</code> field with a human-readable message.</p>
+    <div class="code-block">
+        { <span class="key">"error"</span>: <span class="string">"Invalid IP address"</span> }&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 400</span><br>
+        { <span class="key">"error"</span>: <span class="string">"Authentication required"</span> }&nbsp;<span class="comment">// 401</span><br>
+        { <span class="key">"error"</span>: <span class="string">"Rate limit exceeded"</span> }&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 429</span>
+    </div>
+
+    <h2>Need Help?</h2>
+    <p>Email <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a> with any questions about the API, integration help, or to discuss Pro tier access for higher volumes.</p>
+
+</div>
+
+<footer>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
+    <a href="/">Lookup Tool</a> &middot; <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+</footer>
+
+</body>
+</html>
