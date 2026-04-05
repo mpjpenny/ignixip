@@ -512,6 +512,15 @@ function doIPLookup(ip, originalDomain) {
     var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
+    // More accurate geolocation from ipapi.co
+    var geoPromise = fetch('https://ipapi.co/' + encodeURIComponent(ip) + '/json/')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.error) return null;
+            return { lat: d.latitude, lng: d.longitude, city: d.city, region: d.region, country: d.country_name };
+        })
+        .catch(function() { return null; });
+
     // DNSBL checks
     var reversed = reverseIP(ip);
     var dnsblPromise = Promise.all(DNSBL_LISTS.map(function(list) {
@@ -556,8 +565,8 @@ function doIPLookup(ip, originalDomain) {
                 ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
             } else {
                 d.originalDomain = originalDomain;
-                Promise.all([vpnPromise, rdapPromise, abusePromise, dnsblPromise, ptrPromise]).then(function(extra) {
-                    renderIPResults(d, extra[0], extra[1], extra[2], extra[3], extra[4]);
+                Promise.all([vpnPromise, rdapPromise, abusePromise, dnsblPromise, ptrPromise, geoPromise]).then(function(extra) {
+                    renderIPResults(d, extra[0], extra[1], extra[2], extra[3], extra[4], extra[5]);
                 });
             }
             ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
@@ -796,7 +805,7 @@ function generateAbuseReport() {
     showToast('Abuse report opened in email');
 }
 
-function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData) {
+function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData, geoData) {
     var ip = d.ip || '';
     var org = d.org || '—';
     var asn = org.split(' ')[0] || '—';
@@ -875,7 +884,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData)
         '</div>';
 
     // Map
-    if (d.loc) {
+    if (d.loc || (geoData && geoData.lat)) {
         html += '<div class="map-container fade-in" id="ip-map"></div>';
     }
 
@@ -951,21 +960,31 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData)
     ipResults.innerHTML = html;
     history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
 
-    // Initialize map after DOM update
-    if (d.loc) {
+    // Initialize map after DOM update — prefer ipapi.co coords for accuracy
+    var mapLat, mapLng, hasCoords = false;
+    if (geoData && geoData.lat && geoData.lng) {
+        mapLat = geoData.lat;
+        mapLng = geoData.lng;
+        hasCoords = true;
+    } else if (d.loc) {
         var parts = d.loc.split(',');
-        var lat = parseFloat(parts[0]);
-        var lng = parseFloat(parts[1]);
+        mapLat = parseFloat(parts[0]);
+        mapLng = parseFloat(parts[1]);
+        hasCoords = true;
+    }
+    if (hasCoords) {
+        var mapCity = (geoData && geoData.city) || d.city;
+        var mapCountry = d.country;
         setTimeout(function() {
             var mapEl = document.getElementById('ip-map');
-            if (mapEl && mapEl._leaflet_id) return; // already initialized
-            var map = L.map('ip-map', { zoomControl: true, scrollWheelZoom: false, dragging: true, attributionControl: true }).setView([lat, lng], 10);
+            if (mapEl && mapEl._leaflet_id) return;
+            var map = L.map('ip-map', { zoomControl: true, scrollWheelZoom: false, dragging: true, attributionControl: true }).setView([mapLat, mapLng], 10);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
                 maxZoom: 18
             }).addTo(map);
-            var marker = L.circleMarker([lat, lng], { radius: 8, fillColor: '#3b82f6', color: '#1d4ed8', weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-            marker.bindPopup('<span style="font-family:JetBrains Mono,monospace;font-size:12px;">' + ip + '<br>' + [d.city, d.country].filter(Boolean).join(', ') + '</span>');
+            var marker = L.circleMarker([mapLat, mapLng], { radius: 8, fillColor: '#3b82f6', color: '#1d4ed8', weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+            marker.bindPopup('<span style="font-family:JetBrains Mono,monospace;font-size:12px;">' + ip + '<br>' + [mapCity, mapCountry].filter(Boolean).join(', ') + '</span>');
         }, 100);
     }
 }
