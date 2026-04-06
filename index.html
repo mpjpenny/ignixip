@@ -212,11 +212,9 @@
             <span class="logo-text">ignix<span>ip</span></span>
         </a>
         <nav class="header-nav">
-    <a href="/threats.html">Threats</a>
-    <a href="/api.html">API</a>
-    <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
-    <a href="mailto:hello@ignix.co.uk">Contact</a>
-</nav>
+            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
+            <a href="mailto:hello@ignix.co.uk">Contact</a>
+        </nav>
     </div>
 </header>
 
@@ -350,7 +348,7 @@
 </div>
 
 <!-- Registration Modal -->
-<div id="reg-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;">
+<div id="reg-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center;">
     <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:32px;max-width:420px;width:90%;position:relative;">
         <button onclick="closeRegModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">&times;</button>
         <div style="text-align:center;margin-bottom:20px;">
@@ -410,8 +408,7 @@
         </section>
 
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
-    <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="https://github.com/mpjpenny/ignixip-cli">CLI Tool</a> &middot; <a href="https://github.com/mpjpenny/ignixip-extension">Chrome Extension</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <div id="toast" class="toast"></div>
@@ -464,9 +461,51 @@ var ipResults = document.getElementById('ip-results');
 
 ipInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupIP(); });
 
-function isIPAddress(str) { return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(str); }
+function isIPv4(str) { return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(str) && str.split('.').every(function(p) { return parseInt(p) <= 255; }); }
 
-function reverseIP(ip) { return ip.split('.').reverse().join('.'); }
+function isIPv6(str) { return /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/.test(str) || /^::([0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}$/.test(str) || /^([0-9a-fA-F]{1,4}:){1,6}:$/.test(str) || /^::$/.test(str); }
+
+function isIPAddress(str) { return isIPv4(str) || isIPv6(str); }
+
+function expandIPv6(ip) {
+    // Handle :: expansion
+    var halves = ip.split('::');
+    var head = halves[0] ? halves[0].split(':') : [];
+    var tail = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
+    var fill = 8 - head.length - tail.length;
+    var full = head.slice();
+    for (var i = 0; i < fill; i++) full.push('0000');
+    full = full.concat(tail);
+    return full.map(function(g) { return ('0000' + g).slice(-4); }).join(':');
+}
+
+function reverseIPv6(ip) {
+    var expanded = expandIPv6(ip).replace(/:/g, '');
+    return expanded.split('').reverse().join('.');
+}
+
+function reverseIP(ip) {
+    if (isIPv4(ip)) return ip.split('.').reverse().join('.');
+    return reverseIPv6(ip);
+}
+
+// IPv6-capable DNSBL lists
+var DNSBL_LISTS_V6 = [
+    { name: 'Spamhaus ZEN IPv6', host: 'zen.ipv6.combined.spamhaus.org' },
+];
+
+function getDnsblLists(ip) {
+    if (isIPv6(ip)) {
+        // Only some DNSBLs support IPv6
+        return DNSBL_LISTS_V6;
+    }
+    return DNSBL_LISTS;
+}
+
+function getPtrZone(ip) {
+    if (isIPv6(ip)) return reverseIPv6(ip) + '.ip6.arpa';
+    return reverseIP(ip) + '.in-addr.arpa';
+}
 
 function lookupSelf() {
     ipInput.value = 'detecting...';
@@ -487,14 +526,24 @@ function lookupIP() {
     if (isIPAddress(query)) {
         doIPLookup(query, null);
     } else {
+        // Try A record first, fall back to AAAA
         fetch('https://dns.google/resolve?name=' + encodeURIComponent(query) + '&type=A')
             .then(function(r) { return r.json(); })
             .then(function(dns) {
                 if (dns.Answer && dns.Answer.length > 0) {
                     doIPLookup(dns.Answer[dns.Answer.length - 1].data, query);
                 } else {
-                    ipResults.innerHTML = '<div class="error-card">Could not resolve "' + query + '" — domain not found</div>';
-                    ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
+                    // Try AAAA
+                    return fetch('https://dns.google/resolve?name=' + encodeURIComponent(query) + '&type=AAAA')
+                        .then(function(r) { return r.json(); })
+                        .then(function(dns6) {
+                            if (dns6.Answer && dns6.Answer.length > 0) {
+                                doIPLookup(dns6.Answer[dns6.Answer.length - 1].data, query);
+                            } else {
+                                ipResults.innerHTML = '<div class="error-card">Could not resolve "' + query + '" — domain not found</div>';
+                                ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
+                            }
+                        });
                 }
             })
             .catch(function() {
@@ -524,9 +573,10 @@ function doIPLookup(ip, originalDomain) {
         })
         .catch(function() { return null; });
 
-    // DNSBL checks
+    // DNSBL checks — use IPv6-specific lists when needed
     var reversed = reverseIP(ip);
-    var dnsblPromise = Promise.all(DNSBL_LISTS.map(function(list) {
+    var activeDnsblLists = getDnsblLists(ip);
+    var dnsblPromise = Promise.all(activeDnsblLists.map(function(list) {
         var lookup = reversed + '.' + list.host;
         return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
             .then(function(r) { return r.json(); })
@@ -536,15 +586,16 @@ function doIPLookup(ip, originalDomain) {
             .catch(function() { return { name: list.name, listed: false }; });
     }));
 
-    // Reverse DNS (PTR) lookup
-    var ptrName = reversed + '.in-addr.arpa';
+    // Reverse DNS (PTR) lookup — uses ip6.arpa for IPv6
+    var ptrName = getPtrZone(ip);
+    var fwdType = isIPv6(ip) ? 'AAAA' : 'A';
     var ptrPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(ptrName) + '&type=PTR')
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (d.Answer && d.Answer.length > 0) {
                 var ptr = d.Answer[0].data.replace(/\.$/, '');
                 // Forward-confirm: check if PTR hostname resolves back to this IP
-                return fetch('https://dns.google/resolve?name=' + encodeURIComponent(ptr) + '&type=A')
+                return fetch('https://dns.google/resolve?name=' + encodeURIComponent(ptr) + '&type=' + fwdType)
                     .then(function(r2) { return r2.json(); })
                     .then(function(fwd) {
                         var confirmed = false;
@@ -883,7 +934,8 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     // IP header
     html += '<div class="ip-header fade-in">' +
             '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:13px;color:var(--text-dim);display:block;margin-bottom:2px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' \u2192</span>' : '') + ip + '</div>' +
-            '<div class="ip-tags"><span class="tag ' + (isHosting ? 'tag-hosting' : 'tag-residential') + '">' + (isHosting ? 'Hosting / DC' : 'Residential / Business') + '</span></div>' +
+            '<div class="ip-tags"><span class="tag ' + (isHosting ? 'tag-hosting' : 'tag-residential') + '">' + (isHosting ? 'Hosting / DC' : 'Residential / Business') + '</span>' +
+            '<span class="tag" style="background:rgba(167,139,250,0.12);color:var(--purple);border:1px solid rgba(167,139,250,0.25);">' + (isIPv6(ip) ? 'IPv6' : 'IPv4') + '</span></div>' +
         '</div>';
 
     // Map
@@ -1134,18 +1186,19 @@ blInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') checkBl
 function checkBlacklist() {
     var ip = blInput.value.trim();
     if (!ip || !isIPAddress(ip)) {
-        blResults.innerHTML = '<div class="error-card">Please enter a valid IP address</div>';
+        blResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
         return;
     }
     blBtn.disabled = true;
     blBtn.textContent = 'Checking...';
     blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking blacklists</span></div>';
     var reversed = reverseIP(ip);
+    var activeLists = getDnsblLists(ip);
 
     var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
-    var promises = DNSBL_LISTS.map(function(list) {
+    var promises = activeLists.map(function(list) {
         var lookup = reversed + '.' + list.host;
         return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
             .then(function(r) { return r.json(); })
@@ -1360,8 +1413,8 @@ toolsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') runT
 
 function runTools() {
     var ip = toolsInput.value.trim();
-    if (!ip || !/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
-        toolsResults.innerHTML = '<div class="error-card">Please enter a valid IP address</div>';
+    if (!ip || !isIPAddress(ip)) {
+        toolsResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
         return;
     }
     toolsBtn.disabled = true;
@@ -1633,21 +1686,20 @@ if (bulkTextarea) {
 }
 
 function extractIPs(text) {
-    var matches = text.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g);
-    if (!matches) return [];
+    // Extract IPv4
+    var v4matches = text.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g) || [];
+    // Extract IPv6 — matches common formats including :: shorthand
+    var v6matches = text.match(/(?:^|[\s,;|])([0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{0,4}){2,7}|::(?:[0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}|[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){1,6}:)(?=$|[\s,;|])/g) || [];
+    v6matches = v6matches.map(function(m) { return m.trim().replace(/^[,;|]/, '').trim(); });
+    var all = v4matches.concat(v6matches);
     // Deduplicate and validate
     var seen = {};
     var valid = [];
-    for (var i = 0; i < matches.length; i++) {
-        var ip = matches[i];
-        if (seen[ip]) continue;
+    for (var i = 0; i < all.length; i++) {
+        var ip = all[i].trim();
+        if (!ip || seen[ip]) continue;
         seen[ip] = true;
-        var parts = ip.split('.');
-        var ok = true;
-        for (var j = 0; j < parts.length; j++) {
-            if (parseInt(parts[j]) > 255) { ok = false; break; }
-        }
-        if (ok) valid.push(ip);
+        if (isIPAddress(ip)) valid.push(ip);
     }
     return valid;
 }
