@@ -1433,13 +1433,15 @@ function runTools() {
 
     // Render ping and scan first, traceroute takes longer
     Promise.all([pingPromise, scanPromise]).then(function(res) {
-        renderTools(ip, res[0], res[1], null);
+        renderTools(ip, res[0], res[1]);
         toolsBtn.disabled = false;
         toolsBtn.textContent = 'Run';
-    });
-    // Add traceroute when it arrives
-    tracePromise.then(function(trace) {
-        appendTraceroute(ip, trace);
+        // Add traceroute when it arrives
+        tracePromise.then(function(trace) {
+            appendTraceroute(ip, trace);
+        }).catch(function() {
+            appendTraceroute(ip, null);
+        });
     });
 }
 
