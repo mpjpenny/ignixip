@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Is My IP Address? — Free IP Lookup | ignixip</title>
+    <meta name="description" content="Find your public IP address instantly. See your ISP, location, whether you're on any blacklists, and get a full security assessment. Free, no signup.">
+    <meta name="keywords" content="what is my IP, my IP address, find my IP, check my IP, my public IP address, IP address lookup">
+    <link rel="canonical" href="https://ignixip.com/my-ip.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <style>
+        :root { --bg:#0a0f1a; --surface:#111827; --surface2:#1a2332; --border:#1e293b; --border2:#334155; --text:#e2e8f0; --text-muted:#94a3b8; --text-dim:#64748b; --text-faint:#475569; --blue:#3b82f6; --blue-bright:#60a5fa; --blue-dim:#1d4ed8; --green:#4ade80; --amber:#fbbf24; --red:#f87171; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+        header { z-index:10; padding:0 24px; border-bottom:1px solid var(--border); background:rgba(10,15,26,0.8); backdrop-filter:blur(12px); position:sticky; top:0; }
+        .header-inner { max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .logo-mark { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; font-family:'JetBrains Mono',monospace; box-shadow:0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.5px; }
+        .logo-text span { color:var(--blue-bright); }
+        .header-nav { display:flex; align-items:center; gap:20px; font-size:13px; }
+        .header-nav a { color:var(--text-dim); text-decoration:none; transition:color 0.2s; }
+        .header-nav a:hover { color:var(--text); }
+        .content { position:relative; z-index:1; max-width:720px; margin:0 auto; padding:48px 24px 80px; }
+        h1 { font-size:clamp(24px,4vw,32px); font-weight:700; letter-spacing:-0.5px; line-height:1.2; margin-bottom:16px; }
+        h1 span { background:linear-gradient(135deg,var(--blue-bright),#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .subtitle { font-size:15px; color:var(--text-muted); line-height:1.7; margin-bottom:32px; }
+        h2 { font-size:18px; font-weight:700; color:var(--text); margin-top:36px; margin-bottom:14px; }
+        p { font-size:14px; color:var(--text-muted); line-height:1.8; margin-bottom:14px; }
+        a { color:var(--blue-bright); text-decoration:none; }
+        a:hover { text-decoration:underline; }
+        .ip-display { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border2); border-radius:12px; padding:28px; text-align:center; margin:24px 0; }
+        .ip-display .detecting { color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:14px; }
+        .ip-display .ip-big { font-family:'JetBrains Mono',monospace; font-size:clamp(24px,5vw,36px); font-weight:700; color:var(--text); margin-bottom:8px; }
+        .ip-display .ip-detail { font-size:13px; color:var(--text-muted); }
+        .cta-box { background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(59,130,246,0.03)); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:20px; text-align:center; margin:24px 0; }
+        .cta-box p { margin-bottom:12px; }
+        .cta-btn { display:inline-block; padding:12px 28px; border-radius:8px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); color:white; text-decoration:none; font-weight:600; font-size:14px; }
+        footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:18px 24px; text-align:center; font-size:12px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:48px; }
+        footer a { color:var(--text-dim); text-decoration:none; }
+        footer a:hover { color:var(--blue-bright); }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo"><div class="logo-mark">IX</div><span class="logo-text">ignix<span>ip</span></span></a>
+        <nav class="header-nav">
+            <a href="/">Lookup Tool</a>
+            <a href="/threats.html">Threats</a>
+            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
+        </nav>
+    </div>
+</header>
+<div class="content">
+    <h1>What is my <span>IP address</span>?</h1>
+    <p class="subtitle">Your public IP address is how the internet sees you. It reveals your approximate location, your internet provider, and whether your connection has been flagged on any security blacklists.</p>
+
+    <div class="ip-display" id="my-ip">
+        <div class="detecting">Detecting your IP address...</div>
+    </div>
+
+    <div class="cta-box">
+        <p>Get a full security assessment of your IP — risk score, blacklists, threat intelligence, and more.</p>
+        <a href="/?tab=ip" class="cta-btn" id="full-report-link">Full Report on My IP</a>
+    </div>
+
+    <h2>What does my IP address reveal?</h2>
+    <p>Your IP address tells websites and services several things about your connection: your approximate geographic location (city and country level, not your exact address), your internet service provider, whether you're connecting from a residential, business, or datacenter connection, and whether your IP has been flagged for any malicious activity.</p>
+
+    <h2>Should I be worried about my IP being visible?</h2>
+    <p>Your IP address is visible to every website you visit — this is a normal part of how the internet works. It's not a security risk in itself. However, if your IP appears on blacklists, it could mean a device on your network has been compromised, or that your ISP has assigned you an IP that was previously used for spam.</p>
+    <p>Use our <a href="/?tab=bl">Blacklist Check</a> to see if your IP is listed anywhere. If it is, check our <a href="/guide.html">Blacklist Guide</a> for what to do.</p>
+
+    <h2>How do I hide my IP address?</h2>
+    <p>You can mask your IP address using a VPN (Virtual Private Network), which routes your traffic through a server in another location. This changes the IP address that websites see. ignixip can detect whether an IP is a VPN, proxy, or Tor exit node — <a href="/?tab=ip">try looking up a VPN server IP</a> to see.</p>
+
+    <h2>Can I look up someone else's IP address?</h2>
+    <p>Yes — enter any IP address into <a href="/">ignixip</a> to see its location, owner, blacklist status, and risk score. This is useful for investigating suspicious connections, checking email senders, or researching IPs from your firewall logs.</p>
+
+    <h2>IPv4 vs IPv6</h2>
+    <p>Most connections still use IPv4 addresses (like 192.168.1.1), but IPv6 (like 2001:db8::1) is increasingly common. ignixip supports both — we'll detect and look up whichever version your connection uses.</p>
+</div>
+<footer>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
+    <a href="/">Lookup Tool</a> &middot; <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="/api.html">API</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+</footer>
+<script>
+fetch('https://api.ipify.org?format=json')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var ip = d.ip;
+        return fetch('https://ipapi.co/' + ip + '/json/')
+            .then(function(r) { return r.json(); })
+            .then(function(geo) {
+                var loc = [geo.city, geo.region, geo.country_name].filter(Boolean).join(', ');
+                var org = geo.org || '';
+                document.getElementById('my-ip').innerHTML =
+                    '<div class="ip-big">' + ip + '</div>' +
+                    '<div class="ip-detail">' + loc + ' &middot; ' + (geo.asn || '') + ' ' + org + '</div>';
+                document.getElementById('full-report-link').href = '/?tab=ip&ip=' + encodeURIComponent(ip);
+            });
+    })
+    .catch(function() {
+        document.getElementById('my-ip').innerHTML = '<div class="detecting">Could not detect your IP address</div>';
+    });
+</script>
+</body>
+</html>
