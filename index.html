@@ -233,6 +233,7 @@
         <button class="tab-btn" onclick="switchTab('asn')">&#9671; ASN</button>
         <button class="tab-btn" onclick="switchTab('tools')">&#9874; Network Tools</button>
         <button class="tab-btn" onclick="switchTab('bulk')">&#9776; Bulk Lookup</button>
+        <button class="tab-btn" onclick="switchTab('headers')">&#9993; Email Headers</button>
     </div>
 
     <!-- IP Lookup Tab -->
@@ -345,6 +346,21 @@
         </div>
         <div class="results" id="bulk-results"></div>
     </div>
+
+    <!-- Email Headers Tab -->
+    <div class="tab-pane" id="tab-headers">
+        <textarea id="headers-input" style="width:100%;height:200px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);resize:vertical;outline:none;margin-bottom:10px;" placeholder="Paste raw email headers here...&#10;&#10;Copy the full headers from your email client:&#10;  Gmail: Open email → ⋮ → Show original&#10;  Outlook: Open email → File → Properties → Internet Headers&#10;  Thunderbird: View → Headers → All"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;">
+                Extracts IPs from Received: headers and checks each one
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="action-btn" onclick="clearHeaders()">Clear</button>
+                <button class="search-btn" id="headers-btn" onclick="analyseHeaders()">Analyse</button>
+            </div>
+        </div>
+        <div class="results" id="headers-results"></div>
+    </div>
 </div>
 
 <!-- Registration Modal -->
@@ -436,7 +452,7 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + tab).classList.add('active');
     var btns = document.querySelectorAll('.tab-btn');
-    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5, bulk:6}[tab];
+    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5, bulk:6, headers:7}[tab];
     btns[idx].classList.add('active');
     history.pushState({}, '', '?tab=' + tab);
     // Show bulk auth area if needed
@@ -1949,6 +1965,245 @@ function exportBulkJSON() {
     a.click();
     URL.revokeObjectURL(url);
     showToast('JSON exported');
+}
+
+// ── Email Header Analyser ────────────────────────────────────────────────────
+function clearHeaders() {
+    document.getElementById('headers-input').value = '';
+    document.getElementById('headers-results').innerHTML = '';
+}
+
+function parseReceivedHeaders(raw) {
+    // Join continuation lines (lines starting with whitespace are continuations)
+    var joined = raw.replace(/\r\n/g, '\n').replace(/\n[ \t]+/g, ' ');
+    var lines = joined.split('\n');
+    var received = [];
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (/^Received:/i.test(line)) {
+            received.push(line);
+        }
+    }
+    // Received headers are in reverse order — first one added is the last hop
+    // We reverse so index 0 = origin
+    received.reverse();
+
+    var hops = [];
+    for (var j = 0; j < received.length; j++) {
+        var header = received[j];
+        // Extract IPs — look for IPs in brackets or after "from"
+        var ips = [];
+        var ipMatches = header.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/g);
+        if (ipMatches) {
+            for (var k = 0; k < ipMatches.length; k++) {
+                ips.push(ipMatches[k].replace(/[\[\]]/g, ''));
+            }
+        }
+        // Also try IPv6 in brackets
+        var ip6Matches = header.match(/\[([0-9a-fA-F:]{3,39})\]/g);
+        if (ip6Matches) {
+            for (var m = 0; m < ip6Matches.length; m++) {
+                var v6 = ip6Matches[m].replace(/[\[\]]/g, '');
+                if (isIPv6(v6) && ips.indexOf(v6) < 0) ips.push(v6);
+            }
+        }
+        // Also match bare IPs after "from" or "by"
+        var bareMatch = header.match(/(?:from|by)\s+\S+\s+\((?:[^)]*?)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/i);
+        if (bareMatch && ips.indexOf(bareMatch[1]) < 0) {
+            ips.push(bareMatch[1]);
+        }
+
+        // Extract hostnames from "from hostname" and "by hostname"
+        var fromMatch = header.match(/from\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+        var byMatch = header.match(/by\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+
+        // Extract timestamp
+        var dateMatch = header.match(/;\s*(.+)$/);
+        var timestamp = dateMatch ? dateMatch[1].trim() : '';
+
+        // Filter out private IPs for the "main" IP
+        var publicIps = ips.filter(function(ip) {
+            var parts = ip.split('.');
+            if (parts.length !== 4) return !ip.startsWith('fe80') && !ip.startsWith('::1'); // IPv6 private
+            var a = parseInt(parts[0]), b = parseInt(parts[1]);
+            return !(a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a === 127);
+        });
+
+        hops.push({
+            hop: j + 1,
+            raw: header,
+            from: fromMatch ? fromMatch[1] : '',
+            by: byMatch ? byMatch[1] : '',
+            ips: ips,
+            publicIps: publicIps,
+            mainIp: publicIps.length > 0 ? publicIps[0] : (ips.length > 0 ? ips[0] : ''),
+            timestamp: timestamp
+        });
+    }
+    return hops;
+}
+
+function analyseHeaders() {
+    var raw = document.getElementById('headers-input').value.trim();
+    if (!raw) return;
+    var btn = document.getElementById('headers-btn');
+    var results = document.getElementById('headers-results');
+    btn.disabled = true;
+    btn.textContent = 'Analysing...';
+
+    var hops = parseReceivedHeaders(raw);
+
+    if (hops.length === 0) {
+        results.innerHTML = '<div class="error-card">No Received: headers found. Make sure you paste the full email headers.</div>';
+        btn.disabled = false;
+        btn.textContent = 'Analyse';
+        return;
+    }
+
+    // Also extract other useful headers
+    var subjectMatch = raw.match(/^Subject:\s*(.+)$/im);
+    var fromHeaderMatch = raw.match(/^From:\s*(.+)$/im);
+    var toMatch = raw.match(/^To:\s*(.+)$/im);
+    var dateHeaderMatch = raw.match(/^Date:\s*(.+)$/im);
+    var spfMatch = raw.match(/spf=(\w+)/i);
+    var dkimMatch = raw.match(/dkim=(\w+)/i);
+    var dmarcMatch = raw.match(/dmarc=(\w+)/i);
+    var returnPathMatch = raw.match(/^Return-Path:\s*<?([^>\s]+)>?/im);
+
+    // Render header summary first, then look up IPs
+    var html = '';
+
+    // Email summary card
+    html += '<div class="result-card fade-in" style="margin-bottom:12px;">';
+    html += '<div class="card-title">Email Summary</div>';
+    if (fromHeaderMatch) html += '<div class="data-row"><span class="data-key">From</span><span class="data-val muted" style="font-size:11px;">' + escHtml(fromHeaderMatch[1]) + '</span></div>';
+    if (toMatch) html += '<div class="data-row"><span class="data-key">To</span><span class="data-val muted" style="font-size:11px;">' + escHtml(toMatch[1]) + '</span></div>';
+    if (subjectMatch) html += '<div class="data-row"><span class="data-key">Subject</span><span class="data-val" style="font-size:11px;">' + escHtml(subjectMatch[1]) + '</span></div>';
+    if (dateHeaderMatch) html += '<div class="data-row"><span class="data-key">Date</span><span class="data-val muted" style="font-size:11px;">' + escHtml(dateHeaderMatch[1]) + '</span></div>';
+    if (returnPathMatch) html += '<div class="data-row"><span class="data-key">Return-Path</span><span class="data-val muted" style="font-size:11px;">' + escHtml(returnPathMatch[1]) + '</span></div>';
+    // Auth results
+    if (spfMatch || dkimMatch || dmarcMatch) {
+        var authHtml = '';
+        if (spfMatch) { var spfOk = spfMatch[1].toLowerCase() === 'pass'; authHtml += '<span class="risk-factor risk-factor-' + (spfOk ? 'green' : 'red') + '">SPF ' + spfMatch[1] + '</span> '; }
+        if (dkimMatch) { var dkimOk = dkimMatch[1].toLowerCase() === 'pass'; authHtml += '<span class="risk-factor risk-factor-' + (dkimOk ? 'green' : 'red') + '">DKIM ' + dkimMatch[1] + '</span> '; }
+        if (dmarcMatch) { var dmarcOk = dmarcMatch[1].toLowerCase() === 'pass'; authHtml += '<span class="risk-factor risk-factor-' + (dmarcOk ? 'green' : 'red') + '">DMARC ' + dmarcMatch[1] + '</span> '; }
+        html += '<div class="data-row"><span class="data-key">Auth</span><span class="data-val">' + authHtml + '</span></div>';
+    }
+    html += '<div class="data-row"><span class="data-key">Hops</span><span class="data-val">' + hops.length + ' servers</span></div>';
+    html += '</div>';
+
+    // Route chain
+    html += '<div class="dns-section fade-in"><div class="card-title">Email Route (' + hops.length + ' hops)</div>';
+    for (var i = 0; i < hops.length; i++) {
+        var h = hops[i];
+        var label = h.from || h.mainIp || 'unknown';
+        var isPrivate = h.publicIps.length === 0 && h.ips.length > 0;
+        html += '<div class="dns-record" style="flex-wrap:wrap;gap:6px;">';
+        html += '<span class="dns-type-badge dns-NS" style="min-width:28px;font-size:10px;">' + h.hop + '</span>';
+        html += '<span class="dns-record-data" style="flex:1;min-width:200px;">';
+        if (h.from) html += '<span style="color:var(--text);">' + h.from + '</span> ';
+        if (h.mainIp) {
+            html += '<a class="ip-link" onclick="setAndLookup(\'ip\',\'' + h.mainIp + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:11px;">' + h.mainIp + '</a> ';
+        }
+        if (h.by) html += '<span style="color:var(--text-faint);font-size:11px;">→ ' + h.by + '</span>';
+        if (isPrivate && h.ips.length > 0) html += ' <span style="color:var(--text-faint);font-size:10px;">(internal: ' + h.ips[0] + ')</span>';
+        html += '</span>';
+        // Placeholder for risk badge — will be filled by lookups
+        html += '<span class="header-hop-risk" id="hop-risk-' + i + '" style="font-size:10px;"></span>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // IP lookup section placeholder
+    html += '<div id="header-ip-results"><div class="loading" style="padding:16px;"><span class="loading-dots">Looking up IP addresses</span></div></div>';
+
+    results.innerHTML = html;
+    btn.disabled = false;
+    btn.textContent = 'Analyse';
+
+    // Now look up all public IPs
+    var uniqueIps = [];
+    var seenIps = {};
+    var hopIpMap = {}; // ip -> [hop indices]
+    for (var n = 0; n < hops.length; n++) {
+        var mip = hops[n].mainIp;
+        if (mip && isIPAddress(mip) && !seenIps[mip]) {
+            var parts = mip.split('.');
+            var isPrivateIp = false;
+            if (parts.length === 4) {
+                var a = parseInt(parts[0]), b = parseInt(parts[1]);
+                isPrivateIp = (a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a === 127);
+            }
+            if (!isPrivateIp) {
+                seenIps[mip] = true;
+                uniqueIps.push(mip);
+            }
+        }
+        if (mip) {
+            if (!hopIpMap[mip]) hopIpMap[mip] = [];
+            hopIpMap[mip].push(n);
+        }
+    }
+
+    if (uniqueIps.length === 0) {
+        document.getElementById('header-ip-results').innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-family:JetBrains Mono,monospace;padding:8px 0;">No public IPs found in headers — all hops are internal.</div>';
+        return;
+    }
+
+    // Look up each IP
+    var lookupPromises = uniqueIps.map(function(lookupIp) {
+        return fetch('https://ipinfo.io/' + encodeURIComponent(lookupIp) + '/json')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var org = d.org || '';
+                var isHost = /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|google|cloudflare|akamai|fastly|cdn/i.test(org);
+                return { ip: lookupIp, country: d.country || '', city: d.city || '', org: org, hostname: d.hostname || '', is_hosting: isHost };
+            })
+            .catch(function() { return { ip: lookupIp, error: true }; });
+    });
+
+    Promise.all(lookupPromises).then(function(lookupResults) {
+        var ipResultsHtml = '<div class="dns-section fade-in"><div class="card-title">IP Analysis (' + lookupResults.length + ' public IPs)</div>';
+        var suspicious = 0;
+        for (var r = 0; r < lookupResults.length; r++) {
+            var lr = lookupResults[r];
+            if (lr.error) continue;
+            var flag = '';
+            if (lr.country && lr.country.length === 2) {
+                var c = lr.country.toUpperCase();
+                flag = String.fromCodePoint(0x1F1E0 + c.charCodeAt(0) - 65) + String.fromCodePoint(0x1F1E0 + c.charCodeAt(1) - 65) + ' ';
+            }
+            ipResultsHtml += '<div class="dns-record" style="flex-wrap:wrap;gap:6px;">';
+            ipResultsHtml += '<span class="dns-type-badge ' + (lr.is_hosting ? 'dns-TXT' : 'dns-A') + '" style="min-width:32px;font-size:10px;">' + (lr.is_hosting ? 'DC' : 'ISP') + '</span>';
+            ipResultsHtml += '<span class="dns-record-data" style="flex:1;min-width:200px;">';
+            ipResultsHtml += '<a class="ip-link" onclick="setAndLookup(\'ip\',\'' + lr.ip + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;">' + lr.ip + '</a> ';
+            ipResultsHtml += '<span style="color:var(--text-faint);font-size:11px;">' + flag + lr.org + '</span>';
+            if (lr.hostname) ipResultsHtml += '<br><span style="color:var(--text-faint);font-size:10px;">' + lr.hostname + '</span>';
+            ipResultsHtml += '</span>';
+            ipResultsHtml += '<span class="dns-ttl"><a onclick="setAndLookup(\'ip\',\'' + lr.ip + '\')" style="color:var(--blue-bright);text-decoration:none;font-size:10px;cursor:pointer;">Full report →</a></span>';
+            ipResultsHtml += '</div>';
+
+            // Update hop risk badges
+            if (hopIpMap[lr.ip]) {
+                for (var hi = 0; hi < hopIpMap[lr.ip].length; hi++) {
+                    var badge = document.getElementById('hop-risk-' + hopIpMap[lr.ip][hi]);
+                    if (badge) {
+                        badge.innerHTML = '<span class="risk-factor risk-factor-' + (lr.is_hosting ? 'blue' : 'green') + '">' + flag + lr.country + '</span>';
+                    }
+                }
+            }
+        }
+        ipResultsHtml += '</div>';
+
+        // CTA
+        ipResultsHtml += '<div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-faint);">Click any IP for a full risk assessment with blacklist checking and threat intelligence.</div>';
+
+        document.getElementById('header-ip-results').innerHTML = ipResultsHtml;
+    });
+}
+
+function escHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ── Page load ────────────────────────────────────────────────────────────────
