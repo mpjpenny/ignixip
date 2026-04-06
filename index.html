@@ -1419,7 +1419,7 @@ function runTools() {
     }
     toolsBtn.disabled = true;
     toolsBtn.textContent = 'Running...';
-    toolsResults.innerHTML = '<div class="loading"><span class="loading-dots">Running ping and port scan</span></div>';
+    toolsResults.innerHTML = '<div class="loading"><span class="loading-dots">Running ping, port scan and traceroute</span></div>';
     history.pushState({}, '', '?tab=tools&ip=' + encodeURIComponent(ip));
 
     var pingPromise = fetch('https://tools.ignixip.com/ping/' + encodeURIComponent(ip))
@@ -1428,10 +1428,18 @@ function runTools() {
     var scanPromise = fetch('https://tools.ignixip.com/scan/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
+    var tracePromise = fetch('https://tools.ignixip.com/traceroute/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // Render ping and scan first, traceroute takes longer
     Promise.all([pingPromise, scanPromise]).then(function(res) {
-        renderTools(ip, res[0], res[1]);
+        renderTools(ip, res[0], res[1], null);
         toolsBtn.disabled = false;
         toolsBtn.textContent = 'Run';
+    });
+    // Add traceroute when it arrives
+    tracePromise.then(function(trace) {
+        appendTraceroute(ip, trace);
     });
 }
 
@@ -1482,7 +1490,44 @@ function renderTools(ip, ping, scan) {
         html += '</div>';
     }
 
+    // Traceroute placeholder
+    html += '<div id="traceroute-section" class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Traceroute</div>';
+    html += '<div class="loading" style="padding:16px;"><span class="loading-dots">Running traceroute</span></div>';
+    html += '</div>';
+
     toolsResults.innerHTML = html;
+}
+
+function appendTraceroute(ip, trace) {
+    var el = document.getElementById('traceroute-section');
+    if (!el) return;
+    if (!trace || trace.error) {
+        el.innerHTML = '<div class="card-title">Traceroute</div><div class="dns-empty">' + (trace && trace.error ? trace.error : 'Traceroute failed') + '</div>';
+        return;
+    }
+    var html = '<div class="card-title">Traceroute</div>';
+    if (trace.hops && trace.hops.length > 0) {
+        for (var i = 0; i < trace.hops.length; i++) {
+            var h = trace.hops[i];
+            var hopColor = h.ip === '*' ? 'var(--text-faint)' : h.ip === ip ? 'var(--green)' : 'var(--text-muted)';
+            var rttText = h.rtt !== null ? h.rtt.toFixed(2) + ' ms' : '';
+            html += '<div class="dns-record">';
+            html += '<span class="dns-type-badge dns-NS" style="min-width:32px;font-size:10px;">' + h.hop + '</span>';
+            if (h.ip === '*') {
+                html += '<span class="dns-record-data" style="color:var(--text-faint);">* * *</span>';
+            } else {
+                var hostDisplay = h.host !== h.ip ? h.host + ' <span style="color:var(--text-faint);">(' + h.ip + ')</span>' : h.ip;
+                html += '<span class="dns-record-data" style="color:' + hopColor + ';">' + hostDisplay + '</span>';
+            }
+            html += '<span class="dns-ttl" style="color:' + (h.rtt !== null && h.rtt > 100 ? 'var(--amber)' : 'var(--text-dim)') + ';">' + rttText + '</span>';
+            html += '</div>';
+        }
+        html += '<div style="padding:8px 0;font-size:11px;color:var(--text-faint);font-family:JetBrains Mono,monospace;">' +
+            trace.total_hops + ' hops' + (trace.reached ? ' — destination reached' : ' — destination not reached') + '</div>';
+    } else {
+        html += '<div class="dns-empty">No hops returned</div>';
+    }
+    el.innerHTML = html;
 }
 
 // ── ASN Lookup ──────────────────────────────────────────────────────────────
