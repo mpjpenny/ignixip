@@ -345,6 +345,18 @@
             </div>
         </div>
         <div class="results" id="bulk-results"></div>
+        <!-- IP Monitoring Section -->
+        <div id="monitor-section" style="display:none;margin-top:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="font-size:13px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;">&#128276; Monitored IPs</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="text" id="monitor-ip-input" placeholder="IP to monitor..." style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;width:160px;">
+                    <input type="text" id="monitor-label-input" placeholder="Label (optional)" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:12px;font-family:'Inter',sans-serif;color:var(--text);outline:none;width:120px;">
+                    <button class="action-btn" onclick="addMonitorIP()" style="font-size:11px;padding:5px 10px;">Add</button>
+                </div>
+            </div>
+            <div id="monitor-list"></div>
+        </div>
     </div>
 
     <!-- Email Headers Tab -->
@@ -424,8 +436,7 @@
         </section>
 
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
-    <a href="/my-ip.html">My IP</a> &middot; <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="/api.html">API</a> &middot; <a href="https://tools.ignixip.com/feed/rss">RSS</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <div id="toast" class="toast"></div>
@@ -1678,6 +1689,9 @@ function showBulkInput(userInfo) {
     document.getElementById('bulk-auth-area').innerHTML = '';
     document.getElementById('bulk-input-area').style.display = 'block';
     document.getElementById('bulk-user-info').textContent = userInfo.email + ' \u2014 ' + (userInfo.bulk_count_today || 0) + '/' + userInfo.daily_bulk_limit + ' bulk lookups today';
+    // Load monitoring section
+    document.getElementById('monitor-section').style.display = 'block';
+    loadMonitoredIPs();
 }
 
 function openRegModal() {
@@ -1966,6 +1980,109 @@ function exportBulkJSON() {
     a.click();
     URL.revokeObjectURL(url);
     showToast('JSON exported');
+}
+
+// ── IP Monitoring ────────────────────────────────────────────────────────────
+function loadMonitoredIPs() {
+    var token = getBulkToken();
+    if (!token) return;
+    fetch(TOOLS_API + '/monitor/list', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.ips) renderMonitorList(d.ips, d.limit);
+        })
+        .catch(function() {});
+}
+
+function renderMonitorList(ips, limit) {
+    var el = document.getElementById('monitor-list');
+    if (ips.length === 0) {
+        el.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-family:JetBrains Mono,monospace;padding:12px 0;">No IPs monitored yet. Add an IP above to get blacklist alerts every 6 hours. Up to ' + limit + ' IPs free.</div>';
+        return;
+    }
+    var html = '<div class="dns-section" style="padding:0;">';
+    for (var i = 0; i < ips.length; i++) {
+        var m = ips[i];
+        var statusColor = m.last_status === 'High' || m.last_status === 'Critical' ? 'var(--red)' : m.last_status === 'Medium' ? 'var(--amber)' : m.last_status === 'unknown' ? 'var(--text-faint)' : 'var(--green)';
+        var blText = m.last_blacklist_count > 0 ? m.last_blacklist_count + ' listed' : m.last_status === 'unknown' ? 'Not checked' : 'Clean';
+        var blColor = m.last_blacklist_count > 0 ? 'var(--red)' : 'var(--green)';
+        var checked = m.last_checked ? new Date(m.last_checked + 'Z').toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
+        html += '<div class="dns-record" style="align-items:center;">';
+        html += '<div class="bl-dot" style="background:' + statusColor + ';"></div>';
+        html += '<span style="flex:1;min-width:0;">';
+        html += '<a class="ip-link" onclick="setAndLookup(\'ip\',\'' + m.ip + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:12px;">' + m.ip + '</a>';
+        if (m.label) html += ' <span style="color:var(--text-faint);font-size:11px;">' + m.label + '</span>';
+        html += '</span>';
+        html += '<span style="color:' + blColor + ';font-size:11px;font-family:JetBrains Mono,monospace;margin-right:10px;">' + blText + '</span>';
+        html += '<span style="color:var(--text-faint);font-size:10px;font-family:JetBrains Mono,monospace;margin-right:10px;">' + checked + '</span>';
+        html += '<button class="action-btn" onclick="removeMonitorIP(\'' + m.ip + '\')" style="font-size:10px;padding:2px 6px;color:var(--red);">&times;</button>';
+        html += '</div>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+    html += '<button class="action-btn" onclick="checkMonitorNow()" style="font-size:11px;">Check All Now</button>';
+    html += '<span style="font-size:11px;color:var(--text-faint);font-family:JetBrains Mono,monospace;line-height:30px;">' + ips.length + '/' + limit + ' IPs monitored &middot; Checked every 6 hours</span>';
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+function addMonitorIP() {
+    var token = getBulkToken();
+    if (!token) return;
+    var ip = document.getElementById('monitor-ip-input').value.trim();
+    var label = document.getElementById('monitor-label-input').value.trim();
+    if (!ip || !isIPAddress(ip)) {
+        showToast('Enter a valid IP address');
+        return;
+    }
+    fetch(TOOLS_API + '/monitor/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ ip: ip, label: label })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) { showToast(d.error); }
+        else {
+            document.getElementById('monitor-ip-input').value = '';
+            document.getElementById('monitor-label-input').value = '';
+            showToast('Monitoring ' + ip);
+            loadMonitoredIPs();
+        }
+    })
+    .catch(function() { showToast('Failed to add IP'); });
+}
+
+function removeMonitorIP(ip) {
+    var token = getBulkToken();
+    if (!token) return;
+    fetch(TOOLS_API + '/monitor/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ ip: ip })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+        showToast('Removed ' + ip);
+        loadMonitoredIPs();
+    })
+    .catch(function() { showToast('Failed to remove IP'); });
+}
+
+function checkMonitorNow() {
+    var token = getBulkToken();
+    if (!token) return;
+    showToast('Checking all monitored IPs...');
+    fetch(TOOLS_API + '/monitor/check-now', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        showToast('Checked ' + d.checked + ' IPs');
+        loadMonitoredIPs();
+    })
+    .catch(function() { showToast('Check failed'); });
 }
 
 // ── Email Header Analyser ────────────────────────────────────────────────────
