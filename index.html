@@ -973,6 +973,9 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     // Community reports section
     html += '<div id="community-reports" class="fade-in"></div>';
 
+    // History timeline section
+    html += '<div id="ip-history" class="fade-in"></div>';
+
     // IP header
     html += '<div class="ip-header fade-in">' +
             '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:13px;color:var(--text-dim);display:block;margin-bottom:2px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' \u2192</span>' : '') + ip + '</div>' +
@@ -1088,6 +1091,9 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
 
     // Load community reports for this IP
     loadCommunityReports(ip);
+
+    // Load IP history timeline
+    loadIPHistory(ip);
 
     // Initialize map after DOM update — prefer ipapi.co coords for accuracy
     var mapLat, mapLng, hasCoords = false;
@@ -1998,6 +2004,62 @@ function exportBulkJSON() {
     a.click();
     URL.revokeObjectURL(url);
     showToast('JSON exported');
+}
+
+// ── IP History Timeline ──────────────────────────────────────────────────────
+function loadIPHistory(ip) {
+    fetch(TOOLS_API + '/history/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var el = document.getElementById('ip-history');
+            if (!el) return;
+            if (!d.timeline || d.timeline.length < 2) return; // Only show if we have multiple data points
+
+            var html = '<div class="result-card" style="margin-top:8px;">';
+            html += '<div class="card-title">History</div>';
+            html += '<div class="data-row"><span class="data-key">First Seen</span><span class="data-val muted">' + formatHistoryDate(d.first_seen) + '</span></div>';
+            html += '<div class="data-row"><span class="data-key">Last Seen</span><span class="data-val muted">' + formatHistoryDate(d.last_seen) + '</span></div>';
+            html += '<div class="data-row"><span class="data-key">Total Lookups</span><span class="data-val muted">' + d.total_lookups + '</span></div>';
+            if (d.report_count > 0) {
+                html += '<div class="data-row"><span class="data-key">Reports</span><span class="data-val" style="color:var(--amber);">' + d.report_count + ' community reports</span></div>';
+            }
+
+            // Risk timeline chart
+            html += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">';
+            html += '<div style="font-size:10px;color:var(--text-faint);font-family:JetBrains Mono,monospace;margin-bottom:8px;">RISK SCORE OVER TIME</div>';
+            html += '<div style="display:flex;align-items:flex-end;gap:2px;height:60px;">';
+            var maxScore = Math.max.apply(null, d.timeline.map(function(t) { return t.risk_score; }));
+            if (maxScore < 10) maxScore = 10;
+            for (var i = 0; i < d.timeline.length; i++) {
+                var t = d.timeline[i];
+                var h = Math.max(4, Math.round((t.risk_score / maxScore) * 56));
+                var barColor = t.risk_score >= 40 ? 'var(--red)' : t.risk_score >= 16 ? 'var(--amber)' : 'var(--green)';
+                var barWidth = Math.max(4, Math.min(20, Math.floor(300 / d.timeline.length)));
+                var dateLabel = t.date.substring(5); // MM-DD
+                html += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:' + barWidth + 'px;" title="' + t.date + ': Risk ' + t.risk_score + ' (' + t.risk_label + ') — ' + t.lookups + ' lookups">';
+                html += '<div style="width:100%;height:' + h + 'px;background:' + barColor + ';border-radius:2px 2px 0 0;min-width:4px;opacity:0.8;"></div>';
+                html += '</div>';
+            }
+            html += '</div>';
+            // Date labels — show first and last
+            html += '<div style="display:flex;justify-content:space-between;margin-top:4px;">';
+            html += '<span style="font-size:9px;color:var(--text-faint);font-family:JetBrains Mono,monospace;">' + d.timeline[0].date + '</span>';
+            html += '<span style="font-size:9px;color:var(--text-faint);font-family:JetBrains Mono,monospace;">' + d.timeline[d.timeline.length - 1].date + '</span>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '</div>';
+            el.innerHTML = html;
+        })
+        .catch(function() {});
+}
+
+function formatHistoryDate(dt) {
+    if (!dt) return '—';
+    try {
+        var d = new Date(dt + 'Z');
+        return d.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    } catch(e) { return dt; }
 }
 
 // ── Community Reporting ──────────────────────────────────────────────────────
