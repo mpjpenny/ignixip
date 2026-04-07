@@ -653,7 +653,7 @@ function doIPLookup(ip, originalDomain) {
         })
         .catch(function() { return { ptr: null, confirmed: false }; });
 
-    fetch('https://ipinfo.io/' + encodeURIComponent(ip) + '/json')
+    fetch('https://tools.ignixip.com/ipinfo/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (d.error) {
@@ -2545,7 +2545,7 @@ function analyseHeaders() {
 
     // Look up each IP
     var lookupPromises = uniqueIps.map(function(lookupIp) {
-        return fetch('https://ipinfo.io/' + encodeURIComponent(lookupIp) + '/json')
+        return fetch('https://tools.ignixip.com/ipinfo/' + encodeURIComponent(lookupIp))
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var org = d.org || '';
