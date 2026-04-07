@@ -212,11 +212,6 @@
             <span class="logo-text">ignix<span>ip</span></span>
         </a>
         <nav class="header-nav">
-            <a href="/threats.html">Threats</a>
-            <a href="/search.html">Search</a>
-            <a href="/api.html">API</a>
-            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
-        </nav>
             <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
             <a href="mailto:hello@ignix.co.uk">Contact</a>
         </nav>
@@ -451,8 +446,7 @@
         </section>
 
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
-    <a href="/my-ip.html">My IP</a> &middot; <a href="/search.html">Search</a> &middot; <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="/api.html">API</a> &middot; <a href="https://tools.ignixip.com/feed/rss">RSS</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <div id="toast" class="toast"></div>
@@ -973,7 +967,11 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     html += '<button class="action-btn" onclick="exportJSON()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON</button>';
     html += '<button class="action-btn" onclick="generateAbuseReport()"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Report Abuse</button>';
     html += '<button class="action-btn" onclick="copyShareLink()"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Share Link</button>';
+    html += '<button class="action-btn" onclick="showReportForm(\'' + ip + '\')"><svg viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg>Report IP</button>';
     html += '</div>';
+
+    // Community reports section
+    html += '<div id="community-reports" class="fade-in"></div>';
 
     // IP header
     html += '<div class="ip-header fade-in">' +
@@ -1087,6 +1085,9 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
             })
         }).catch(function() {});
     } catch(e) {}
+
+    // Load community reports for this IP
+    loadCommunityReports(ip);
 
     // Initialize map after DOM update — prefer ipapi.co coords for accuracy
     var mapLat, mapLng, hasCoords = false;
@@ -1997,6 +1998,124 @@ function exportBulkJSON() {
     a.click();
     URL.revokeObjectURL(url);
     showToast('JSON exported');
+}
+
+// ── Community Reporting ──────────────────────────────────────────────────────
+function loadCommunityReports(ip) {
+    fetch(TOOLS_API + '/reports/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var el = document.getElementById('community-reports');
+            if (!el) return;
+            if (d.total_reports === 0) return; // Don't show if no reports
+            var catLabels = {spam:'Spam',malware:'Malware',brute_force:'Brute Force',scanning:'Scanning',phishing:'Phishing',botnet:'Botnet',fraud:'Fraud',other:'Other'};
+            var html = '<div class="result-card" style="margin-top:8px;">';
+            html += '<div class="card-title" style="color:var(--amber);">Community Reports (' + d.total_reports + ')</div>';
+            for (var i = 0; i < d.categories.length; i++) {
+                var cat = d.categories[i];
+                html += '<span class="risk-factor risk-factor-red" style="margin-right:6px;">' + (catLabels[cat.category] || cat.category) + ' (' + cat.count + ')</span>';
+            }
+            if (d.recent && d.recent.length > 0) {
+                html += '<div style="margin-top:10px;">';
+                for (var j = 0; j < d.recent.length; j++) {
+                    var r = d.recent[j];
+                    var date = new Date(r.date + 'Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+                    html += '<div style="font-size:11px;color:var(--text-faint);padding:3px 0;border-top:1px solid var(--border);">';
+                    html += '<span style="color:var(--text-muted);">' + (catLabels[r.category] || r.category) + '</span>';
+                    if (r.comment) html += ' — ' + r.comment;
+                    html += ' <span style="color:var(--text-faint);">(' + date + ')</span>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            el.innerHTML = html;
+        })
+        .catch(function() {});
+}
+
+function showReportForm(ip) {
+    var existing = document.getElementById('report-form-container');
+    if (existing) { existing.remove(); return; }
+    var catLabels = [
+        {val:'spam', label:'Spam'},
+        {val:'malware', label:'Malware'},
+        {val:'brute_force', label:'Brute Force'},
+        {val:'scanning', label:'Port Scanning'},
+        {val:'phishing', label:'Phishing'},
+        {val:'botnet', label:'Botnet'},
+        {val:'fraud', label:'Fraud'},
+        {val:'other', label:'Other'}
+    ];
+    var html = '<div id="report-form-container" class="result-card fade-in" style="margin-top:8px;border-color:var(--amber);">';
+    html += '<div class="card-title" style="color:var(--amber);">Report ' + ip + '</div>';
+    html += '<div style="margin-bottom:10px;font-size:12px;color:var(--text-muted);">Help the community by reporting malicious activity from this IP.</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">';
+    for (var i = 0; i < catLabels.length; i++) {
+        html += '<button class="filter-btn" onclick="selectReportCat(this,\'' + catLabels[i].val + '\')" data-cat="' + catLabels[i].val + '" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-size:11px;cursor:pointer;">' + catLabels[i].label + '</button>';
+    }
+    html += '</div>';
+    html += '<input type="text" id="report-comment" placeholder="Optional: brief description of what you observed" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:12px;outline:none;margin-bottom:10px;">';
+    html += '<div style="display:flex;gap:8px;align-items:center;">';
+    html += '<button class="action-btn" onclick="submitReport(\'' + ip + '\')" style="background:var(--amber);color:var(--bg);font-weight:600;">Submit Report</button>';
+    html += '<button class="action-btn" onclick="document.getElementById(\'report-form-container\').remove()">Cancel</button>';
+    html += '<span id="report-status" style="font-size:11px;color:var(--text-faint);"></span>';
+    html += '</div></div>';
+
+    var actionBar = document.querySelector('.action-bar');
+    if (actionBar) actionBar.insertAdjacentHTML('afterend', html);
+}
+
+var selectedReportCat = '';
+function selectReportCat(btn, cat) {
+    document.querySelectorAll('#report-form-container .filter-btn').forEach(function(b) {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-dim)';
+        b.style.borderColor = 'var(--border2)';
+    });
+    btn.style.background = 'rgba(251,191,36,0.12)';
+    btn.style.color = 'var(--amber)';
+    btn.style.borderColor = 'var(--amber)';
+    selectedReportCat = cat;
+}
+
+function submitReport(ip) {
+    if (!selectedReportCat) {
+        document.getElementById('report-status').textContent = 'Please select a category';
+        document.getElementById('report-status').style.color = 'var(--red)';
+        return;
+    }
+    var comment = document.getElementById('report-comment').value.trim();
+    var status = document.getElementById('report-status');
+    status.textContent = 'Submitting...';
+    status.style.color = 'var(--text-dim)';
+
+    fetch(TOOLS_API + '/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip: ip, category: selectedReportCat, comment: comment })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = d.error;
+            status.style.color = 'var(--red)';
+        } else {
+            status.textContent = 'Reported — thank you!';
+            status.style.color = 'var(--green)';
+            showToast('IP reported — ' + d.report_count + ' total reports');
+            selectedReportCat = '';
+            setTimeout(function() {
+                var form = document.getElementById('report-form-container');
+                if (form) form.remove();
+                loadCommunityReports(ip);
+            }, 1500);
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Failed to submit';
+        status.style.color = 'var(--red)';
+    });
 }
 
 // ── Webhook Configuration ────────────────────────────────────────────────────
