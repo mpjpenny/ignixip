@@ -356,6 +356,16 @@
                 </div>
             </div>
             <div id="monitor-list"></div>
+            <!-- Webhook Configuration -->
+            <div style="margin-top:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
+                <div style="font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;margin-bottom:8px;">&#128279; Webhook / Slack Alerts</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="text" id="webhook-url-input" placeholder="https://hooks.slack.com/... or any webhook URL" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;">
+                    <button class="action-btn" onclick="saveWebhook()" style="font-size:11px;padding:5px 10px;">Save</button>
+                    <button class="action-btn" onclick="testWebhook()" style="font-size:11px;padding:5px 10px;">Test</button>
+                </div>
+                <div id="webhook-status" style="font-size:10px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-top:6px;">Blacklist alerts will be sent to this URL as JSON POST requests.</div>
+            </div>
         </div>
     </div>
 
@@ -436,8 +446,7 @@
         </section>
 
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
-    <a href="/my-ip.html">My IP</a> &middot; <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="/api.html">API</a> &middot; <a href="https://tools.ignixip.com/feed/rss">RSS</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a> &middot; Data via ipinfo.io &amp; dns.google &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
 </footer>
 
 <div id="toast" class="toast"></div>
@@ -1693,6 +1702,7 @@ function showBulkInput(userInfo) {
     // Load monitoring section
     document.getElementById('monitor-section').style.display = 'block';
     loadMonitoredIPs();
+    loadWebhookUrl();
 }
 
 function openRegModal() {
@@ -1981,6 +1991,80 @@ function exportBulkJSON() {
     a.click();
     URL.revokeObjectURL(url);
     showToast('JSON exported');
+}
+
+// ── Webhook Configuration ────────────────────────────────────────────────────
+function loadWebhookUrl() {
+    var token = getBulkToken();
+    if (!token) return;
+    fetch(TOOLS_API + '/user/webhook', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.webhook_url) {
+                document.getElementById('webhook-url-input').value = d.webhook_url;
+                document.getElementById('webhook-status').textContent = 'Webhook configured — alerts will be sent here.';
+                document.getElementById('webhook-status').style.color = 'var(--green)';
+            }
+        })
+        .catch(function() {});
+}
+
+function saveWebhook() {
+    var token = getBulkToken();
+    if (!token) return;
+    var url = document.getElementById('webhook-url-input').value.trim();
+    var status = document.getElementById('webhook-status');
+    fetch(TOOLS_API + '/user/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ webhook_url: url })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = d.error;
+            status.style.color = 'var(--red)';
+        } else if (url) {
+            status.textContent = 'Webhook saved — alerts will be sent here.';
+            status.style.color = 'var(--green)';
+            showToast('Webhook saved');
+        } else {
+            status.textContent = 'Webhook removed.';
+            status.style.color = 'var(--text-faint)';
+            showToast('Webhook removed');
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Failed to save webhook.';
+        status.style.color = 'var(--red)';
+    });
+}
+
+function testWebhook() {
+    var token = getBulkToken();
+    if (!token) return;
+    var status = document.getElementById('webhook-status');
+    status.textContent = 'Sending test...';
+    status.style.color = 'var(--text-dim)';
+    fetch(TOOLS_API + '/user/webhook/test', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = 'Test failed: ' + d.error;
+            status.style.color = 'var(--red)';
+        } else {
+            status.textContent = 'Test sent successfully!';
+            status.style.color = 'var(--green)';
+            showToast('Webhook test sent');
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Test failed — check your URL.';
+        status.style.color = 'var(--red)';
+    });
 }
 
 // ── IP Monitoring ────────────────────────────────────────────────────────────
