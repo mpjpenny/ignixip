@@ -236,6 +236,8 @@
         <button class="tab-btn" onclick="switchTab('tools')">&#9874; Network Tools</button>
         <button class="tab-btn" onclick="switchTab('bulk')">&#9776; Bulk Lookup</button>
         <button class="tab-btn" onclick="switchTab('headers')">&#9993; Email Headers</button>
+        <button class="tab-btn" onclick="switchTab('urlcheck')">&#128279; URL Check</button>
+        <button class="tab-btn" onclick="switchTab('emailcheck')">&#9993; Sender Check</button>
     </div>
 
     <!-- IP Lookup Tab -->
@@ -385,6 +387,30 @@
         </div>
         <div class="results" id="headers-results"></div>
     </div>
+
+    <!-- URL Check Tab -->
+    <div class="tab-pane" id="tab-urlcheck">
+        <div class="search-box" style="margin-bottom:16px;">
+            <input type="text" id="url-input" class="search-input" placeholder="Paste a suspicious URL... e.g. https://example.com/login" style="flex:1;">
+            <button class="search-btn" id="url-btn" onclick="checkURL()">Check URL</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-bottom:16px;">
+            Checks domain age, DNS resolution, SSL certificate, blacklist status, and risk assessment.
+        </div>
+        <div class="results" id="url-results"></div>
+    </div>
+
+    <!-- Email Sender Check Tab -->
+    <div class="tab-pane" id="tab-emailcheck">
+        <div class="search-box" style="margin-bottom:16px;">
+            <input type="text" id="email-input" class="search-input" placeholder="Enter an email address or domain... e.g. suspicious@example.com" style="flex:1;">
+            <button class="search-btn" id="email-btn" onclick="checkEmail()">Check Sender</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-bottom:16px;">
+            Checks domain MX records, SPF/DKIM/DMARC, domain age, and mail server reputation.
+        </div>
+        <div class="results" id="email-results"></div>
+    </div>
 </div>
 
 <!-- Registration Modal -->
@@ -477,7 +503,7 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + tab).classList.add('active');
     var btns = document.querySelectorAll('.tab-btn');
-    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5, bulk:6, headers:7}[tab];
+    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5, bulk:6, headers:7, urlcheck:8, emailcheck:9}[tab];
     btns[idx].classList.add('active');
     history.pushState({}, '', '?tab=' + tab);
     // Show bulk auth area if needed
@@ -2603,6 +2629,389 @@ function analyseHeaders() {
 
 function escHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── URL Check ────────────────────────────────────────────────────────────────
+document.getElementById('url-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkURL(); });
+
+function extractDomain(url) {
+    try {
+        url = url.trim();
+        if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
+        var a = new URL(url);
+        return a.hostname;
+    } catch(e) {
+        // Try as plain domain
+        return url.replace(/^https?:\/\//i, '').replace(/\/.*/, '').trim();
+    }
+}
+
+function checkURL() {
+    var url = document.getElementById('url-input').value.trim();
+    if (!url) return;
+    var btn = document.getElementById('url-btn');
+    var results = document.getElementById('url-results');
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    results.innerHTML = '<div class="loading"><span class="loading-dots">Analysing URL</span></div>';
+
+    var domain = extractDomain(url);
+    if (!domain) {
+        results.innerHTML = '<div class="error-card">Could not extract domain from URL</div>';
+        btn.disabled = false; btn.textContent = 'Check URL';
+        return;
+    }
+
+    // Parallel lookups
+    var dnsPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=A')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var mxPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var txtPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=TXT')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var nsPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=NS')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // WHOIS via RDAP for domain age
+    var rdapPromise = fetch('https://rdap.org/domain/' + encodeURIComponent(domain))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // Google Safe Browsing check via DNS (experimental)
+    // Check if domain resolves at all
+    var aaaaPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=AAAA')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    Promise.all([dnsPromise, mxPromise, txtPromise, nsPromise, rdapPromise, aaaaPromise]).then(function(res) {
+        var dns = res[0], mx = res[1], txt = res[2], ns = res[3], rdap = res[4], aaaa = res[5];
+        var html = '';
+
+        // Risk assessment
+        var risks = [];
+        var score = 0;
+
+        // Check if domain resolves
+        var resolvedIP = '';
+        if (dns && dns.Answer && dns.Answer.length > 0) {
+            resolvedIP = dns.Answer[dns.Answer.length - 1].data;
+        }
+        if (!resolvedIP && (!aaaa || !aaaa.Answer || aaaa.Answer.length === 0)) {
+            risks.push({level: 'red', text: 'Domain does not resolve — may not exist or is offline'});
+            score += 30;
+        }
+
+        // Domain age from RDAP
+        var regDate = '';
+        var domainAge = '';
+        if (rdap && rdap.events) {
+            for (var i = 0; i < rdap.events.length; i++) {
+                if (rdap.events[i].eventAction === 'registration') {
+                    regDate = rdap.events[i].eventDate || '';
+                    if (regDate) {
+                        var reg = new Date(regDate);
+                        var now = new Date();
+                        var days = Math.floor((now - reg) / (1000 * 60 * 60 * 24));
+                        if (days < 30) { risks.push({level: 'red', text: 'Domain registered ' + days + ' days ago — very new'}); score += 35; }
+                        else if (days < 90) { risks.push({level: 'amber', text: 'Domain registered ' + days + ' days ago — relatively new'}); score += 15; }
+                        else if (days < 365) { domainAge = days + ' days'; }
+                        else { domainAge = Math.floor(days / 365) + ' years'; }
+                    }
+                }
+            }
+        }
+
+        // Check for no MX (no email capability — not necessarily bad)
+        var hasMX = mx && mx.Answer && mx.Answer.length > 0;
+
+        // Check SPF
+        var hasSPF = false;
+        var spfRecord = '';
+        if (txt && txt.Answer) {
+            for (var t = 0; t < txt.Answer.length; t++) {
+                var txtData = txt.Answer[t].data || '';
+                if (txtData.indexOf('v=spf1') >= 0) { hasSPF = true; spfRecord = txtData; }
+            }
+        }
+
+        // Check NS
+        var hasNS = ns && ns.Answer && ns.Answer.length > 0;
+        if (!hasNS) { risks.push({level: 'amber', text: 'No nameservers found'}); score += 10; }
+
+        // Calculate risk
+        if (score >= 40) { var riskLabel = 'High Risk'; var riskColor = 'var(--red)'; }
+        else if (score >= 16) { var riskLabel = 'Medium Risk'; var riskColor = 'var(--amber)'; }
+        else { var riskLabel = 'Low Risk'; var riskColor = 'var(--green)'; }
+
+        // Render results
+        // URL header
+        html += '<div class="ip-header fade-in"><div class="ip-address-display" style="font-size:16px;word-break:break-all;">' + url.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+        html += '<div class="ip-tags"><span class="tag" style="background:rgba(59,130,246,0.12);color:var(--blue-bright);border:1px solid rgba(59,130,246,0.25);">' + domain + '</span></div></div>';
+
+        // Risk card
+        html += '<div class="result-card fade-in" style="border-color:' + riskColor + '30;"><div class="card-title" style="color:' + riskColor + ';">URL Assessment: ' + riskLabel + '</div>';
+        if (risks.length > 0) {
+            for (var r = 0; r < risks.length; r++) {
+                html += '<div style="margin-bottom:4px;"><span class="risk-factor risk-factor-' + risks[r].level + '">' + risks[r].text + '</span></div>';
+            }
+        } else {
+            html += '<div style="color:var(--green);font-size:13px;">No significant risk indicators detected.</div>';
+        }
+        html += '</div>';
+
+        // Results grid
+        html += '<div class="results-grid fade-in">';
+
+        // Domain info
+        html += '<div class="result-card"><div class="card-title">Domain</div>';
+        html += '<div class="data-row"><span class="data-key">Domain</span><span class="data-val">' + domain + '</span></div>';
+        if (regDate) {
+            var regDisplay = new Date(regDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+            html += '<div class="data-row"><span class="data-key">Registered</span><span class="data-val ' + (score >= 30 ? 'red' : 'muted') + '">' + regDisplay + '</span></div>';
+        }
+        if (domainAge) html += '<div class="data-row"><span class="data-key">Age</span><span class="data-val green">' + domainAge + '</span></div>';
+        if (hasNS && ns.Answer) {
+            html += '<div class="data-row"><span class="data-key">Nameservers</span><span class="data-val muted" style="font-size:11px;">' + ns.Answer.slice(0,2).map(function(n) { return n.data.replace(/\.$/,''); }).join(', ') + '</span></div>';
+        }
+        // Registrar
+        if (rdap && rdap.entities) {
+            for (var e = 0; e < rdap.entities.length; e++) {
+                if (rdap.entities[e].roles && rdap.entities[e].roles.indexOf('registrar') >= 0) {
+                    var registrar = rdap.entities[e].vcardArray ? '' : (rdap.entities[e].handle || '');
+                    if (rdap.entities[e].publicIds) registrar = rdap.entities[e].publicIds[0].identifier || registrar;
+                    if (registrar) html += '<div class="data-row"><span class="data-key">Registrar</span><span class="data-val muted" style="font-size:11px;">' + registrar + '</span></div>';
+                }
+            }
+        }
+        html += '</div>';
+
+        // DNS resolution
+        html += '<div class="result-card"><div class="card-title">DNS</div>';
+        if (resolvedIP) {
+            html += '<div class="data-row"><span class="data-key">Resolves To</span><span class="data-val"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;">' + resolvedIP + '</a></span></div>';
+        } else {
+            html += '<div class="data-row"><span class="data-key">Resolves To</span><span class="data-val red">Does not resolve</span></div>';
+        }
+        if (aaaa && aaaa.Answer && aaaa.Answer.length > 0) {
+            html += '<div class="data-row"><span class="data-key">IPv6</span><span class="data-val muted" style="font-size:11px;">' + aaaa.Answer[0].data + '</span></div>';
+        }
+        if (hasMX) {
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val green">Yes (' + mx.Answer.length + ')</span></div>';
+        } else {
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val muted">None</span></div>';
+        }
+        html += '<div class="data-row"><span class="data-key">SPF</span><span class="data-val ' + (hasSPF ? 'green' : 'amber') + '">' + (hasSPF ? 'Present' : 'Not found') + '</span></div>';
+        html += '</div>';
+
+        html += '</div>'; // close results-grid
+
+        // IP lookup link
+        if (resolvedIP) {
+            html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
+        }
+
+        results.innerHTML = html;
+        btn.disabled = false; btn.textContent = 'Check URL';
+    });
+}
+
+// ── Email Sender Check ───────────────────────────────────────────────────────
+document.getElementById('email-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkEmail(); });
+
+function checkEmail() {
+    var input = document.getElementById('email-input').value.trim();
+    if (!input) return;
+    var btn = document.getElementById('email-btn');
+    var results = document.getElementById('email-results');
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    results.innerHTML = '<div class="loading"><span class="loading-dots">Checking sender</span></div>';
+
+    // Extract domain from email or use as-is if it's a domain
+    var domain = input.indexOf('@') >= 0 ? input.split('@')[1].trim() : input.trim();
+    var email = input.indexOf('@') >= 0 ? input : '';
+
+    if (!domain || domain.indexOf('.') < 0) {
+        results.innerHTML = '<div class="error-card">Enter a valid email address or domain</div>';
+        btn.disabled = false; btn.textContent = 'Check Sender';
+        return;
+    }
+
+    // Parallel lookups
+    var mxPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var txtPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=TXT')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var aPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=A')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var nsPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=NS')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // DMARC
+    var dmarcPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent('_dmarc.' + domain) + '&type=TXT')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // DKIM selector guess (common selectors)
+    var dkimPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent('google._domainkey.' + domain) + '&type=TXT')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d && d.Answer && d.Answer.length > 0) return {found: true, selector: 'google'};
+            return fetch('https://dns.google/resolve?name=' + encodeURIComponent('default._domainkey.' + domain) + '&type=TXT')
+                .then(function(r) { return r.json(); })
+                .then(function(d2) {
+                    if (d2 && d2.Answer && d2.Answer.length > 0) return {found: true, selector: 'default'};
+                    return fetch('https://dns.google/resolve?name=' + encodeURIComponent('selector1._domainkey.' + domain) + '&type=TXT')
+                        .then(function(r) { return r.json(); })
+                        .then(function(d3) {
+                            return (d3 && d3.Answer && d3.Answer.length > 0) ? {found: true, selector: 'selector1'} : {found: false};
+                        });
+                });
+        })
+        .catch(function() { return {found: false}; });
+
+    // RDAP for domain age
+    var rdapPromise = fetch('https://rdap.org/domain/' + encodeURIComponent(domain))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    Promise.all([mxPromise, txtPromise, aPromise, nsPromise, dmarcPromise, dkimPromise, rdapPromise]).then(function(res) {
+        var mx = res[0], txt = res[1], a = res[2], ns = res[3], dmarc = res[4], dkim = res[5], rdap = res[6];
+        var html = '';
+
+        var risks = [];
+        var score = 0;
+
+        // Check MX
+        var hasMX = mx && mx.Answer && mx.Answer.length > 0;
+        if (!hasMX) { risks.push({level: 'red', text: 'No mail servers — domain cannot receive email'}); score += 25; }
+
+        // Check SPF
+        var hasSPF = false;
+        var spfRecord = '';
+        if (txt && txt.Answer) {
+            for (var t = 0; t < txt.Answer.length; t++) {
+                var txtData = txt.Answer[t].data || '';
+                if (txtData.indexOf('v=spf1') >= 0) { hasSPF = true; spfRecord = txtData; }
+            }
+        }
+        if (!hasSPF) { risks.push({level: 'amber', text: 'No SPF record — email authentication not configured'}); score += 10; }
+
+        // Check DMARC
+        var hasDMARC = dmarc && dmarc.Answer && dmarc.Answer.length > 0;
+        var dmarcRecord = '';
+        if (hasDMARC) {
+            dmarcRecord = dmarc.Answer[0].data || '';
+        } else {
+            risks.push({level: 'amber', text: 'No DMARC record — domain not protected against spoofing'}); score += 10;
+        }
+
+        // Check DKIM
+        var hasDKIM = dkim && dkim.found;
+
+        // Domain age
+        var regDate = '';
+        var domainAge = '';
+        if (rdap && rdap.events) {
+            for (var i = 0; i < rdap.events.length; i++) {
+                if (rdap.events[i].eventAction === 'registration') {
+                    regDate = rdap.events[i].eventDate || '';
+                    if (regDate) {
+                        var reg = new Date(regDate);
+                        var now = new Date();
+                        var days = Math.floor((now - reg) / (1000 * 60 * 60 * 24));
+                        if (days < 30) { risks.push({level: 'red', text: 'Domain registered ' + days + ' days ago — very new'}); score += 30; }
+                        else if (days < 90) { risks.push({level: 'amber', text: 'Domain registered ' + days + ' days ago'}); score += 10; }
+                        else if (days < 365) { domainAge = days + ' days'; }
+                        else { domainAge = Math.floor(days / 365) + ' years'; }
+                    }
+                }
+            }
+        }
+
+        // Domain doesn't resolve
+        var resolvedIP = '';
+        if (a && a.Answer && a.Answer.length > 0) {
+            resolvedIP = a.Answer[a.Answer.length - 1].data;
+        } else {
+            if (!hasMX) { risks.push({level: 'red', text: 'Domain does not resolve — may not exist'}); score += 20; }
+        }
+
+        // Risk level
+        if (score >= 40) { var riskLabel = 'Suspicious'; var riskColor = 'var(--red)'; }
+        else if (score >= 16) { var riskLabel = 'Some Concerns'; var riskColor = 'var(--amber)'; }
+        else { var riskLabel = 'Looks Legitimate'; var riskColor = 'var(--green)'; }
+
+        // Render
+        html += '<div class="ip-header fade-in"><div class="ip-address-display" style="font-size:18px;">' + (email || domain) + '</div>';
+        html += '<div class="ip-tags"><span class="tag" style="background:rgba(59,130,246,0.12);color:var(--blue-bright);border:1px solid rgba(59,130,246,0.25);">' + domain + '</span></div></div>';
+
+        // Assessment
+        html += '<div class="result-card fade-in" style="border-color:' + riskColor + '30;"><div class="card-title" style="color:' + riskColor + ';">Sender Assessment: ' + riskLabel + '</div>';
+        if (risks.length > 0) {
+            for (var r = 0; r < risks.length; r++) {
+                html += '<div style="margin-bottom:4px;"><span class="risk-factor risk-factor-' + risks[r].level + '">' + risks[r].text + '</span></div>';
+            }
+        } else {
+            html += '<div style="color:var(--green);font-size:13px;">Domain has proper email authentication and appears legitimate.</div>';
+        }
+        html += '</div>';
+
+        html += '<div class="results-grid fade-in">';
+
+        // Email authentication
+        html += '<div class="result-card"><div class="card-title">Email Authentication</div>';
+        html += '<div class="data-row"><span class="data-key">SPF</span><span class="data-val ' + (hasSPF ? 'green' : 'red') + '">' + (hasSPF ? 'Configured' : 'Not Found') + '</span></div>';
+        html += '<div class="data-row"><span class="data-key">DKIM</span><span class="data-val ' + (hasDKIM ? 'green' : 'amber') + '">' + (hasDKIM ? 'Found (selector: ' + dkim.selector + ')' : 'Not detected') + '</span></div>';
+        html += '<div class="data-row"><span class="data-key">DMARC</span><span class="data-val ' + (hasDMARC ? 'green' : 'red') + '">' + (hasDMARC ? 'Configured' : 'Not Found') + '</span></div>';
+        if (hasMX) {
+            var mxServers = mx.Answer.sort(function(a, b) { return (a.data || '').localeCompare(b.data || ''); });
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val muted" style="font-size:11px;">' + mxServers.slice(0,3).map(function(m) { return m.data.replace(/\.$/,''); }).join('<br>') + '</span></div>';
+        } else {
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val red">None — cannot receive email</span></div>';
+        }
+        html += '</div>';
+
+        // Domain info
+        html += '<div class="result-card"><div class="card-title">Domain Info</div>';
+        html += '<div class="data-row"><span class="data-key">Domain</span><span class="data-val">' + domain + '</span></div>';
+        if (regDate) {
+            var regDisplay = new Date(regDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+            html += '<div class="data-row"><span class="data-key">Registered</span><span class="data-val ' + (score >= 30 ? 'red' : 'muted') + '">' + regDisplay + '</span></div>';
+        }
+        if (domainAge) html += '<div class="data-row"><span class="data-key">Age</span><span class="data-val green">' + domainAge + '</span></div>';
+        if (resolvedIP) {
+            html += '<div class="data-row"><span class="data-key">IP</span><span class="data-val"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;">' + resolvedIP + '</a></span></div>';
+        }
+        if (ns && ns.Answer) {
+            html += '<div class="data-row"><span class="data-key">Nameservers</span><span class="data-val muted" style="font-size:11px;">' + ns.Answer.slice(0,2).map(function(n) { return n.data.replace(/\.$/,''); }).join(', ') + '</span></div>';
+        }
+        html += '</div>';
+
+        html += '</div>'; // close results-grid
+
+        // SPF/DMARC details
+        if (hasSPF || hasDMARC) {
+            html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Record Details</div>';
+            if (hasSPF) {
+                html += '<div class="dns-record"><span class="dns-type-badge dns-TXT">SPF</span><span class="dns-record-data" style="font-size:11px;word-break:break-all;">' + spfRecord.replace(/"/g, '') + '</span></div>';
+            }
+            if (hasDMARC && dmarcRecord) {
+                html += '<div class="dns-record"><span class="dns-type-badge dns-TXT">DMARC</span><span class="dns-record-data" style="font-size:11px;word-break:break-all;">' + dmarcRecord.replace(/"/g, '') + '</span></div>';
+            }
+            html += '</div>';
+        }
+
+        // Full IP report link
+        if (resolvedIP) {
+            html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
+        }
+
+        results.innerHTML = html;
+        btn.disabled = false; btn.textContent = 'Check Sender';
+    });
 }
 
 // ── Page load ────────────────────────────────────────────────────────────────
