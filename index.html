@@ -2816,7 +2816,27 @@ function checkURL() {
             html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
         }
 
+        // Report button
+        html += '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;">';
+        html += '<button class="action-btn" onclick="showDomainReportForm(\'' + domain + '\', \'url\')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg> Report this URL</button>';
+        html += '</div>';
+        html += '<div id="domain-report-form"></div>';
+        html += '<div id="domain-reports"></div>';
+
         results.innerHTML = html;
+
+        // Log check to tools server
+        try {
+            fetch(TOOLS_API + '/log-domain-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain: domain, check_type: 'url', risk_score: score, risk_label: riskLabel, data: { has_mx: hasMX, has_spf: hasSPF, resolved_ip: resolvedIP, domain_age: domainAge } })
+            }).catch(function() {});
+        } catch(e) {}
+
+        // Load community reports
+        loadDomainReports(domain);
+
         btn.disabled = false; btn.textContent = 'Check URL';
     });
 }
@@ -3014,8 +3034,144 @@ function checkEmail() {
             html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
         }
 
+        // Report button
+        html += '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;">';
+        html += '<button class="action-btn" onclick="showDomainReportForm(\'' + domain + '\', \'sender\')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg> Report this sender</button>';
+        html += '</div>';
+        html += '<div id="domain-report-form"></div>';
+        html += '<div id="domain-reports"></div>';
+
         results.innerHTML = html;
+
+        // Log check to tools server
+        try {
+            fetch(TOOLS_API + '/log-domain-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain: domain, check_type: 'sender', risk_score: score, risk_label: riskLabel, data: { has_mx: hasMX, has_spf: hasSPF, has_dkim: hasDKIM, has_dmarc: hasDMARC } })
+            }).catch(function() {});
+        } catch(e) {}
+
+        // Load community reports
+        loadDomainReports(domain);
+
         btn.disabled = false; btn.textContent = 'Check Sender';
+    });
+}
+
+// ── Domain Reporting Functions ───────────────────────────────────────────────
+function loadDomainReports(domain) {
+    fetch(TOOLS_API + '/domain-reports/' + encodeURIComponent(domain))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var el = document.getElementById('domain-reports');
+            if (!el || d.total_reports === 0) return;
+            var catLabels = {spam:'Spam',phishing:'Phishing',malware:'Malware',scam:'Scam',impersonation:'Impersonation',other:'Other'};
+            var html = '<div class="result-card" style="margin-top:10px;">';
+            html += '<div class="card-title" style="color:var(--amber);">Community Reports (' + d.total_reports + ')</div>';
+            if (d.total_checks > 0) html += '<div style="font-size:11px;color:var(--text-faint);margin-bottom:8px;">Checked ' + d.total_checks + ' times by ignixip users</div>';
+            for (var i = 0; i < d.categories.length; i++) {
+                var cat = d.categories[i];
+                html += '<span class="risk-factor risk-factor-red" style="margin-right:6px;">' + (catLabels[cat.category] || cat.category) + ' (' + cat.count + ')</span>';
+            }
+            if (d.recent && d.recent.length > 0) {
+                html += '<div style="margin-top:10px;">';
+                for (var j = 0; j < d.recent.length; j++) {
+                    var r = d.recent[j];
+                    var date = new Date(r.date + 'Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+                    html += '<div style="font-size:11px;color:var(--text-faint);padding:3px 0;border-top:1px solid var(--border);">';
+                    html += '<span style="color:var(--text-muted);">' + (catLabels[r.category] || r.category) + '</span>';
+                    if (r.comment) html += ' — ' + r.comment;
+                    html += ' <span style="color:var(--text-faint);">(' + date + ')</span>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            el.innerHTML = html;
+        })
+        .catch(function() {});
+}
+
+var selectedDomainReportCat = '';
+function showDomainReportForm(domain, checkType) {
+    var existing = document.getElementById('domain-report-form');
+    if (!existing) return;
+    if (existing.innerHTML) { existing.innerHTML = ''; return; }
+    var catLabels = [
+        {val:'spam', label:'Spam'},
+        {val:'phishing', label:'Phishing'},
+        {val:'malware', label:'Malware'},
+        {val:'scam', label:'Scam'},
+        {val:'impersonation', label:'Impersonation'},
+        {val:'other', label:'Other'}
+    ];
+    var html = '<div class="result-card" style="margin-top:8px;border-color:var(--amber);">';
+    html += '<div class="card-title" style="color:var(--amber);">Report ' + domain + '</div>';
+    html += '<div style="margin-bottom:10px;font-size:12px;color:var(--text-muted);">Help the community — flag this ' + (checkType === 'sender' ? 'sender' : 'URL') + ' as suspicious.</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">';
+    for (var i = 0; i < catLabels.length; i++) {
+        html += '<button class="filter-btn" onclick="selectDomainReportCat(this,\'' + catLabels[i].val + '\')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-size:11px;cursor:pointer;">' + catLabels[i].label + '</button>';
+    }
+    html += '</div>';
+    html += '<input type="text" id="domain-report-comment" placeholder="Optional: describe what you received" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:12px;outline:none;margin-bottom:10px;">';
+    html += '<div style="display:flex;gap:8px;align-items:center;">';
+    html += '<button class="action-btn" onclick="submitDomainReport(\'' + domain + '\', \'' + checkType + '\')" style="background:var(--amber);color:var(--bg);font-weight:600;">Submit Report</button>';
+    html += '<button class="action-btn" onclick="document.getElementById(\'domain-report-form\').innerHTML=\'\'">Cancel</button>';
+    html += '<span id="domain-report-status" style="font-size:11px;color:var(--text-faint);"></span>';
+    html += '</div></div>';
+    existing.innerHTML = html;
+}
+
+function selectDomainReportCat(btn, cat) {
+    var form = document.getElementById('domain-report-form');
+    if (!form) return;
+    form.querySelectorAll('.filter-btn').forEach(function(b) {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-dim)';
+        b.style.borderColor = 'var(--border2)';
+    });
+    btn.style.background = 'rgba(251,191,36,0.12)';
+    btn.style.color = 'var(--amber)';
+    btn.style.borderColor = 'var(--amber)';
+    selectedDomainReportCat = cat;
+}
+
+function submitDomainReport(domain, checkType) {
+    if (!selectedDomainReportCat) {
+        document.getElementById('domain-report-status').textContent = 'Select a category';
+        document.getElementById('domain-report-status').style.color = 'var(--red)';
+        return;
+    }
+    var comment = document.getElementById('domain-report-comment').value.trim();
+    var status = document.getElementById('domain-report-status');
+    status.textContent = 'Submitting...';
+    status.style.color = 'var(--text-dim)';
+
+    fetch(TOOLS_API + '/report-domain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: domain, check_type: checkType, category: selectedDomainReportCat, comment: comment })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = d.error;
+            status.style.color = 'var(--red)';
+        } else {
+            status.textContent = 'Reported — thank you!';
+            status.style.color = 'var(--green)';
+            showToast('Domain reported — ' + d.report_count + ' total reports');
+            selectedDomainReportCat = '';
+            setTimeout(function() {
+                document.getElementById('domain-report-form').innerHTML = '';
+                loadDomainReports(domain);
+            }, 1500);
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Failed to submit';
+        status.style.color = 'var(--red)';
     });
 }
 
