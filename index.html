@@ -39,6 +39,7 @@
             --purple: #a78bfa;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
         body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
         header { z-index: 10; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(10,15,26,0.8); backdrop-filter: blur(12px); position: sticky; top: 0; }
@@ -91,6 +92,39 @@
         .tag-residential { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
         .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         @media (max-width: 600px) { .results-grid { grid-template-columns: 1fr; } }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            header { padding: 0 12px; }
+            .header-inner { height: 48px; }
+            .header-nav { gap: 12px; font-size: 11px; }
+            .hero { padding: 28px 16px 24px; }
+            .hero h1 { font-size: 22px; }
+            .hero p { font-size: 13px; margin-bottom: 20px; }
+            .tabs-container { padding: 0 12px; max-width: 100%; }
+            .tab-nav { border-radius: 8px; padding: 3px; gap: 2px; }
+            .tab-row { gap: 2px; }
+            .tab-btn { padding: 7px 4px; font-size: 10px; }
+            .search-box { flex-direction: column; gap: 8px; }
+            .search-input { font-size: 14px; padding: 12px; }
+            .search-btn { width: 100%; padding: 12px; }
+            .action-bar { gap: 6px; }
+            .action-btn { font-size: 10px; padding: 6px 10px; }
+            .ip-header { padding: 12px; }
+            .ip-address-display { font-size: 18px !important; word-break: break-all; }
+            .result-card { padding: 14px; }
+            .card-title { font-size: 11px; }
+            .data-row { font-size: 12px; }
+            .data-key { min-width: 70px; }
+            .map-container { height: 200px !important; }
+            .risk-card { padding: 16px; }
+            footer { font-size: 11px; padding: 16px 12px; }
+        }
+        @media (max-width: 400px) {
+            .header-nav a:last-child { display: none; }
+            .tab-btn { font-size: 9px; padding: 6px 2px; }
+            .hero h1 { font-size: 20px; }
+        }
         .result-card { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
         .card-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
