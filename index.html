@@ -103,9 +103,9 @@
             .hero h1 { font-size: 22px; }
             .hero p { font-size: 13px; margin-bottom: 20px; }
             .tabs-container { padding: 0 12px; max-width: 100%; }
-            .tab-nav { border-radius: 8px; padding: 3px; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .tab-row { gap: 2px; min-width: 0; }
-            .tab-btn { padding: 7px 6px; font-size: 10px; flex: 0 0 auto; min-width: 0; }
+            .tab-nav { border-radius: 8px; padding: 3px; gap: 2px; }
+            .tab-row { gap: 2px; min-width: 0; flex-wrap: wrap; }
+            .tab-btn { padding: 7px 6px; font-size: 10px; flex: 1 1 30%; min-width: 0; }
             .search-box { flex-direction: column; gap: 8px; padding: 12px; }
             .search-input { font-size: 14px; padding: 12px; width: 100%; }
             .search-btn { width: 100%; padding: 12px; }
@@ -265,18 +265,18 @@
 <div class="tabs-container">
     <div class="tab-nav">
         <div class="tab-row">
-            <button class="tab-btn active" onclick="switchTab('ip')">&#8594; IP Lookup</button>
-            <button class="tab-btn" onclick="switchTab('dns')">&#8635; DNS Lookup</button>
-            <button class="tab-btn" onclick="switchTab('bl')">&#9632; Blacklist Check</button>
-            <button class="tab-btn" onclick="switchTab('whois')">&#9432; WHOIS</button>
-            <button class="tab-btn" onclick="switchTab('asn')">&#9671; ASN</button>
-            <button class="tab-btn" onclick="switchTab('tools')">&#9874; Network Tools</button>
+            <button class="tab-btn active" onclick="switchTab('ip')">IP Lookup</button>
+            <button class="tab-btn" onclick="switchTab('dns')">DNS Lookup</button>
+            <button class="tab-btn" onclick="switchTab('bl')">Blacklist</button>
+            <button class="tab-btn" onclick="switchTab('whois')">WHOIS</button>
+            <button class="tab-btn" onclick="switchTab('asn')">ASN</button>
+            <button class="tab-btn" onclick="switchTab('tools')">Net Tools</button>
         </div>
         <div class="tab-row">
-            <button class="tab-btn" onclick="switchTab('bulk')">&#9776; Bulk Lookup</button>
-            <button class="tab-btn" onclick="switchTab('headers')">&#9993; Email Headers</button>
-            <button class="tab-btn" onclick="switchTab('urlcheck')">&#128279; URL Check</button>
-            <button class="tab-btn" onclick="switchTab('emailcheck')">&#128231; Sender Check</button>
+            <button class="tab-btn" onclick="switchTab('bulk')">Bulk Lookup</button>
+            <button class="tab-btn" onclick="switchTab('headers')">Email Headers</button>
+            <button class="tab-btn" onclick="switchTab('urlcheck')">URL Check</button>
+            <button class="tab-btn" onclick="switchTab('emailcheck')">Sender Check</button>
         </div>
     </div>
 
