@@ -344,13 +344,14 @@
     <div class="tab-pane" id="tab-whois">
         <div class="search-box">
             <span class="search-icon">&#9432;</span>
-            <input type="text" id="whois-input" class="search-input" placeholder="Enter IP address or CIDR..." autocomplete="off" spellcheck="false">
+            <input type="text" id="whois-input" class="search-input" placeholder="Enter IP address, CIDR, or domain..." autocomplete="off" spellcheck="false">
             <button class="search-btn" id="whois-btn" onclick="lookupWHOIS()">Look Up</button>
         </div>
         <div class="search-hint">
             Try: <a onclick="setAndLookup('whois', '8.8.8.8')">8.8.8.8</a> &middot;
             <a onclick="setAndLookup('whois', '1.1.1.1')">1.1.1.1</a> &middot;
-            <a onclick="setAndLookup('whois', '185.220.101.34')">185.220.101.34</a>
+            <a onclick="setAndLookup('whois', 'github.com')">github.com</a> &middot;
+            <a onclick="setAndLookup('whois', 'bbc.co.uk')">bbc.co.uk</a>
         </div>
         <div class="results" id="whois-results"></div>
     </div>
@@ -1436,24 +1437,79 @@ var whoisResults = document.getElementById('whois-results');
 whoisInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupWHOIS(); });
 
 function lookupWHOIS() {
+    // lookupWHOIS_v2 - handles both IPs and domains via tools.ignixip.com
     var query = whoisInput.value.trim();
     if (!query) return;
     whoisBtn.disabled = true;
     whoisBtn.textContent = 'Looking up...';
-    whoisResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying RDAP</span></div>';
-    fetch('https://rdap.org/ip/' + encodeURIComponent(query))
-        .then(function(r) { return r.json(); })
+    whoisResults.innerHTML = '<div class="loading"><span class="loading-dots">Looking up WHOIS</span></div>';
+    fetch('https://tools.ignixip.com/whois/' + encodeURIComponent(query))
+        .then(function(r) {
+            if (!r.ok) {
+                return r.json().then(function(e) { throw new Error(e.error || ('HTTP ' + r.status)); });
+            }
+            return r.json();
+        })
         .then(function(d) {
-            renderWHOIS(query, d);
+            if (d.type === 'domain') {
+                renderWHOISDomain(d.query, d.fields, d.raw);
+            } else if (d.type === 'ip' && d.rdap) {
+                renderWHOISIP(d.query, d.rdap);
+            } else {
+                throw new Error('Unexpected response shape');
+            }
             whoisBtn.disabled = false;
             whoisBtn.textContent = 'Look Up';
-            history.pushState({}, '', '?tab=whois&ip=' + encodeURIComponent(query));
+            history.pushState({}, '', '?tab=whois&q=' + encodeURIComponent(query));
         })
-        .catch(function() {
-            whoisResults.innerHTML = '<div class="error-card">WHOIS lookup failed — please check the IP and try again.</div>';
+        .catch(function(err) {
+            whoisResults.innerHTML = '<div class="error-card">WHOIS lookup failed - ' + (err.message || 'please check input and try again') + '</div>';
             whoisBtn.disabled = false;
             whoisBtn.textContent = 'Look Up';
         });
+}
+
+function renderWHOISDomain(query, f, raw) {
+    function row(label, value, opts) {
+        opts = opts || {};
+        if (!value || (Array.isArray(value) && value.length === 0)) value = '-';
+        if (Array.isArray(value)) value = value.join('<br>');
+        var cls = opts.muted ? 'muted' : (opts.color || '');
+        return '<div class="data-row"><span class="data-key">' + label + '</span><span class="data-val ' + cls + '">' + value + '</span></div>';
+    }
+    var redactionNote = '';
+    if (!f.registrant && !f.admin_email && !f.registrant_country) {
+        redactionNote = '<div style="font-size:12px;color:var(--text-dim);padding:10px 14px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.18);border-radius:8px;margin-top:14px;">Registrant contact details are not shown. Most domain registrars redact this under GDPR and similar privacy regulations - this is normal, not an error.</div>';
+    }
+    var rawEsc = raw ? raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+    whoisResults.innerHTML =
+        '<div class="ip-header fade-in"><div class="ip-address-display">' + query + '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">domain</span></div></div>' +
+        '<div class="results-grid fade-in">' +
+            '<div class="result-card"><div class="card-title">Registration</div>' +
+                row('Registrar', f.registrar) +
+                row('Registered', f.registered, {color: 'green'}) +
+                row('Expires', f.expires, {color: 'blue'}) +
+                row('Last updated', f.updated, {muted: true}) +
+                row('Status', f.status, {muted: true}) +
+            '</div>' +
+            '<div class="result-card"><div class="card-title">Registrant</div>' +
+                row('Name / Org', f.registrant) +
+                row('Country', f.registrant_country) +
+                row('Admin email', f.admin_email) +
+                row('Abuse email', f.abuse_email) +
+            '</div>' +
+            '<div class="result-card" style="grid-column: 1 / -1;"><div class="card-title">Name Servers</div>' +
+                (f.name_servers && f.name_servers.length ?
+                    f.name_servers.map(function(ns){ return '<div class="data-row"><span class="data-val blue" style="font-family:JetBrains Mono,monospace;">' + ns + '</span></div>'; }).join('') :
+                    '<div class="data-row"><span class="data-val muted">-</span></div>') +
+            '</div>' +
+        '</div>' +
+        redactionNote +
+        (rawEsc ? '<div style="margin-top:18px;"><a onclick="var el=document.getElementById(\'whois-raw\'); el.style.display=el.style.display===\'block\'?\'none\':\'block\';" style="cursor:pointer;font-size:12px;color:var(--blue-bright);">Show raw WHOIS</a><pre id="whois-raw" style="display:none;margin-top:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-muted);white-space:pre-wrap;word-wrap:break-word;line-height:1.5;max-height:400px;overflow-y:auto;">' + rawEsc + '</pre></div>' : '');
+}
+
+function renderWHOISIP(query, d) {
+    return renderWHOIS(query, d);
 }
 
 function getVcard(entity, field) {
