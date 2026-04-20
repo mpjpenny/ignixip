@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMARC Report Analyser — Plain English Parser | ignixip</title>
+    <meta name="description" content="Drop DMARC aggregate report XML files and get a plain-English breakdown. Free, no signup, runs entirely in your browser.">
+    <meta name="keywords" content="DMARC report parser, DMARC XML analyser, DMARC aggregate report, plain English DMARC">
+    <link rel="canonical" href="https://ignixip.com/dmarc.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        :root { --bg:#0a0f1a; --surface:#111827; --surface2:#1a2332; --border:#1e293b; --border2:#334155; --text:#e2e8f0; --text-muted:#94a3b8; --text-dim:#64748b; --text-faint:#475569; --blue:#3b82f6; --blue-bright:#60a5fa; --blue-dim:#1d4ed8; --green:#4ade80; --amber:#fbbf24; --red:#f87171; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+        header { z-index:10; padding:0 24px; border-bottom:1px solid var(--border); background:rgba(10,15,26,0.8); backdrop-filter:blur(12px); position:sticky; top:0; }
+        .header-inner { max-width:1000px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .logo-mark { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; font-family:'JetBrains Mono',monospace; box-shadow:0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.5px; }
+        .logo-text span { color:var(--blue-bright); }
+        .header-nav { display:flex; align-items:center; gap:20px; font-size:13px; }
+        .header-nav a { color:var(--text-dim); text-decoration:none; transition:color 0.2s; }
+        .header-nav a:hover { color:var(--text); }
+        .content { position:relative; z-index:1; max-width:1000px; margin:0 auto; padding:32px 24px 80px; }
+        h1 { font-size:clamp(22px,4vw,28px); font-weight:700; letter-spacing:-0.5px; line-height:1.2; margin-bottom:8px; }
+        h1 span { background:linear-gradient(135deg,var(--blue-bright),#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .subtitle { font-size:14px; color:var(--text-muted); line-height:1.7; margin-bottom:24px; }
+        .privacy-note { font-size:12px; color:var(--green); margin-bottom:24px; padding:8px 12px; background:rgba(74,222,128,0.06); border:1px solid rgba(74,222,128,0.18); border-radius:6px; display:inline-block; }
+        .drop-zone { border:2px dashed var(--border2); border-radius:12px; padding:40px 24px; text-align:center; cursor:pointer; transition:all 0.2s; background:rgba(30,41,59,0.3); }
+        .drop-zone:hover, .drop-zone.dragover { border-color:var(--blue-bright); background:rgba(59,130,246,0.06); }
+        .drop-zone.dragover { transform:scale(1.01); }
+        .drop-zone-icon { font-size:36px; margin-bottom:12px; font-family:'JetBrains Mono',monospace; color:var(--blue-bright); font-weight:700; }
+        .drop-zone-text { font-size:15px; color:var(--text); margin-bottom:6px; }
+        .drop-zone-hint { font-size:12px; color:var(--text-dim); }
+        .drop-zone input[type="file"] { display:none; }
+        .sample-link { font-size:12px; color:var(--blue-bright); cursor:pointer; margin-top:12px; display:inline-block; }
+        .sample-link:hover { text-decoration:underline; }
+        .file-list { margin-top:18px; display:flex; flex-direction:column; gap:6px; }
+        .file-row { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface); border:1px solid var(--border); border-radius:6px; font-size:13px; }
+        .file-row .file-name { font-family:'JetBrains Mono',monospace; color:var(--text); }
+        .file-row .file-status { font-size:11px; color:var(--text-dim); }
+        .file-row .file-status.ok { color:var(--green); }
+        .file-row .file-status.err { color:var(--red); }
+        .btn { padding:10px 22px; border-radius:8px; border:none; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); color:white; font-size:14px; font-weight:600; cursor:pointer; }
+        .btn:hover { opacity:0.9; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .btn-secondary { background:transparent; border:1px solid var(--border2); color:var(--text); }
+        .btn-secondary:hover { background:var(--surface); }
+        .section { margin-top:28px; }
+        .section-title { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-bottom:12px; }
+        .at-glance { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+        .glance-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+        .glance-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; font-family:'JetBrains Mono',monospace; }
+        .glance-value { font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+        .glance-value.green { color:var(--green); }
+        .glance-value.amber { color:var(--amber); }
+        .glance-value.red { color:var(--red); }
+        .glance-value.blue { color:var(--blue-bright); }
+        .summary-text { padding:16px 18px; background:var(--surface); border:1px solid var(--border); border-radius:10px; font-size:14px; line-height:1.7; color:var(--text-muted); margin-top:12px; }
+        .summary-text strong { color:var(--text); }
+        .tabs { display:flex; gap:4px; margin-top:12px; border-bottom:1px solid var(--border); }
+        .tab-btn { padding:10px 16px; background:transparent; border:none; color:var(--text-dim); font-size:13px; font-family:'Inter',sans-serif; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; }
+        .tab-btn:hover { color:var(--text); }
+        .tab-btn.active { color:var(--blue-bright); border-bottom-color:var(--blue-bright); }
+        .tab-pane { display:none; margin-top:16px; }
+        .tab-pane.active { display:block; }
+        .sender-row { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+        .sender-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .sender-label { font-size:14px; font-weight:600; color:var(--text); }
+        .sender-ip { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); margin-left:8px; }
+        .sender-badges { display:flex; gap:6px; flex-wrap:wrap; }
+        .badge { font-size:10px; padding:2px 8px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-weight:600; text-transform:uppercase; }
+        .badge.pass { background:rgba(74,222,128,0.12); color:var(--green); }
+        .badge.fail { background:rgba(248,113,113,0.12); color:var(--red); }
+        .badge.mixed { background:rgba(251,191,36,0.12); color:var(--amber); }
+        .badge.info { background:rgba(96,165,250,0.12); color:var(--blue-bright); }
+        .sender-meta { font-size:12px; color:var(--text-dim); margin-top:6px; display:flex; gap:14px; flex-wrap:wrap; }
+        .sender-meta strong { color:var(--text-muted); font-weight:500; }
+        .sender-detail { display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted); }
+        .sender-detail.open { display:block; }
+        .sender-detail table { width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:11px; }
+        .sender-detail th { text-align:left; padding:6px 8px; color:var(--text-dim); font-weight:500; border-bottom:1px solid var(--border); }
+        .sender-detail td { padding:6px 8px; border-bottom:1px solid var(--border); }
+        .sender-toggle { font-size:11px; color:var(--blue-bright); cursor:pointer; margin-top:6px; display:inline-block; }
+        .report-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+        .report-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+        .report-title { font-size:13px; font-weight:600; color:var(--text); }
+        .report-meta { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+        .report-records { font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+        .report-records table { width:100%; border-collapse:collapse; }
+        .report-records th { text-align:left; padding:5px 8px; color:var(--text-dim); font-weight:500; border-bottom:1px solid var(--border); }
+        .report-records td { padding:5px 8px; border-bottom:1px solid var(--border); }
+        .findings { padding:16px 18px; background:var(--surface); border:1px solid var(--border); border-radius:10px; }
+        .finding { padding:10px 12px; border-left:3px solid var(--border2); margin-bottom:10px; font-size:13px; line-height:1.6; color:var(--text-muted); }
+        .finding:last-child { margin-bottom:0; }
+        .finding.warn { border-left-color:var(--amber); }
+        .finding.alert { border-left-color:var(--red); }
+        .finding.ok { border-left-color:var(--green); }
+        .finding strong { color:var(--text); }
+        .loading { padding:32px; text-align:center; color:var(--text-dim); font-size:13px; }
+        .error-card { padding:14px 18px; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.2); border-radius:8px; color:var(--red); font-size:13px; margin-top:12px; }
+        .muted { color:var(--text-dim); }
+        footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:18px 24px; text-align:center; font-size:12px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:48px; }
+        footer a { color:var(--text-dim); text-decoration:none; }
+        footer a:hover { color:var(--blue-bright); }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo"><div class="logo-mark">IX</div><span class="logo-text">ignix<span>ip</span></span></a>
+        <nav class="header-nav">
+            <a href="/">Lookup Tool</a>
+            <a href="/dmarc.html" style="color:var(--text);">DMARC</a>
+            <a href="/threats.html">Threats</a>
+            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
+        </nav>
+    </div>
+</header>
+<div class="content">
+    <h1>DMARC report <span>analyser</span></h1>
+    <p class="subtitle">Drop one or more DMARC aggregate report files and see what they mean in plain English. Identifies your legitimate senders, flags anomalies, and explains what action to take.</p>
+    <div class="privacy-note">✓ Reports are parsed entirely in your browser. Nothing is uploaded or stored.</div>
+
+    <div class="drop-zone" id="drop-zone">
+        <div class="drop-zone-icon">XML</div>
+        <div class="drop-zone-text">Drop DMARC reports here, or click to choose files</div>
+        <div class="drop-zone-hint">Accepts .xml, .xml.gz, or .zip from Google, Microsoft, Yahoo, and others. Multiple files OK.</div>
+        <input type="file" id="file-input" accept=".xml,.gz,.zip,application/gzip,application/zip,text/xml,application/xml" multiple>
+    </div>
+    <div class="file-list" id="file-list"></div>
+    <div id="analysis-output"></div>
+</div>
+<footer>
+    ignixip.com &middot; <a href="https://ignix.co.uk">Ignix</a> &middot; Free, no ads, no signup<br>
+    <a href="/">Lookup</a> &middot; <a href="/dmarc.html">DMARC</a> &middot; <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="/api.html">API</a>
+</footer>
+
+<script>
+// ── Known mail providers dictionary ─────────────────────────────────────────
+// Maps WHOIS org / netname fragments (lowercased) to friendly labels.
+// Order matters — more specific matches should come first.
+var PROVIDER_DICT = [
+    { match: ['google', 'gmail'], label: 'Google / Gmail' },
+    { match: ['microsoft', 'outlook', 'office 365', 'onmicrosoft'], label: 'Microsoft 365 / Outlook' },
+    { match: ['appriver'], label: 'AppRiver' },
+    { match: ['proofpoint'], label: 'Proofpoint' },
+    { match: ['mimecast'], label: 'Mimecast' },
+    { match: ['barracuda'], label: 'Barracuda' },
+    { match: ['mailchannels'], label: 'MailChannels' },
+    { match: ['sendgrid', 'twilio'], label: 'SendGrid' },
+    { match: ['mailgun'], label: 'Mailgun' },
+    { match: ['amazon ses', 'amazonses'], label: 'Amazon SES' },
+    { match: ['postmark'], label: 'Postmark' },
+    { match: ['sparkpost'], label: 'SparkPost' },
+    { match: ['fastmail'], label: 'Fastmail' },
+    { match: ['protonmail', 'proton ag'], label: 'Proton Mail' },
+    { match: ['zoho'], label: 'Zoho Mail' },
+    { match: ['yahoo'], label: 'Yahoo' },
+    { match: ['apple', 'icloud'], label: 'Apple iCloud' },
+    { match: ['cloudflare'], label: 'Cloudflare' },
+    { match: ['mailerlite'], label: 'MailerLite' },
+    { match: ['constant contact'], label: 'Constant Contact' },
+    { match: ['mailjet'], label: 'Mailjet' },
+    { match: ['hubspot'], label: 'HubSpot' },
+    { match: ['activecampaign'], label: 'ActiveCampaign' },
+    { match: ['klaviyo'], label: 'Klaviyo' },
+    { match: ['intuit'], label: 'Intuit / QuickBooks' },
+    { match: ['salesforce'], label: 'Salesforce' },
+    { match: ['zendesk'], label: 'Zendesk' },
+    { match: ['docusign'], label: 'DocuSign' },
+    { match: ['godaddy'], label: 'GoDaddy' },
+    { match: ['ovh'], label: 'OVH' },
+    { match: ['hetzner'], label: 'Hetzner' },
+    { match: ['digitalocean'], label: 'DigitalOcean' },
+    { match: ['linode', 'akamai'], label: 'Linode / Akamai' },
+    { match: ['ionos'], label: 'IONOS / 1&1' },
+    { match: ['aws', 'amazon.com'], label: 'Amazon AWS' },
+    { match: ['sky', 'bskyb'], label: 'Sky' },
+    { match: ['bt.com', 'british telecom'], label: 'BT' },
+    { match: ['virgin media'], label: 'Virgin Media' }
+];
+
+function friendlyProvider(orgText) {
+    if (!orgText) return null;
+    var lower = orgText.toLowerCase();
+    for (var i = 0; i < PROVIDER_DICT.length; i++) {
+        var entry = PROVIDER_DICT[i];
+        for (var j = 0; j < entry.match.length; j++) {
+            if (lower.indexOf(entry.match[j]) !== -1) return entry.label;
+        }
+    }
+    return null;
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+var loadedReports = []; // [{filename, xml, parsed, error}]
+var enrichmentCache = {}; // ip -> {label, org}
+
+// ── DOM refs ───────────────────────────────────────────────────────────────
+var dropZone = document.getElementById('drop-zone');
+var fileInput = document.getElementById('file-input');
+var fileList = document.getElementById('file-list');
+var output = document.getElementById('analysis-output');
+
+// ── File handling ──────────────────────────────────────────────────────────
+dropZone.addEventListener('click', function() { fileInput.click(); });
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', function(e) { handleFiles(e.target.files); });
+
+function handleFiles(fileObjs) {
+    var files = Array.prototype.slice.call(fileObjs);
+    if (files.length === 0) return;
+    var promises = files.map(readFile);
+    Promise.all(promises).then(function(results) {
+        results.forEach(function(r) { loadedReports.push(r); });
+        renderFileList();
+        analyse();
+    });
+}
+
+function readFile(file) {
+    return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var data = e.target.result;
+            var xml = '';
+            var error = null;
+            try {
+                if (/\.gz$/i.test(file.name)) {
+                    var inflated = window.pako.ungzip(new Uint8Array(data), { to: 'string' });
+                    xml = inflated;
+                } else if (/\.zip$/i.test(file.name)) {
+                    // Simple ZIP handling: just grab the first XML entry with deflate.
+                    // For robustness we'd use a proper ZIP lib; for DMARC this is usually one-file ZIPs.
+                    error = 'ZIP files not yet supported — please extract and upload the XML directly.';
+                } else {
+                    // plain text
+                    xml = new TextDecoder('utf-8').decode(data);
+                }
+            } catch (ex) {
+                error = 'Could not read file: ' + ex.message;
+            }
+            var parsed = null;
+            if (xml && !error) {
+                try { parsed = parseReportXML(xml); }
+                catch (ex) { error = 'XML parse failed: ' + ex.message; }
+            }
+            resolve({ filename: file.name, xml: xml, parsed: parsed, error: error });
+        };
+        reader.onerror = function() {
+            resolve({ filename: file.name, xml: '', parsed: null, error: 'File read error' });
+        };
+        if (/\.(gz|zip)$/i.test(file.name)) reader.readAsArrayBuffer(file);
+        else reader.readAsArrayBuffer(file);
+    });
+}
+
+function renderFileList() {
+    fileList.innerHTML = loadedReports.map(function(r, i) {
+        var statusCls = r.error ? 'err' : 'ok';
+        var statusText = r.error ? r.error : (r.parsed ? ('OK, ' + r.parsed.records.length + ' records') : 'pending');
+        return '<div class="file-row"><span class="file-name">' + escapeHTML(r.filename) + '</span><span class="file-status ' + statusCls + '">' + escapeHTML(statusText) + ' <a onclick="removeReport(' + i + ')" style="cursor:pointer;margin-left:8px;color:var(--text-dim);">[remove]</a></span></div>';
+    }).join('');
+}
+
+window.removeReport = function(i) {
+    loadedReports.splice(i, 1);
+    renderFileList();
+    analyse();
+};
+
+// ── XML parsing ────────────────────────────────────────────────────────────
+function parseReportXML(xmlText) {
+    var doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    var parseError = doc.querySelector('parsererror');
+    if (parseError) throw new Error('Invalid XML');
+    var feedback = doc.querySelector('feedback');
+    if (!feedback) throw new Error('Not a DMARC report (no <feedback> root)');
+
+    function text(parent, sel) {
+        var el = parent.querySelector(sel);
+        return el ? (el.textContent || '').trim() : '';
+    }
+
+    var meta = feedback.querySelector('report_metadata');
+    var policy = feedback.querySelector('policy_published');
+    var report = {
+        org: meta ? text(meta, 'org_name') : '',
+        email: meta ? text(meta, 'email') : '',
+        reportId: meta ? text(meta, 'report_id') : '',
+        begin: meta ? parseInt(text(meta, 'date_range > begin')) : 0,
+        end: meta ? parseInt(text(meta, 'date_range > end')) : 0,
+        policy: policy ? {
+            domain: text(policy, 'domain'),
+            adkim: text(policy, 'adkim'),
+            aspf: text(policy, 'aspf'),
+            p: text(policy, 'p'),
+            sp: text(policy, 'sp'),
+            pct: text(policy, 'pct')
+        } : {},
+        records: []
+    };
+
+    var recs = feedback.querySelectorAll('record');
+    for (var i = 0; i < recs.length; i++) {
+        var rec = recs[i];
+        var row = rec.querySelector('row');
+        var pe = row ? row.querySelector('policy_evaluated') : null;
+        var ids = rec.querySelector('identifiers');
+        var auth = rec.querySelector('auth_results');
+        var dkimAuths = auth ? auth.querySelectorAll('dkim') : [];
+        var spfAuths = auth ? auth.querySelectorAll('spf') : [];
+        var reasons = pe ? pe.querySelectorAll('reason') : [];
+
+        var dkimResults = [];
+        for (var j = 0; j < dkimAuths.length; j++) {
+            dkimResults.push({
+                domain: text(dkimAuths[j], 'domain'),
+                result: text(dkimAuths[j], 'r') || text(dkimAuths[j], 'result'),
+                selector: text(dkimAuths[j], 'selector')
+            });
+        }
+        var spfResults = [];
+        for (var k = 0; k < spfAuths.length; k++) {
+            spfResults.push({
+                domain: text(spfAuths[k], 'domain'),
+                result: text(spfAuths[k], 'r') || text(spfAuths[k], 'result')
+            });
+        }
+        var reasonList = [];
+        for (var m = 0; m < reasons.length; m++) {
+            reasonList.push({
+                type: text(reasons[m], 'type'),
+                comment: text(reasons[m], 'comment')
+            });
+        }
+
+        report.records.push({
+            sourceIP: row ? text(row, 'source_ip') : '',
+            count: row ? parseInt(text(row, 'count')) || 0 : 0,
+            disposition: pe ? text(pe, 'disposition') : '',
+            dkimEval: pe ? text(pe, 'dkim') : '',
+            spfEval: pe ? text(pe, 'spf') : '',
+            headerFrom: ids ? text(ids, 'header_from') : '',
+            envelopeFrom: ids ? text(ids, 'envelope_from') : '',
+            envelopeTo: ids ? text(ids, 'envelope_to') : '',
+            dkim: dkimResults,
+            spf: spfResults,
+            reasons: reasonList
+        });
+    }
+    return report;
+}
+
+// ── Enrichment ─────────────────────────────────────────────────────────────
+function enrichIP(ip) {
+    if (enrichmentCache[ip]) return Promise.resolve(enrichmentCache[ip]);
+    return fetch('https://tools.ignixip.com/whois/' + encodeURIComponent(ip))
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(d) {
+            var org = '';
+            if (d && d.rdap && d.rdap.name) org = d.rdap.name;
+            if (d && d.rdap && d.rdap.entities) {
+                for (var i = 0; i < d.rdap.entities.length; i++) {
+                    var e = d.rdap.entities[i];
+                    if (e.vcardArray && e.vcardArray[1]) {
+                        for (var j = 0; j < e.vcardArray[1].length; j++) {
+                            if (e.vcardArray[1][j][0] === 'fn' && e.vcardArray[1][j][3]) {
+                                if (!org || org.indexOf('-') === 0) org = e.vcardArray[1][j][3];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            var friendly = friendlyProvider(org);
+            var result = { label: friendly || org || 'Unknown', org: org };
+            enrichmentCache[ip] = result;
+            return result;
+        })
+        .catch(function() {
+            var result = { label: 'Unknown', org: '' };
+            enrichmentCache[ip] = result;
+            return result;
+        });
+}
+
+// ── Analysis ───────────────────────────────────────────────────────────────
+function analyse() {
+    var good = loadedReports.filter(function(r) { return r.parsed && !r.error; });
+    if (good.length === 0) {
+        output.innerHTML = '';
+        return;
+    }
+    output.innerHTML = '<div class="loading">Looking up sender IPs...</div>';
+
+    // Aggregate by source IP across all reports
+    var bySender = {};
+    var allIPs = {};
+    good.forEach(function(r) {
+        r.parsed.records.forEach(function(rec) {
+            if (!rec.sourceIP) return;
+            allIPs[rec.sourceIP] = true;
+            if (!bySender[rec.sourceIP]) {
+                bySender[rec.sourceIP] = {
+                    ip: rec.sourceIP,
+                    count: 0,
+                    passDMARC: 0,
+                    failDMARC: 0,
+                    passDKIM: 0,
+                    failDKIM: 0,
+                    passSPF: 0,
+                    failSPF: 0,
+                    reportsSeen: {},
+                    records: []
+                };
+            }
+            var s = bySender[rec.sourceIP];
+            s.count += rec.count;
+            var dkimOK = rec.dkimEval === 'pass';
+            var spfOK = rec.spfEval === 'pass';
+            var dmarcOK = dkimOK || spfOK; // DMARC passes if EITHER passes with alignment
+            if (dmarcOK) s.passDMARC += rec.count; else s.failDMARC += rec.count;
+            if (dkimOK) s.passDKIM += rec.count; else s.failDKIM += rec.count;
+            if (spfOK) s.passSPF += rec.count; else s.failSPF += rec.count;
+            s.reportsSeen[r.filename] = (s.reportsSeen[r.filename] || 0) + rec.count;
+            s.records.push({ report: r.filename, rec: rec });
+        });
+    });
+
+    // Enrich all IPs in parallel
+    var ips = Object.keys(allIPs);
+    var enrichPromises = ips.map(function(ip) { return enrichIP(ip); });
+    Promise.all(enrichPromises).then(function() {
+        render(good, bySender);
+    });
+}
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+function render(reports, bySender) {
+    var totalMessages = 0, totalPass = 0;
+    var policyDomain = reports[0].parsed.policy.domain || '';
+    var policyP = reports[0].parsed.policy.p || '';
+    var senders = Object.values(bySender).sort(function(a, b) { return b.count - a.count; });
+    senders.forEach(function(s) { totalMessages += s.count; totalPass += s.passDMARC; });
+    var passRate = totalMessages > 0 ? Math.round(100 * totalPass / totalMessages) : 0;
+
+    var dates = reports.map(function(r) { return [r.parsed.begin, r.parsed.end]; }).flat();
+    var earliest = Math.min.apply(null, dates);
+    var latest = Math.max.apply(null, dates);
+
+    var html = '';
+
+    // At a glance
+    html += '<div class="section"><div class="section-title">At a glance</div>';
+    html += '<div class="at-glance">';
+    html += glanceCard('Domain', policyDomain || '—', 'blue');
+    html += glanceCard('Policy', policyP || '—', policyP === 'reject' ? 'green' : (policyP === 'quarantine' ? 'amber' : ''));
+    html += glanceCard('Reports', reports.length);
+    html += glanceCard('Messages', totalMessages.toLocaleString());
+    html += glanceCard('Senders', senders.length);
+    html += glanceCard('Pass rate', passRate + '%', passRate >= 95 ? 'green' : (passRate >= 80 ? 'amber' : 'red'));
+    html += glanceCard('Period', formatDateRange(earliest, latest), '');
+    html += '</div></div>';
+
+    // Summary in prose
+    html += '<div class="section"><div class="section-title">Summary</div>';
+    html += '<div class="summary-text">' + writeSummary(reports, senders, totalMessages, totalPass, passRate, policyP) + '</div></div>';
+
+    // Findings
+    var findings = generateFindings(senders, totalMessages, policyP, reports);
+    if (findings.length > 0) {
+        html += '<div class="section"><div class="section-title">Findings</div>';
+        html += '<div class="findings">';
+        findings.forEach(function(f) {
+            html += '<div class="finding ' + f.level + '"><strong>' + escapeHTML(f.title) + '</strong> &mdash; ' + f.detail + '</div>';
+        });
+        html += '</div></div>';
+    }
+
+    // Tabs
+    html += '<div class="section">';
+    html += '<div class="tabs">';
+    html += '<button class="tab-btn active" onclick="switchTab(\'sender\')">By sender</button>';
+    html += '<button class="tab-btn" onclick="switchTab(\'report\')">By report</button>';
+    html += '</div>';
+
+    // Sender tab
+    html += '<div class="tab-pane active" id="tab-sender">';
+    senders.forEach(function(s, idx) {
+        var enriched = enrichmentCache[s.ip] || { label: 'Unknown', org: '' };
+        var dmarcBadge;
+        if (s.failDMARC === 0) dmarcBadge = '<span class="badge pass">DMARC pass</span>';
+        else if (s.passDMARC === 0) dmarcBadge = '<span class="badge fail">DMARC fail</span>';
+        else dmarcBadge = '<span class="badge mixed">Mixed</span>';
+        var spfBadge = s.failSPF === 0 ? '<span class="badge pass">SPF</span>' : (s.passSPF === 0 ? '<span class="badge fail">SPF</span>' : '<span class="badge mixed">SPF</span>');
+        var dkimBadge = s.failDKIM === 0 ? '<span class="badge pass">DKIM</span>' : (s.passDKIM === 0 ? '<span class="badge fail">DKIM</span>' : '<span class="badge mixed">DKIM</span>');
+        var numReports = Object.keys(s.reportsSeen).length;
+        html += '<div class="sender-row">';
+        html += '<div class="sender-head">';
+        html += '<div><span class="sender-label">' + escapeHTML(enriched.label) + '</span><span class="sender-ip">' + escapeHTML(s.ip) + '</span></div>';
+        html += '<div class="sender-badges">' + dmarcBadge + spfBadge + dkimBadge + '</div>';
+        html += '</div>';
+        html += '<div class="sender-meta">';
+        html += '<span><strong>' + s.count.toLocaleString() + '</strong> message' + (s.count === 1 ? '' : 's') + '</span>';
+        html += '<span>Pass: <strong>' + s.passDMARC + '</strong> &middot; Fail: <strong>' + s.failDMARC + '</strong></span>';
+        html += '<span>Seen in <strong>' + numReports + '</strong> report' + (numReports === 1 ? '' : 's') + '</span>';
+        if (enriched.org && enriched.org !== enriched.label) html += '<span class="muted">' + escapeHTML(enriched.org) + '</span>';
+        html += '</div>';
+        html += '<a class="sender-toggle" onclick="toggleSender(' + idx + ')">Show detail</a>';
+        html += '<div class="sender-detail" id="sender-detail-' + idx + '">';
+        html += '<table><thead><tr><th>Report</th><th>Count</th><th>DMARC</th><th>DKIM</th><th>SPF</th><th>Notes</th></tr></thead><tbody>';
+        s.records.forEach(function(entry) {
+            var notes = [];
+            if (entry.rec.reasons && entry.rec.reasons.length > 0) {
+                entry.rec.reasons.forEach(function(r) {
+                    notes.push(r.type + (r.comment ? ': ' + r.comment : ''));
+                });
+            }
+            if (entry.rec.envelopeFrom && entry.rec.envelopeFrom !== entry.rec.headerFrom) notes.push('env-from: ' + entry.rec.envelopeFrom);
+            html += '<tr><td class="muted">' + escapeHTML(entry.report) + '</td><td>' + entry.rec.count + '</td><td>' + entry.rec.dkimEval + '/' + entry.rec.spfEval + '</td><td>' + (entry.rec.dkim.map(function(d) { return d.domain + '=' + d.result; }).join('<br>') || '—') + '</td><td>' + (entry.rec.spf.map(function(d) { return d.domain + '=' + d.result; }).join('<br>') || '—') + '</td><td>' + escapeHTML(notes.join('; ')) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        html += '</div>';
+        html += '</div>';
+    });
+    html += '</div>';
+
+    // Report tab
+    html += '<div class="tab-pane" id="tab-report">';
+    reports.forEach(function(r) {
+        var total = r.parsed.records.reduce(function(acc, rec) { return acc + rec.count; }, 0);
+        var pass = r.parsed.records.reduce(function(acc, rec) {
+            return acc + ((rec.dkimEval === 'pass' || rec.spfEval === 'pass') ? rec.count : 0);
+        }, 0);
+        html += '<div class="report-block">';
+        html += '<div class="report-head">';
+        html += '<div class="report-title">' + escapeHTML(r.parsed.org || 'Unknown reporter') + ' <span class="muted" style="font-weight:400;">&middot; ' + escapeHTML(r.filename) + '</span></div>';
+        html += '<div class="report-meta">' + formatDateRange(r.parsed.begin, r.parsed.end) + ' &middot; ' + total + ' msg &middot; ' + pass + ' pass</div>';
+        html += '</div>';
+        html += '<div class="report-records"><table><thead><tr><th>Source IP</th><th>Sender</th><th>Count</th><th>DMARC</th><th>Notes</th></tr></thead><tbody>';
+        r.parsed.records.sort(function(a, b) { return b.count - a.count; }).forEach(function(rec) {
+            var label = (enrichmentCache[rec.sourceIP] || {}).label || '—';
+            var dmarc = (rec.dkimEval === 'pass' || rec.spfEval === 'pass') ? '<span style="color:var(--green);">pass</span>' : '<span style="color:var(--red);">fail</span>';
+            var notes = rec.reasons && rec.reasons.length > 0 ? rec.reasons.map(function(r) { return r.type; }).join(', ') : '';
+            html += '<tr><td>' + escapeHTML(rec.sourceIP) + '</td><td>' + escapeHTML(label) + '</td><td>' + rec.count + '</td><td>' + dmarc + '</td><td class="muted">' + escapeHTML(notes) + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        html += '</div>';
+    });
+    html += '</div>';
+
+    html += '</div>'; // end section
+
+    output.innerHTML = html;
+}
+
+function glanceCard(label, value, cls) {
+    return '<div class="glance-card"><div class="glance-label">' + label + '</div><div class="glance-value ' + (cls || '') + '">' + value + '</div></div>';
+}
+
+// ── Summary + findings ────────────────────────────────────────────────────
+function writeSummary(reports, senders, totalMessages, totalPass, passRate, policy) {
+    if (senders.length === 0) return 'No records to analyse.';
+    var authSenders = senders.filter(function(s) { return s.failDMARC === 0; });
+    var failingSenders = senders.filter(function(s) { return s.passDMARC === 0 && s.count > 0; });
+    var mixedSenders = senders.filter(function(s) { return s.passDMARC > 0 && s.failDMARC > 0; });
+
+    var parts = [];
+    parts.push('<strong>' + totalMessages.toLocaleString() + '</strong> message' + (totalMessages === 1 ? '' : 's') + ' across ' + reports.length + ' report' + (reports.length === 1 ? '' : 's') + ' from <strong>' + senders.length + '</strong> unique sender' + (senders.length === 1 ? '' : 's') + '.');
+
+    // Note when overall pass rate is dominated by a single outlier
+    if (failingSenders.length > 0) {
+        var topFailing = failingSenders.sort(function(a, b) { return b.count - a.count; })[0];
+        var topFailingLabel = (enrichmentCache[topFailing.ip] || {}).label || topFailing.ip;
+        if (topFailing.count > totalMessages * 0.5) {
+            parts.push('The overall pass rate of <strong>' + passRate + '%</strong> is skewed by one large unauthenticated sender: <strong>' + escapeHTML(topFailingLabel) + ' (' + topFailing.ip + ')</strong> accounts for <strong>' + topFailing.count + '</strong> failing messages. Excluding this sender, the remaining pass rate is <strong>' + Math.round(100 * totalPass / Math.max(1, totalMessages - topFailing.count)) + '%</strong>.');
+        } else {
+            parts.push('Pass rate is <strong>' + passRate + '%</strong>. The largest unauthenticated sender is <strong>' + escapeHTML(topFailingLabel) + ' (' + topFailing.ip + ')</strong> with <strong>' + topFailing.count + '</strong> message' + (topFailing.count === 1 ? '' : 's') + '.');
+        }
+    } else {
+        parts.push('Pass rate is <strong>' + passRate + '%</strong>.');
+    }
+
+    parts.push(authSenders.length + ' sender' + (authSenders.length === 1 ? '' : 's') + ' authenticated cleanly; ' + failingSenders.length + ' failed entirely; ' + mixedSenders.length + ' had mixed results.');
+
+    if (policy === 'none') {
+        parts.push('Your policy is <strong>p=none</strong> &mdash; reporting-only mode. No messages were blocked.');
+    } else if (policy === 'quarantine') {
+        parts.push('Your policy is <strong>p=quarantine</strong> &mdash; failing messages would be sent to spam.');
+    } else if (policy === 'reject') {
+        parts.push('Your policy is <strong>p=reject</strong> &mdash; failing messages would be refused.');
+    }
+    return parts.join(' ');
+}
+
+function generateFindings(senders, totalMessages, policy, reports) {
+    var findings = [];
+
+    // High-volume unauthenticated sender
+    senders.forEach(function(s) {
+        if (s.failDMARC > 0 && s.passDMARC === 0 && s.count >= Math.max(10, totalMessages * 0.05)) {
+            var label = (enrichmentCache[s.ip] || {}).label || s.ip;
+            findings.push({
+                level: 'alert',
+                title: 'High-volume unauthenticated sender',
+                detail: '<strong>' + escapeHTML(label) + '</strong> (' + s.ip + ') sent <strong>' + s.count + '</strong> message' + (s.count === 1 ? '' : 's') + ' that failed DMARC. This is either a legitimate sender you haven\'t added to your SPF/DKIM config, or someone spoofing your domain. Investigate the IP ownership and envelope-from details.'
+            });
+        }
+    });
+
+    // Mixed authentication — same sender, some pass some fail
+    senders.forEach(function(s) {
+        if (s.passDMARC > 0 && s.failDMARC > 0 && s.count >= 5) {
+            var label = (enrichmentCache[s.ip] || {}).label || s.ip;
+            findings.push({
+                level: 'warn',
+                title: 'Mixed authentication from ' + escapeHTML(label),
+                detail: '<strong>' + s.passDMARC + '</strong> pass, <strong>' + s.failDMARC + '</strong> fail from ' + s.ip + '. A legitimate sender is producing inconsistent results &mdash; could be a misconfigured mail path, forwarding breaking DKIM, or SPF drift.'
+            });
+        }
+    });
+
+    // Consistently-failing DKIM key across all records
+    var dkimDomainStats = {};
+    reports.forEach(function(r) {
+        r.parsed.records.forEach(function(rec) {
+            rec.dkim.forEach(function(d) {
+                if (!dkimDomainStats[d.domain]) dkimDomainStats[d.domain] = { pass: 0, fail: 0, selector: d.selector };
+                if (d.result === 'pass') dkimDomainStats[d.domain].pass += rec.count;
+                else dkimDomainStats[d.domain].fail += rec.count;
+            });
+        });
+    });
+    Object.keys(dkimDomainStats).forEach(function(dom) {
+        var s = dkimDomainStats[dom];
+        if (s.fail >= 10 && s.pass === 0) {
+            findings.push({
+                level: 'warn',
+                title: 'DKIM key always fails',
+                detail: 'DKIM for <code>' + escapeHTML(dom) + '</code> (selector <code>' + escapeHTML(s.selector || '?') + '</code>) failed ' + s.fail + ' times and never passed. Check whether this DKIM record is still needed or is misconfigured.'
+            });
+        }
+    });
+
+    // Policy recommendation
+    if (policy === 'none' && senders.length > 0) {
+        var allKnownPass = senders.every(function(s) { return s.failDMARC === 0 || s.count < 3; });
+        if (allKnownPass) {
+            findings.push({
+                level: 'ok',
+                title: 'Ready to consider tightening policy',
+                detail: 'All significant senders are authenticating. You could consider moving from <code>p=none</code> to <code>p=quarantine</code> to start protecting your domain from spoofing. Review the unauthenticated senders first to confirm none are legitimate.'
+            });
+        } else {
+            findings.push({
+                level: 'warn',
+                title: 'Not yet ready to tighten policy',
+                detail: 'You still have unauthenticated senders. Moving to <code>p=quarantine</code> now would send their messages to spam. Identify whether they are legitimate (and fix authentication) or spoofs (no action needed) first.'
+            });
+        }
+    }
+
+    return findings;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function formatDateRange(beginSec, endSec) {
+    if (!beginSec || !endSec) return '—';
+    var b = new Date(beginSec * 1000);
+    var e = new Date(endSec * 1000);
+    var sameDay = b.toDateString() === e.toDateString();
+    if (sameDay) return b.toLocaleDateString('en-GB');
+    return b.toLocaleDateString('en-GB') + ' — ' + e.toLocaleDateString('en-GB');
+}
+
+function escapeHTML(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+window.switchTab = function(which) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('.tab-btn[onclick*="\'' + which + '\'"]').classList.add('active');
+    document.getElementById('tab-' + which).classList.add('active');
+};
+
+window.toggleSender = function(idx) {
+    var d = document.getElementById('sender-detail-' + idx);
+    if (!d) return;
+    d.classList.toggle('open');
+    var link = d.previousElementSibling;
+    if (link && link.classList.contains('sender-toggle')) {
+        link.textContent = d.classList.contains('open') ? 'Hide detail' : 'Show detail';
+    }
+};
+</script>
+</body>
+</html>
