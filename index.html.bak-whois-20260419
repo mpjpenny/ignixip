@@ -1,0 +1,3252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ignixip — Free IP Address Lookup, DNS Records & Blacklist Check</title>
+    <meta name="description" content="Look up any IP address or domain. Get geolocation, ASN, DNS records, and check against 12 blacklists including Spamhaus and AbuseIPDB. Free, fast, no ads.">
+    <meta name="keywords" content="IP address lookup, IP geolocation, DNS lookup, blacklist check, IP blacklist, spam check, AbuseIPDB, Spamhaus, DNSBL, IP reputation, network tools">
+    <meta name="author" content="Ignix">
+    <meta property="og:title" content="ignixip — Free IP Address Lookup & Blacklist Check">
+    <meta property="og:description" content="Look up any IP address or domain. Geolocation, DNS records, blacklist checking. Free and fast.">
+    <meta property="og:url" content="https://ignixip.com">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="ignixip — Free IP Address Lookup & Blacklist Check">
+    <meta name="twitter:description" content="Look up any IP address or domain. Geolocation, DNS records, blacklist checking. Free and fast.">
+    <link rel="canonical" href="https://ignixip.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <style>
+        :root {
+            --bg: #0a0f1a;
+            --surface: #111827;
+            --surface2: #1a2332;
+            --border: #1e293b;
+            --border2: #334155;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --text-faint: #475569;
+            --blue: #3b82f6;
+            --blue-bright: #60a5fa;
+            --blue-dim: #1d4ed8;
+            --green: #4ade80;
+            --amber: #fbbf24;
+            --red: #f87171;
+            --purple: #a78bfa;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { overflow-x: hidden; width: 100%; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; width: 100%; margin: 0; }
+        body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+        header { z-index: 10; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(10,15,26,0.8); backdrop-filter: blur(12px); position: sticky; top: 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-mark { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+        .logo-text span { color: var(--blue-bright); }
+        .header-nav { display: flex; align-items: center; gap: 20px; font-size: 13px; }
+        .header-nav a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+        .header-nav a:hover { color: var(--text); }
+
+        /* Hero */
+        .hero { position: relative; z-index: 1; text-align: center; padding: 48px 24px 36px; }
+        .hero-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(59,130,246,0.3); background: rgba(59,130,246,0.08); font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--blue-bright); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 16px; }
+        .hero h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 700; color: var(--text); letter-spacing: -1px; line-height: 1.15; margin-bottom: 10px; }
+        .hero h1 span { background: linear-gradient(135deg, var(--blue-bright), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero p { font-size: 14px; color: var(--text-muted); max-width: 480px; margin: 0 auto 28px; line-height: 1.6; }
+
+        /* Tabs */
+        .tabs-container { max-width: 780px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+        .tab-nav { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 4px; }
+        .tab-row { display: flex; gap: 4px; width: 100%; }
+        .tab-btn { flex: 1; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-dim); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; white-space: nowrap; }
+        .tab-btn.active { background: var(--surface2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border2); }
+        .tab-btn:hover:not(.active) { color: var(--text-muted); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* Search box */
+        .search-box { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 4px 4px 4px 16px; gap: 8px; transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 10px; }
+        .search-box:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        .search-icon { color: var(--text-dim); font-size: 14px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+        .search-input { flex: 1; background: transparent; border: none; outline: none; font-size: 15px; font-family: 'JetBrains Mono', monospace; color: var(--text); padding: 10px 0; letter-spacing: 0.5px; }
+        .search-input::placeholder { color: var(--text-faint); }
+        .search-btn { padding: 10px 20px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s; white-space: nowrap; }
+        .search-btn:hover { opacity: 0.9; }
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .search-hint { font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 20px; }
+        .search-hint a { color: var(--text-dim); cursor: pointer; text-decoration: none; }
+        .search-hint a:hover { color: var(--blue-bright); }
+
+        /* Results */
+        .results { margin-top: 4px; }
+        .ip-header { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border2); border-radius: 12px; padding: 18px 24px; margin-bottom: 12px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .ip-address-display { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; flex: 1; min-width: 200px; }
+        .ip-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tag-hosting { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+        .tag-residential { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (max-width: 600px) { .results-grid { grid-template-columns: 1fr; } }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            header { padding: 0 12px; }
+            .header-inner { height: 48px; }
+            .header-nav { gap: 12px; font-size: 11px; }
+            .hero { padding: 28px 16px 24px; }
+            .hero h1 { font-size: 22px; }
+            .hero p { font-size: 13px; margin-bottom: 20px; }
+            .tabs-container { padding: 0 12px; max-width: 100%; }
+            .tab-nav { border-radius: 8px; padding: 3px; gap: 2px; }
+            .tab-row { gap: 2px; min-width: 0; flex-wrap: wrap; }
+            .tab-btn { padding: 7px 6px; font-size: 10px; flex: 1 1 30%; min-width: 0; }
+            .search-box { flex-direction: column; gap: 8px; padding: 12px; }
+            .search-input { font-size: 14px; padding: 12px; width: 100%; }
+            .search-btn { width: 100%; padding: 12px; }
+            .action-bar { gap: 6px; }
+            .action-btn { font-size: 10px; padding: 6px 10px; }
+            .ip-header { padding: 12px; }
+            .ip-address-display { font-size: 18px !important; word-break: break-all; }
+            .result-card { padding: 14px; }
+            .card-title { font-size: 11px; }
+            .data-row { font-size: 12px; }
+            .data-key { min-width: 70px; }
+            .map-container { height: 200px !important; }
+            .risk-card { padding: 16px; }
+            footer { font-size: 11px; padding: 16px 12px; }
+        }
+        @media (max-width: 400px) {
+            .header-nav a:last-child { display: none; }
+            .tab-btn { font-size: 9px; padding: 6px 4px; }
+            .hero h1 { font-size: 20px; }
+        }
+        .result-card { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+        .card-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .data-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+        .data-row:last-child { border-bottom: none; }
+        .data-key { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+        .data-val { font-size: 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; text-align: right; word-break: break-all; }
+        .data-val.muted { color: var(--text-muted); }
+        .data-val.green { color: var(--green); }
+        .data-val.red { color: var(--red); }
+        .data-val.amber { color: var(--amber); }
+        .data-val.blue { color: var(--blue-bright); }
+        .data-val.purple { color: var(--purple); }
+
+        /* Risk Score Panel */
+        .risk-panel { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border2); border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+        .risk-gauge { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+        .risk-gauge svg { transform: rotate(-90deg); width: 90px; height: 90px; }
+        .risk-gauge-bg { fill: none; stroke: var(--border2); stroke-width: 6; }
+        .risk-gauge-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease, stroke 0.5s ease; }
+        .risk-gauge-score { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; }
+        .risk-info { flex: 1; min-width: 200px; }
+        .risk-label { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .risk-summary { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+        .risk-factors { display: flex; flex-wrap: wrap; gap: 6px; }
+        .risk-factor { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .risk-factor-red { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+        .risk-factor-amber { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+        .risk-factor-green { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+        .risk-factor-blue { background: rgba(59,130,246,0.12); color: var(--blue-bright); border: 1px solid rgba(59,130,246,0.25); }
+        .risk-cta { margin-top: 10px; font-size: 12px; color: var(--text-faint); }
+        .risk-cta a { color: var(--blue-bright); text-decoration: none; }
+        .risk-cta a:hover { text-decoration: underline; }
+        @keyframes pulseCritical { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .risk-panel-critical { border-color: rgba(248,113,113,0.4); animation: pulseCritical 2s ease infinite; }
+
+        /* DNS results */
+        .dns-section { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; }
+        .dns-type-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-right: 8px; min-width: 44px; text-align: center; }
+        .dns-A { background: rgba(59,130,246,0.15); color: var(--blue-bright); }
+        .dns-MX { background: rgba(167,139,250,0.15); color: var(--purple); }
+        .dns-TXT { background: rgba(251,191,36,0.15); color: var(--amber); }
+        .dns-NS { background: rgba(74,222,128,0.15); color: var(--green); }
+        .dns-CNAME { background: rgba(248,113,113,0.15); color: var(--red); }
+        .dns-record { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+        .dns-record:last-child { border-bottom: none; }
+        .dns-record-data { color: var(--text-muted); flex: 1; word-break: break-all; }
+        .dns-ttl { color: var(--text-faint); font-size: 11px; flex-shrink: 0; }
+        .dns-empty { color: var(--text-faint); font-size: 13px; font-family: 'JetBrains Mono', monospace; padding: 8px 0; }
+
+        /* Blacklist results */
+        .bl-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .bl-stat { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: center; }
+        .bl-stat-num { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; margin-bottom: 4px; }
+        .bl-stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; }
+        .bl-list { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .bl-row { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .bl-row:last-child { border-bottom: none; }
+        .bl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .bl-dot-listed { background: var(--red); box-shadow: 0 0 6px rgba(248,113,113,0.4); }
+        .bl-dot-clean { background: var(--green); }
+        .bl-dot-error { background: var(--text-faint); }
+        .bl-name { font-family: 'JetBrains Mono', monospace; color: var(--text-muted); flex: 1; }
+        .bl-status-listed { color: var(--red); font-family: 'JetBrains Mono', monospace; }
+        .bl-status-clean { color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+
+        /* Loading / error */
+        .loading { text-align: center; padding: 40px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
+        @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+        .error-card { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 18px 22px; color: var(--red); font-size: 14px; text-align: center; }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Map */
+        .map-container { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; height: 200px; }
+        .map-container .leaflet-control-attribution { font-size: 9px; background: rgba(10,15,26,0.8) !important; color: var(--text-faint) !important; }
+        .map-container .leaflet-control-attribution a { color: var(--text-dim) !important; }
+        .map-container .leaflet-control-zoom a { background: var(--surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
+
+        /* Bulk results table */
+        .bulk-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+        .bulk-table th { text-align: left; padding: 10px 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; border-bottom: 1px solid var(--border2); cursor: pointer; user-select: none; white-space: nowrap; }
+        .bulk-table th:hover { color: var(--text-muted); }
+        .bulk-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+        .bulk-table tr:hover td { background: rgba(59,130,246,0.04); }
+        .bulk-table .risk-low { color: var(--green); }
+        .bulk-table .risk-medium { color: var(--amber); }
+        .bulk-table .risk-high { color: var(--red); }
+        .bulk-table .ip-link { color: var(--blue-bright); text-decoration: none; cursor: pointer; }
+        .bulk-table .ip-link:hover { text-decoration: underline; }
+        .bulk-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+        @media (max-width: 600px) { .bulk-summary-grid { grid-template-columns: repeat(2, 1fr); } .bulk-table { font-size: 11px; } .bulk-table th, .bulk-table td { padding: 6px 8px; } }
+
+        /* Registration modal */
+        #reg-modal { align-items: center; justify-content: center; }
+
+        /* Action bar */
+        .action-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.2s; }
+        .action-btn:hover { border-color: var(--blue); color: var(--text); background: var(--surface2); }
+        .action-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        /* Toast notification */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 18px; font-size: 13px; font-family: 'JetBrains Mono', monospace; color: var(--green); z-index: 1000; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* Footer */
+        footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 18px 24px; text-align: center; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-top: 48px; }
+        footer a { color: var(--text-dim); text-decoration: none; }
+        footer a:hover { color: var(--blue-bright); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo">
+            <div class="logo-mark">IX</div>
+            <span class="logo-text">ignix<span>ip</span></span>
+        </a>
+        <nav class="header-nav">
+            <a href="/threats.html">Threats</a>
+            <a href="/search.html">Search</a>
+            <a href="/api.html">API</a>
+            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
+        </nav>
+    </div>
+</header>
+
+<div class="hero">
+    <div class="hero-badge">&#9889; IP &amp; DNS Intelligence</div>
+    <h1>Look up any <span>IP address</span> or domain</h1>
+    <p>Geolocation, DNS records and blacklist checking. Fast, clean, no clutter.</p>
+</div>
+
+<div class="tabs-container">
+    <div class="tab-nav">
+        <div class="tab-row">
+            <button class="tab-btn active" onclick="switchTab('ip')">IP Lookup</button>
+            <button class="tab-btn" onclick="switchTab('dns')">DNS Lookup</button>
+            <button class="tab-btn" onclick="switchTab('bl')">Blacklist</button>
+            <button class="tab-btn" onclick="switchTab('whois')">WHOIS</button>
+            <button class="tab-btn" onclick="switchTab('asn')">ASN</button>
+            <button class="tab-btn" onclick="switchTab('tools')">Net Tools</button>
+        </div>
+        <div class="tab-row">
+            <button class="tab-btn" onclick="switchTab('bulk')">Bulk Lookup</button>
+            <button class="tab-btn" onclick="switchTab('headers')">Email Headers</button>
+            <button class="tab-btn" onclick="switchTab('urlcheck')">URL Check</button>
+            <button class="tab-btn" onclick="switchTab('emailcheck')">Sender Check</button>
+        </div>
+    </div>
+
+    <!-- IP Lookup Tab -->
+    <div class="tab-pane active" id="tab-ip">
+        <div class="search-box">
+            <span class="search-icon">&#8594;</span>
+            <input type="text" id="ip-input" class="search-input" placeholder="Enter IP address or domain..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="ip-btn" onclick="lookupIP()">Look Up</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="lookupSelf()">your own IP</a> &middot;
+            <a onclick="setAndLookup('ip', '8.8.8.8')">8.8.8.8</a> &middot;
+            <a onclick="setAndLookup('ip', '1.1.1.1')">1.1.1.1</a>
+        </div>
+        <div class="results" id="ip-results"></div>
+    </div>
+
+    <!-- DNS Lookup Tab -->
+    <div class="tab-pane" id="tab-dns">
+        <div class="search-box">
+            <span class="search-icon">&#8635;</span>
+            <input type="text" id="dns-input" class="search-input" placeholder="Enter domain name..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="dns-btn" onclick="lookupDNS()">Look Up</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('dns', 'google.com')">google.com</a> &middot;
+            <a onclick="setAndLookup('dns', 'ignix.co.uk')">ignix.co.uk</a> &middot;
+            <a onclick="setAndLookup('dns', 'cloudflare.com')">cloudflare.com</a>
+        </div>
+        <div class="results" id="dns-results"></div>
+    </div>
+
+    <!-- Network Tools Tab -->
+    <div class="tab-pane" id="tab-tools">
+        <div class="search-box">
+            <span class="search-icon">&#9874;</span>
+            <input type="text" id="tools-input" class="search-input" placeholder="Enter IP address..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="tools-btn" onclick="runTools()">Run</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('tools', '8.8.8.8')">8.8.8.8</a> &middot;
+            <a onclick="setAndLookup('tools', '1.1.1.1')">1.1.1.1</a> &middot;
+            <a onclick="setAndLookup('tools', '185.220.101.34')">185.220.101.34</a>
+        </div>
+        <div class="results" id="tools-results"></div>
+    </div>
+
+    <!-- ASN Tab -->
+    <div class="tab-pane" id="tab-asn">
+        <div class="search-box">
+            <span class="search-icon">&#9671;</span>
+            <input type="text" id="asn-input" class="search-input" placeholder="Enter ASN e.g. AS15169 or 15169..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="asn-btn" onclick="lookupASN()">Look Up</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('asn', 'AS15169')">AS15169 Google</a> &middot;
+            <a onclick="setAndLookup('asn', 'AS13335')">AS13335 Cloudflare</a> &middot;
+            <a onclick="setAndLookup('asn', 'AS16509')">AS16509 Amazon</a>
+        </div>
+        <div class="results" id="asn-results"></div>
+    </div>
+
+    <!-- WHOIS Tab -->
+    <div class="tab-pane" id="tab-whois">
+        <div class="search-box">
+            <span class="search-icon">&#9432;</span>
+            <input type="text" id="whois-input" class="search-input" placeholder="Enter IP address or CIDR..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="whois-btn" onclick="lookupWHOIS()">Look Up</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('whois', '8.8.8.8')">8.8.8.8</a> &middot;
+            <a onclick="setAndLookup('whois', '1.1.1.1')">1.1.1.1</a> &middot;
+            <a onclick="setAndLookup('whois', '185.220.101.34')">185.220.101.34</a>
+        </div>
+        <div class="results" id="whois-results"></div>
+    </div>
+
+    <!-- Blacklist Check Tab -->
+    <div class="tab-pane" id="tab-bl">
+        <div class="search-box">
+            <span class="search-icon">&#9632;</span>
+            <input type="text" id="bl-input" class="search-input" placeholder="Enter IP address..." autocomplete="off" spellcheck="false">
+            <button class="search-btn" id="bl-btn" onclick="checkBlacklist()">Check</button>
+        </div>
+        <div class="search-hint">
+            Try: <a onclick="setAndLookup('bl', '127.0.0.2')">known listed IP</a> &middot;
+            <a onclick="setAndLookup('bl', '8.8.8.8')">8.8.8.8</a>
+        </div>
+        <div class="results" id="bl-results"></div>
+    </div>
+
+    <!-- Bulk Lookup Tab -->
+    <div class="tab-pane" id="tab-bulk">
+        <div id="bulk-auth-area"></div>
+        <div id="bulk-input-area" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;" id="bulk-user-info"></span>
+                <button class="action-btn" onclick="bulkLogout()" style="font-size:11px;padding:4px 10px;">Sign Out</button>
+            </div>
+            <textarea id="bulk-ips" style="width:100%;height:160px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);resize:vertical;outline:none;" placeholder="Paste IP addresses here — one per line, comma-separated, or raw log text&#10;&#10;Example:&#10;8.8.8.8&#10;1.1.1.1&#10;185.220.101.34"></textarea>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;margin-bottom:16px;">
+                <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;">
+                    Up to 25 IPs per lookup &middot; <span id="bulk-count">0</span> IPs detected
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="action-btn" onclick="clearBulk()">Clear</button>
+                    <button class="search-btn" id="bulk-btn" onclick="runBulkLookup()">Look Up All</button>
+                </div>
+            </div>
+        </div>
+        <div class="results" id="bulk-results"></div>
+        <!-- IP Monitoring Section -->
+        <div id="monitor-section" style="display:none;margin-top:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="font-size:13px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;">&#128276; Monitored IPs</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="text" id="monitor-ip-input" placeholder="IP to monitor..." style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;width:160px;">
+                    <input type="text" id="monitor-label-input" placeholder="Label (optional)" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:12px;font-family:'Inter',sans-serif;color:var(--text);outline:none;width:120px;">
+                    <button class="action-btn" onclick="addMonitorIP()" style="font-size:11px;padding:5px 10px;">Add</button>
+                </div>
+            </div>
+            <div id="monitor-list"></div>
+            <!-- Webhook Configuration -->
+            <div style="margin-top:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
+                <div style="font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;margin-bottom:8px;">&#128279; Webhook / Slack Alerts</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="text" id="webhook-url-input" placeholder="https://hooks.slack.com/... or any webhook URL" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;">
+                    <button class="action-btn" onclick="saveWebhook()" style="font-size:11px;padding:5px 10px;">Save</button>
+                    <button class="action-btn" onclick="testWebhook()" style="font-size:11px;padding:5px 10px;">Test</button>
+                </div>
+                <div id="webhook-status" style="font-size:10px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-top:6px;">Blacklist alerts will be sent to this URL as JSON POST requests.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Headers Tab -->
+    <div class="tab-pane" id="tab-headers">
+        <textarea id="headers-input" style="width:100%;height:200px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);resize:vertical;outline:none;margin-bottom:10px;" placeholder="Paste raw email headers here...&#10;&#10;Copy the full headers from your email client:&#10;  Gmail: Open email → ⋮ → Show original&#10;  Outlook: Open email → File → Properties → Internet Headers&#10;  Thunderbird: View → Headers → All"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;">
+                Extracts IPs from Received: headers and checks each one
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="action-btn" onclick="clearHeaders()">Clear</button>
+                <button class="search-btn" id="headers-btn" onclick="analyseHeaders()">Analyse</button>
+            </div>
+        </div>
+        <div class="results" id="headers-results"></div>
+    </div>
+
+    <!-- URL Check Tab -->
+    <div class="tab-pane" id="tab-urlcheck">
+        <div class="search-box" style="margin-bottom:16px;">
+            <input type="text" id="url-input" class="search-input" placeholder="Paste a suspicious URL... e.g. https://example.com/login" style="flex:1;">
+            <button class="search-btn" id="url-btn" onclick="checkURL()">Check URL</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-bottom:16px;">
+            Checks domain age, DNS resolution, SSL certificate, blacklist status, and risk assessment.
+        </div>
+        <div class="results" id="url-results"></div>
+    </div>
+
+    <!-- Email Sender Check Tab -->
+    <div class="tab-pane" id="tab-emailcheck">
+        <div class="search-box" style="margin-bottom:16px;">
+            <input type="text" id="email-input" class="search-input" placeholder="Enter an email address or domain... e.g. suspicious@example.com" style="flex:1;">
+            <button class="search-btn" id="email-btn" onclick="checkEmail()">Check Sender</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-bottom:16px;">
+            Checks domain MX records, SPF/DKIM/DMARC, domain age, and mail server reputation.
+        </div>
+        <div class="results" id="email-results"></div>
+    </div>
+</div>
+
+<!-- Registration Modal -->
+<div id="reg-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:32px;max-width:420px;width:90%;position:relative;">
+        <button onclick="closeRegModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">&times;</button>
+        <div style="text-align:center;margin-bottom:20px;">
+            <span style="display:inline-block;background:linear-gradient(135deg,var(--blue),var(--blue-dim));color:white;padding:6px 12px;border-radius:7px;font-family:monospace;font-weight:700;font-size:14px;">IX</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text);margin-left:8px;">ignix<span style="color:var(--blue-bright);">ip</span></span>
+        </div>
+        <h3 style="text-align:center;font-size:18px;color:var(--text);margin-bottom:8px;">Unlock Bulk IP Lookup</h3>
+        <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.5;">Enter your email to check up to 25 IPs at once. Free, no password needed.</p>
+        <div class="search-box" style="margin-bottom:12px;">
+            <span class="search-icon">@</span>
+            <input type="email" id="reg-email" class="search-input" placeholder="your@email.com" autocomplete="email" style="font-family:'Inter',sans-serif;">
+            <button class="search-btn" id="reg-btn" onclick="submitRegistration()">Sign Up</button>
+        </div>
+        <div id="reg-status" style="text-align:center;font-size:12px;font-family:'JetBrains Mono',monospace;min-height:20px;"></div>
+        <p style="text-align:center;font-size:11px;color:var(--text-faint);margin-top:12px;">We only use your email for verification. No spam, ever.</p>
+    </div>
+</div>
+
+        <!-- SEO Content Section -->
+        <section style="max-width:780px;margin:48px auto 0;padding:0 24px;">
+            <div style="border-top:1px solid #1e293b;padding-top:40px;">
+                <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin-bottom:10px;letter-spacing:-0.3px;">What is ignixip?</h2>
+                <p style="font-size:14px;color:#64748b;line-height:1.8;margin-bottom:24px;">ignixip is a free IP address intelligence tool. Enter any IP address or domain name to instantly see its geolocation, network owner, ISP, and whether it appears on major spam and abuse blacklists including Spamhaus, Barracuda, SpamCop and AbuseIPDB.</p>
+
+                <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin-bottom:10px;letter-spacing:-0.3px;">Who uses it?</h2>
+                <p style="font-size:14px;color:#64748b;line-height:1.8;margin-bottom:32px;">Network administrators, IT security professionals, and anyone who needs to quickly identify an unfamiliar IP address — whether investigating suspicious network traffic, checking email sender reputation, or verifying where a connection is coming from.</p>
+
+                <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin-bottom:20px;letter-spacing:-0.3px;">Frequently asked questions</h2>
+
+                <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:40px;">
+                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
+                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is an IP address lookup?</h3>
+                        <p style="font-size:13px;color:#64748b;line-height:1.7;">An IP address lookup queries databases to find information about an IP address — including its geographic location, the organisation that owns it, and its internet service provider. This is useful for understanding where network traffic is coming from and who controls a particular IP range.</p>
+                    </div>
+                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
+                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">How do I check if an IP address is blacklisted?</h3>
+                        <p style="font-size:13px;color:#64748b;line-height:1.7;">Use the Blacklist Check tab and enter the IP address. ignixip checks it against 12 major DNS-based blacklists (DNSBLs) including Spamhaus ZEN, Barracuda BRBL and SpamCop, plus the AbuseIPDB community abuse database. A listed IP has been flagged for spam, malware, or other malicious activity.</p>
+                    </div>
+                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
+                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is an ASN?</h3>
+                        <p style="font-size:13px;color:#64748b;line-height:1.7;">An Autonomous System Number (ASN) identifies a network operated by a single organisation on the internet — such as an ISP, cloud provider, or large company. For example, AS15169 is Google's ASN. Knowing the ASN of an IP address tells you who operates the network it belongs to.</p>
+                    </div>
+                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
+                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What does a high AbuseIPDB score mean?</h3>
+                        <p style="font-size:13px;color:#64748b;line-height:1.7;">AbuseIPDB is a community database where network administrators report malicious IP addresses. The confidence score (0–100%) reflects how likely an IP is to be malicious based on recent reports. A score above 50% suggests the IP has been actively involved in attacks, spam, or other abuse. A score of 0% means it has not been reported.</p>
+                    </div>
+                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
+                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is a DNSBL blacklist?</h3>
+                        <p style="font-size:13px;color:#64748b;line-height:1.7;">A DNS-based blackhole list (DNSBL) is a real-time database of IP addresses associated with spam or malicious activity. Mail servers and firewalls use these lists to block unwanted traffic. Common DNSBLs include Spamhaus, Barracuda and SpamCop. Being listed on one can affect email deliverability.</p>
+                    </div>
+                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
+                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">Can I look up a domain name as well as an IP?</h3>
+                        <p style="font-size:13px;color:#64748b;line-height:1.7;">Yes — enter a domain name in the IP Lookup tab and ignixip will automatically resolve it to an IP address via DNS and look up the result. The DNS Lookup tab also lets you query DNS records (A, MX, TXT, NS, CNAME) for any domain.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+<footer>
+    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
+    <a href="/my-ip.html">My IP</a> &middot; <a href="/search.html">Search</a> &middot; <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="/api.html">API</a> &middot; <a href="https://tools.ignixip.com/feed/rss">RSS</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+</footer>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ── DNSBL list (shared by IP Lookup risk score and Blacklist tab) ────────────
+var DNSBL_LISTS = [
+    { name: 'Spamhaus ZEN',         host: 'zen.spamhaus.org' },
+    { name: 'Spamhaus SBL',         host: 'sbl.spamhaus.org' },
+    { name: 'Spamhaus XBL',         host: 'xbl.spamhaus.org' },
+    { name: 'Spamhaus PBL',         host: 'pbl.spamhaus.org' },
+    { name: 'Barracuda BRBL',       host: 'b.barracudacentral.org' },
+    { name: 'SpamCop',              host: 'bl.spamcop.net' },
+    { name: 'SORBS SPAM',           host: 'spam.dnsbl.sorbs.net' },
+    { name: 'SORBS HTTP',           host: 'http.dnsbl.sorbs.net' },
+    { name: 'UCEPROTECT L1',        host: 'dnsbl-1.uceprotect.net' },
+    { name: 'UCEPROTECT L2',        host: 'dnsbl-2.uceprotect.net' },
+    { name: 'Abuse.ch SSLBL',       host: 'sslbl.abuse.ch' },
+    { name: 'NordSpam',             host: 'combined.nerd.dk' },
+];
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+    var btns = document.querySelectorAll('.tab-btn');
+    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5, bulk:6, headers:7, urlcheck:8, emailcheck:9}[tab];
+    btns[idx].classList.add('active');
+    history.pushState({}, '', '?tab=' + tab);
+    // Show bulk auth area if needed
+    if (tab === 'bulk') initBulkTab();
+}
+
+function setAndLookup(tab, val) {
+    switchTab(tab);
+    document.getElementById(tab + '-input').value = val;
+    if (tab === 'ip') lookupIP();
+    else if (tab === 'dns') lookupDNS();
+    else if (tab === 'tools') runTools();
+    else if (tab === 'asn') lookupASN();
+    else if (tab === 'whois') lookupWHOIS();
+    else checkBlacklist();
+}
+
+// ── IP Lookup ────────────────────────────────────────────────────────────────
+var ipInput = document.getElementById('ip-input');
+var ipBtn = document.getElementById('ip-btn');
+var ipResults = document.getElementById('ip-results');
+
+ipInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupIP(); });
+
+function isIPv4(str) { return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(str) && str.split('.').every(function(p) { return parseInt(p) <= 255; }); }
+
+function isIPv6(str) { return /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/.test(str) || /^::([0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}$/.test(str) || /^([0-9a-fA-F]{1,4}:){1,6}:$/.test(str) || /^::$/.test(str); }
+
+function isIPAddress(str) { return isIPv4(str) || isIPv6(str); }
+
+function expandIPv6(ip) {
+    // Handle :: expansion
+    var halves = ip.split('::');
+    var head = halves[0] ? halves[0].split(':') : [];
+    var tail = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
+    var fill = 8 - head.length - tail.length;
+    var full = head.slice();
+    for (var i = 0; i < fill; i++) full.push('0000');
+    full = full.concat(tail);
+    return full.map(function(g) { return ('0000' + g).slice(-4); }).join(':');
+}
+
+function reverseIPv6(ip) {
+    var expanded = expandIPv6(ip).replace(/:/g, '');
+    return expanded.split('').reverse().join('.');
+}
+
+function reverseIP(ip) {
+    if (isIPv4(ip)) return ip.split('.').reverse().join('.');
+    return reverseIPv6(ip);
+}
+
+// IPv6-capable DNSBL lists
+var DNSBL_LISTS_V6 = [
+    { name: 'Spamhaus ZEN IPv6', host: 'zen.ipv6.combined.spamhaus.org' },
+];
+
+function getDnsblLists(ip) {
+    if (isIPv6(ip)) {
+        // Only some DNSBLs support IPv6
+        return DNSBL_LISTS_V6;
+    }
+    return DNSBL_LISTS;
+}
+
+function getPtrZone(ip) {
+    if (isIPv6(ip)) return reverseIPv6(ip) + '.ip6.arpa';
+    return reverseIP(ip) + '.in-addr.arpa';
+}
+
+function lookupSelf() {
+    ipInput.value = 'detecting...';
+    ipBtn.disabled = true;
+    switchTab('ip');
+    fetch('https://api.ipify.org?format=json')
+        .then(function(r) { return r.json(); })
+        .then(function(d) { ipInput.value = d.ip; lookupIP(); })
+        .catch(function() { ipInput.value = ''; ipBtn.disabled = false; });
+}
+
+function lookupIP() {
+    var query = ipInput.value.trim();
+    if (!query || query === 'detecting...') return;
+    ipBtn.disabled = true;
+    ipBtn.textContent = 'Looking up...';
+    ipResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying IP intelligence</span></div>';
+    if (isIPAddress(query)) {
+        doIPLookup(query, null);
+    } else {
+        // Try A record first, fall back to AAAA
+        fetch('https://dns.google/resolve?name=' + encodeURIComponent(query) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(dns) {
+                if (dns.Answer && dns.Answer.length > 0) {
+                    doIPLookup(dns.Answer[dns.Answer.length - 1].data, query);
+                } else {
+                    // Try AAAA
+                    return fetch('https://dns.google/resolve?name=' + encodeURIComponent(query) + '&type=AAAA')
+                        .then(function(r) { return r.json(); })
+                        .then(function(dns6) {
+                            if (dns6.Answer && dns6.Answer.length > 0) {
+                                doIPLookup(dns6.Answer[dns6.Answer.length - 1].data, query);
+                            } else {
+                                ipResults.innerHTML = '<div class="error-card">Could not resolve "' + query + '" — domain not found</div>';
+                                ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
+                            }
+                        });
+                }
+            })
+            .catch(function() {
+                ipResults.innerHTML = '<div class="error-card">DNS resolution failed</div>';
+                ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
+            });
+    }
+}
+
+function doIPLookup(ip, originalDomain) {
+    // Fetch all data sources in parallel
+    var vpnPromise = fetch('https://portal.ignix.co.uk/api/vpnapi/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var rdapPromise = fetch('https://rdap.org/ip/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // More accurate geolocation from ipapi.co
+    var geoPromise = fetch('https://ipapi.co/' + encodeURIComponent(ip) + '/json/')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.error) return null;
+            return { lat: d.latitude, lng: d.longitude, city: d.city, region: d.region, country: d.country_name };
+        })
+        .catch(function() { return null; });
+
+    // DNSBL checks — use IPv6-specific lists when needed
+    var reversed = reverseIP(ip);
+    var activeDnsblLists = getDnsblLists(ip);
+    var dnsblPromise = Promise.all(activeDnsblLists.map(function(list) {
+        var lookup = reversed + '.' + list.host;
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                return { name: list.name, listed: !!(d.Answer && d.Answer.length > 0) };
+            })
+            .catch(function() { return { name: list.name, listed: false }; });
+    }));
+
+    // Reverse DNS (PTR) lookup — uses ip6.arpa for IPv6
+    var ptrName = getPtrZone(ip);
+    var fwdType = isIPv6(ip) ? 'AAAA' : 'A';
+    var ptrPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(ptrName) + '&type=PTR')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.Answer && d.Answer.length > 0) {
+                var ptr = d.Answer[0].data.replace(/\.$/, '');
+                // Forward-confirm: check if PTR hostname resolves back to this IP
+                return fetch('https://dns.google/resolve?name=' + encodeURIComponent(ptr) + '&type=' + fwdType)
+                    .then(function(r2) { return r2.json(); })
+                    .then(function(fwd) {
+                        var confirmed = false;
+                        if (fwd.Answer) {
+                            for (var i = 0; i < fwd.Answer.length; i++) {
+                                if (fwd.Answer[i].data === ip) { confirmed = true; break; }
+                            }
+                        }
+                        return { ptr: ptr, confirmed: confirmed };
+                    })
+                    .catch(function() { return { ptr: ptr, confirmed: false }; });
+            }
+            return { ptr: null, confirmed: false };
+        })
+        .catch(function() { return { ptr: null, confirmed: false }; });
+
+    fetch('https://tools.ignixip.com/ipinfo/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.error) {
+                ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
+            } else {
+                d.originalDomain = originalDomain;
+                Promise.all([vpnPromise, rdapPromise, abusePromise, dnsblPromise, ptrPromise, geoPromise]).then(function(extra) {
+                    renderIPResults(d, extra[0], extra[1], extra[2], extra[3], extra[4], extra[5]);
+                });
+            }
+            ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
+        })
+        .catch(function() {
+            ipResults.innerHTML = '<div class="error-card">Lookup failed — check your connection</div>';
+            ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
+        });
+}
+
+// ── Risk Score Calculation ───────────────────────────────────────────────────
+function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults) {
+    var score = 0;
+    var factors = [];
+
+    // Tor detection
+    if (vpnData && vpnData.security && vpnData.security.tor) {
+        score += 40;
+        factors.push({ label: 'Tor exit node', level: 'red' });
+    }
+
+    // AbuseIPDB
+    if (abuseData && abuseData.data) {
+        var confidence = abuseData.data.abuseConfidenceScore || 0;
+        var reports = abuseData.data.totalReports || 0;
+        if (confidence >= 50) {
+            score += 35;
+            factors.push({ label: 'AbuseIPDB ' + confidence + '%', level: 'red' });
+        } else if (confidence >= 10) {
+            score += 20;
+            factors.push({ label: 'AbuseIPDB ' + confidence + '%', level: 'amber' });
+        } else if (confidence >= 1) {
+            score += 5;
+            factors.push({ label: 'AbuseIPDB ' + confidence + '%', level: 'amber' });
+        } else if (reports === 0) {
+            factors.push({ label: 'No abuse reports', level: 'green' });
+        }
+    }
+
+    // Blacklist hits
+    if (dnsblResults) {
+        var listedCount = dnsblResults.filter(function(r) { return r.listed; }).length;
+        if (listedCount >= 3) {
+            score += 30;
+            factors.push({ label: listedCount + ' blacklists', level: 'red' });
+        } else if (listedCount >= 1) {
+            score += 15;
+            factors.push({ label: listedCount + ' blacklist' + (listedCount > 1 ? 's' : ''), level: 'amber' });
+        } else {
+            factors.push({ label: '0 blacklists', level: 'green' });
+        }
+    }
+
+    // VPN / Proxy / Relay
+    if (vpnData && vpnData.security) {
+        if (vpnData.security.vpn) {
+            score += 15;
+            factors.push({ label: 'VPN detected', level: 'amber' });
+        }
+        if (vpnData.security.proxy) {
+            score += 15;
+            factors.push({ label: 'Proxy detected', level: 'amber' });
+        }
+        if (vpnData.security.relay) {
+            score += 10;
+            factors.push({ label: 'Relay detected', level: 'amber' });
+        }
+    }
+
+    // Hosting / DC
+    if (isHosting) {
+        score += 5;
+        factors.push({ label: 'Hosting / DC', level: 'blue' });
+    }
+
+    // Cap at 100
+    if (score > 100) score = 100;
+
+    // Determine level
+    var level, label, color, summary;
+    if (score >= 70) {
+        level = 'critical'; label = 'Critical'; color = '#ef4444';
+        summary = 'Multiple high-risk indicators detected. This IP shows strong signs of malicious activity.';
+    } else if (score >= 40) {
+        level = 'high'; label = 'High'; color = '#f87171';
+        summary = 'Significant risk indicators present. This IP warrants investigation.';
+    } else if (score >= 16) {
+        level = 'medium'; label = 'Medium'; color = '#fbbf24';
+        summary = 'Some risk indicators detected. Context-dependent — may be benign.';
+    } else {
+        level = 'low'; label = 'Low'; color = '#4ade80';
+        summary = 'No significant risk indicators. This IP appears clean across all checks.';
+    }
+
+    return { score: score, level: level, label: label, color: color, summary: summary, factors: factors };
+}
+
+function renderRiskPanel(risk, ip) {
+    var circumference = 2 * Math.PI * 38;
+    var offset = circumference - (risk.score / 100) * circumference;
+    var panelClass = 'risk-panel fade-in' + (risk.level === 'critical' ? ' risk-panel-critical' : '');
+
+    var html = '<div class="' + panelClass + '">';
+    // SVG gauge
+    html += '<div class="risk-gauge">';
+    html += '<svg viewBox="0 0 90 90"><circle class="risk-gauge-bg" cx="45" cy="45" r="38"/>';
+    html += '<circle class="risk-gauge-fill" cx="45" cy="45" r="38" stroke="' + risk.color + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/></svg>';
+    html += '<div class="risk-gauge-score" style="color:' + risk.color + ';">' + risk.score + '</div>';
+    html += '</div>';
+    // Info
+    html += '<div class="risk-info">';
+    html += '<div class="risk-label" style="color:' + risk.color + ';">' + risk.label + ' Risk</div>';
+    html += '<div class="risk-summary">' + risk.summary + '</div>';
+    html += '<div class="risk-factors">';
+    for (var i = 0; i < risk.factors.length; i++) {
+        var f = risk.factors[i];
+        html += '<span class="risk-factor risk-factor-' + f.level + '">' + f.label + '</span>';
+    }
+    html += '</div>';
+    // CTA for medium/high/critical
+    if (risk.score >= 16) {
+        html += '<div class="risk-cta">Seeing this IP on your network? <a href="https://ignix.co.uk" target="_blank">Get 24/7 AI-powered monitoring \u2192</a></div>';
+    }
+    html += '</div></div>';
+    return html;
+}
+
+// ── Toast notification ──────────────────────────────────────────────────────
+function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ── Store last lookup data for export ───────────────────────────────────────
+var lastLookupData = null;
+
+// ── Export as JSON ──────────────────────────────────────────────────────────
+function exportJSON() {
+    if (!lastLookupData) return;
+    var json = JSON.stringify(lastLookupData, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ignixip-' + (lastLookupData.ip || 'report') + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('JSON exported');
+}
+
+// ── Copy to clipboard ───────────────────────────────────────────────────────
+function copyReport() {
+    if (!lastLookupData) return;
+    var ld = lastLookupData;
+    var lines = [
+        'ignixip Report — ' + ld.ip,
+        '═══════════════════════════════════════',
+        '',
+        'Risk Score:     ' + ld.risk.score + '/100 (' + ld.risk.label + ')',
+        'Risk Factors:   ' + ld.risk.factors.map(function(f) { return f.label; }).join(', '),
+        '',
+        '── Location ──',
+        'Country:        ' + (ld.country || '—'),
+        'Region:         ' + (ld.region || '—'),
+        'City:           ' + (ld.city || '—'),
+        'Coordinates:    ' + (ld.loc || '—'),
+        'Timezone:       ' + (ld.timezone || '—'),
+        '',
+        '── Network ──',
+        'ASN:            ' + (ld.asn || '—'),
+        'Organisation:   ' + (ld.org || '—'),
+        'Hostname:       ' + (ld.hostname || '—'),
+        'Reverse DNS:    ' + (ld.reverseDns || 'No PTR record') + (ld.reverseDnsConfirmed ? ' (forward-confirmed)' : ''),
+        'Prefix:         ' + (ld.prefix || '—'),
+        '',
+        '── Threat Intelligence ──',
+        'VPN:            ' + (ld.vpn ? 'Detected' : 'No'),
+        'Proxy:          ' + (ld.proxy ? 'Detected' : 'No'),
+        'Tor:            ' + (ld.tor ? 'Detected' : 'No'),
+        'Relay:          ' + (ld.relay ? 'Detected' : 'No'),
+        'Type:           ' + (ld.isHosting ? 'Hosting / Datacenter' : 'Residential / Business'),
+        '',
+        '── AbuseIPDB ──',
+        'Confidence:     ' + (ld.abuseConfidence !== undefined ? ld.abuseConfidence + '%' : 'N/A'),
+        'Total Reports:  ' + (ld.abuseReports !== undefined ? ld.abuseReports : 'N/A'),
+        'Last Reported:  ' + (ld.abuseLastReported || 'N/A'),
+        '',
+        '── Blacklists ──',
+        'Listed:         ' + ld.blacklistListed + ' of ' + ld.blacklistTotal,
+    ];
+    if (ld.blacklistNames && ld.blacklistNames.length > 0) {
+        lines.push('Listed On:      ' + ld.blacklistNames.join(', '));
+    }
+    lines.push('');
+    lines.push('Generated by ignixip.com — ' + new Date().toLocaleString('en-GB'));
+    var text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(function() { showToast('Report copied to clipboard'); });
+}
+
+// ── Abuse Report Generator ──────────────────────────────────────────────────
+function generateAbuseReport() {
+    if (!lastLookupData) return;
+    var ld = lastLookupData;
+    var subject = 'Abuse Report — ' + ld.ip;
+    var body = 'Dear Abuse Team,\n\n' +
+        'I am writing to report potentially malicious activity from the following IP address:\n\n' +
+        'IP Address: ' + ld.ip + '\n' +
+        'ASN: ' + (ld.asn || 'Unknown') + '\n' +
+        'Organisation: ' + (ld.org || 'Unknown') + '\n' +
+        'Hostname: ' + (ld.hostname || 'Unknown') + '\n' +
+        'Location: ' + [ld.city, ld.region, ld.country].filter(Boolean).join(', ') + '\n\n' +
+        '── Risk Assessment (via ignixip.com) ──\n' +
+        'Risk Score: ' + ld.risk.score + '/100 (' + ld.risk.label + ')\n' +
+        'Risk Factors: ' + ld.risk.factors.map(function(f) { return f.label; }).join(', ') + '\n';
+    if (ld.abuseConfidence !== undefined) {
+        body += 'AbuseIPDB Confidence: ' + ld.abuseConfidence + '% (' + ld.abuseReports + ' reports)\n';
+    }
+    if (ld.blacklistListed > 0) {
+        body += 'Blacklisted On: ' + ld.blacklistNames.join(', ') + '\n';
+    }
+    if (ld.vpn || ld.proxy || ld.tor) {
+        body += 'Detection Flags: ' + [ld.vpn ? 'VPN' : '', ld.proxy ? 'Proxy' : '', ld.tor ? 'Tor' : ''].filter(Boolean).join(', ') + '\n';
+    }
+    body += '\n── Observed Activity ──\n' +
+        '[Please describe the malicious activity you observed, including dates, times, and any relevant log entries.]\n\n' +
+        'Please investigate and take appropriate action.\n\n' +
+        'Regards,\n[Your Name]\n\n' +
+        '---\nReport generated by ignixip.com';
+
+    // Open mailto with abuse contact if available
+    var mailto = ld.abuseEmail && ld.abuseEmail !== '—' ? ld.abuseEmail : '';
+    var mailtoLink = 'mailto:' + encodeURIComponent(mailto) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    window.open(mailtoLink, '_self');
+    showToast('Abuse report opened in email');
+}
+
+function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData, geoData) {
+    var ip = d.ip || '';
+    var org = d.org || '—';
+    var asn = org.split(' ')[0] || '—';
+    var orgName = org.split(' ').slice(1).join(' ') || '—';
+    var isTor = vpnData && vpnData.security && vpnData.security.tor;
+    var isHosting = isTor || (org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider|google|cloudflare|akamai|fastly|cdn/i.test(org) : false);
+    var flag = '';
+    if (d.country && d.country.length === 2) {
+        var c = d.country.toUpperCase();
+        flag = String.fromCodePoint(0x1F1E0 + c.charCodeAt(0) - 65) + String.fromCodePoint(0x1F1E0 + c.charCodeAt(1) - 65) + ' ';
+    }
+    var coords = d.loc ? d.loc.split(',').map(function(x) { return parseFloat(x).toFixed(4); }).join(', ') : '—';
+
+    // Calculate risk score
+    var risk = calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults);
+
+    // Get abuse email from RDAP
+    var abuseEntity = rdapData ? getEntityByRole(rdapData.entities || [], 'abuse') : null;
+    var abuseEmail = abuseEntity ? getVcard(abuseEntity, 'email') : '—';
+
+    // Blacklist stats
+    var listedCount = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).length : 0;
+    var listedNames = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).map(function(r) { return r.name; }) : [];
+
+    // Store for export
+    lastLookupData = {
+        ip: ip,
+        originalDomain: d.originalDomain || null,
+        country: d.country || null,
+        region: d.region || null,
+        city: d.city || null,
+        postal: d.postal || null,
+        loc: d.loc || null,
+        timezone: d.timezone || null,
+        asn: asn,
+        org: org,
+        orgName: orgName,
+        hostname: d.hostname || null,
+        prefix: (rdapData && rdapData.cidr0_cidrs && rdapData.cidr0_cidrs.length > 0) ? rdapData.cidr0_cidrs[0].v4prefix + '/' + rdapData.cidr0_cidrs[0].length : null,
+        isHosting: isHosting,
+        vpn: vpnData && vpnData.security ? vpnData.security.vpn : false,
+        proxy: vpnData && vpnData.security ? vpnData.security.proxy : false,
+        tor: vpnData && vpnData.security ? vpnData.security.tor : false,
+        relay: vpnData && vpnData.security ? vpnData.security.relay : false,
+        abuseConfidence: abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : undefined,
+        abuseReports: abuseData && abuseData.data ? (abuseData.data.totalReports || 0) : undefined,
+        abuseLastReported: abuseData && abuseData.data && abuseData.data.lastReportedAt ? new Date(abuseData.data.lastReportedAt).toLocaleDateString('en-GB') : null,
+        abuseEmail: abuseEmail,
+        reverseDns: ptrData && ptrData.ptr ? ptrData.ptr : null,
+        reverseDnsConfirmed: ptrData ? ptrData.confirmed : false,
+        blacklistListed: listedCount,
+        blacklistTotal: dnsblResults ? dnsblResults.length : 0,
+        blacklistNames: listedNames,
+        risk: { score: risk.score, label: risk.label, factors: risk.factors },
+        timestamp: new Date().toISOString()
+    };
+
+    // Build output
+    var html = '';
+
+    // Risk panel (top)
+    html += renderRiskPanel(risk, ip);
+
+    // Action bar
+    html += '<div class="action-bar fade-in">';
+    html += '<button class="action-btn" onclick="copyReport()"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy Report</button>';
+    html += '<button class="action-btn" onclick="exportJSON()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON</button>';
+    html += '<button class="action-btn" onclick="generateAbuseReport()"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Report Abuse</button>';
+    html += '<button class="action-btn" onclick="copyShareLink()"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Share Link</button>';
+    html += '<button class="action-btn" onclick="showReportForm(\'' + ip + '\')"><svg viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg>Report IP</button>';
+    html += '</div>';
+
+    // Community reports section
+    html += '<div id="community-reports" class="fade-in"></div>';
+
+    // History timeline section
+    html += '<div id="ip-history" class="fade-in"></div>';
+
+    // IP header
+    html += '<div class="ip-header fade-in">' +
+            '<div class="ip-address-display">' + (d.originalDomain ? '<span style="font-size:13px;color:var(--text-dim);display:block;margin-bottom:2px;font-family:JetBrains Mono,monospace;">' + d.originalDomain + ' \u2192</span>' : '') + ip + '</div>' +
+            '<div class="ip-tags"><span class="tag ' + (isHosting ? 'tag-hosting' : 'tag-residential') + '">' + (isHosting ? 'Hosting / DC' : 'Residential / Business') + '</span>' +
+            '<span class="tag" style="background:rgba(167,139,250,0.12);color:var(--purple);border:1px solid rgba(167,139,250,0.25);">' + (isIPv6(ip) ? 'IPv6' : 'IPv4') + '</span></div>' +
+        '</div>';
+
+    // Map
+    if (d.loc || (geoData && geoData.lat)) {
+        html += '<div class="map-container fade-in" id="ip-map"></div>';
+    }
+
+    // Ignix CTA
+    html += '<div class="fade-in" style="margin:10px 0;background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(59,130,246,0.02));border:1px solid rgba(59,130,246,0.15);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">';
+    html += '<div style="flex-shrink:0;width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--blue),var(--blue-dim));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;font-family:JetBrains Mono,monospace;">IX</div>';
+    html += '<div style="flex:1;font-size:12px;color:var(--text-muted);">Investigating IPs manually? <a href="https://ignix.co.uk" target="_blank" style="color:var(--blue-bright);text-decoration:none;font-weight:600;">Ignix</a> monitors your network 24/7 and alerts you automatically.</div>';
+    html += '</div>';
+
+    // Results grid
+    html += '<div class="results-grid fade-in">';
+
+    // Location card
+    html += '<div class="result-card"><div class="card-title">Location</div>' +
+        '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + (d.country || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Region</span><span class="data-val muted">' + (d.region || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">City</span><span class="data-val muted">' + (d.city || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Postcode</span><span class="data-val muted">' + (d.postal || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Coordinates</span><span class="data-val muted" style="font-size:11px;">' + coords + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Timezone</span><span class="data-val muted">' + (d.timezone || '—') + '</span></div>' +
+    '</div>';
+
+    // Network card
+    html += '<div class="result-card"><div class="card-title">Network</div>' +
+        '<div class="data-row"><span class="data-key">ASN</span><span class="data-val"><a href="#" onclick="setAndLookup(\'asn\',\'' + asn + '\');return false;" style="color:var(--blue-bright);text-decoration:none;">' + asn + '</a></span></div>' +
+        (rdapData && rdapData.cidr0_cidrs && rdapData.cidr0_cidrs.length > 0 ? '<div class="data-row"><span class="data-key">Prefix</span><span class="data-val muted">' + rdapData.cidr0_cidrs[0].v4prefix + '/' + rdapData.cidr0_cidrs[0].length + '</span></div>' : '') +
+        '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val muted" style="font-size:11px;">' + orgName + '</span></div>' +
+        '<div class="data-row"><span class="data-key">ISP / Org</span><span class="data-val muted" style="font-size:11px;">' + org + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Hostname</span><span class="data-val muted" style="font-size:11px;">' + (d.hostname || '—') + '</span></div>' +
+        (ptrData && ptrData.ptr ?
+            '<div class="data-row"><span class="data-key">Reverse DNS</span><span class="data-val muted" style="font-size:11px;">' + ptrData.ptr +
+            (ptrData.confirmed ? ' <span style="color:var(--green);font-size:10px;">&#10003; FCrDNS</span>' : ' <span style="color:var(--amber);font-size:10px;">&#9888; no forward match</span>') +
+            '</span></div>' :
+            '<div class="data-row"><span class="data-key">Reverse DNS</span><span class="data-val muted" style="font-size:11px;">No PTR record</span></div>') +
+        (abuseEmail !== '—' ? '<div class="data-row"><span class="data-key">Abuse Contact</span><span class="data-val blue" style="font-size:11px;"><a href="mailto:' + abuseEmail + '" style="color:var(--blue-bright);text-decoration:none;">' + abuseEmail + '</a></span></div>' : '') +
+    '</div>';
+
+    // Threat Intelligence card (VPN/Proxy/Tor)
+    if (vpnData && vpnData.security) {
+        html += '<div class="result-card"><div class="card-title">Threat Intelligence</div>' +
+            '<div class="data-row"><span class="data-key">VPN</span><span class="data-val ' + (vpnData.security.vpn ? 'amber' : 'green') + '">' + (vpnData.security.vpn ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Proxy</span><span class="data-val ' + (vpnData.security.proxy ? 'amber' : 'green') + '">' + (vpnData.security.proxy ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Tor</span><span class="data-val ' + (vpnData.security.tor ? 'red' : 'green') + '">' + (vpnData.security.tor ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Relay</span><span class="data-val ' + (vpnData.security.relay ? 'amber' : 'green') + '">' + (vpnData.security.relay ? 'Detected' : 'No') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Type</span><span class="data-val ' + (isHosting ? 'amber' : 'green') + '">' + (isHosting ? 'Hosting / Datacenter' : 'Residential / Business') + '</span></div>' +
+        '</div>';
+    }
+
+    // AbuseIPDB card
+    if (abuseData && abuseData.data) {
+        var ad = abuseData.data;
+        var abuseScore = ad.abuseConfidenceScore || 0;
+        var abuseColor = abuseScore >= 50 ? 'red' : abuseScore >= 10 ? 'amber' : 'green';
+        var abuseLabel = abuseScore >= 50 ? 'High Risk' : abuseScore >= 10 ? 'Suspicious' : 'Clean';
+        var lastReported = ad.lastReportedAt ? new Date(ad.lastReportedAt).toLocaleDateString('en-GB') : 'Never';
+        html += '<div class="result-card"><div class="card-title">AbuseIPDB</div>' +
+            '<div class="data-row"><span class="data-key">Confidence</span><span class="data-val ' + abuseColor + '" style="font-size:18px;font-weight:700;">' + abuseScore + '%</span></div>' +
+            '<div class="data-row"><span class="data-key">Risk Level</span><span class="data-val ' + abuseColor + '">' + abuseLabel + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Reports</span><span class="data-val">' + (ad.totalReports || 0) + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Last Reported</span><span class="data-val muted">' + lastReported + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Usage Type</span><span class="data-val muted">' + (ad.usageType || '—') + '</span></div>' +
+        '</div>';
+    }
+
+    // Blacklist summary card
+    if (dnsblResults) {
+        html += '<div class="result-card"><div class="card-title">Blacklists</div>' +
+            '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + (listedCount > 0 ? 'red' : 'green') + '">' + (listedCount > 0 ? listedCount + ' listed' : 'Clean') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Checked</span><span class="data-val muted">' + dnsblResults.length + ' DNSBLs</span></div>';
+        if (listedCount > 0) {
+            html += '<div class="data-row"><span class="data-key">Listed On</span><span class="data-val red" style="font-size:11px;text-align:right;">' + listedNames.join(', ') + '</span></div>';
+        }
+        html += '<div class="data-row"><span class="data-key">Full Check</span><span class="data-val"><a href="#" onclick="setAndLookup(\'bl\',\'' + ip + '\');return false;" style="color:var(--blue-bright);text-decoration:none;font-size:11px;">Detailed blacklist check \u2192</a></span></div>';
+        html += '</div>';
+    }
+
+    html += '</div>'; // close results-grid
+
+    ipResults.innerHTML = html;
+    history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
+
+    // Log lookup to tools server for stats (fire and forget)
+    try {
+        fetch('https://tools.ignixip.com/log-lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ip: ip,
+                risk_score: risk.score,
+                risk_label: risk.label,
+                country: d.country || '',
+                org: d.org || '',
+                cache_data: {
+                    ip: ip,
+                    country: d.country || '',
+                    region: d.region || '',
+                    city: d.city || '',
+                    org: d.org || '',
+                    hostname: d.hostname || '',
+                    loc: d.loc || '',
+                    is_hosting: isHosting,
+                    blacklist_count: listedCount,
+                    blacklist_names: listedNames,
+                    risk_score: risk.score,
+                    risk_label: risk.label
+                }
+            })
+        }).catch(function() {});
+    } catch(e) {}
+
+    // Load community reports for this IP
+    loadCommunityReports(ip);
+
+    // Load IP history timeline
+    loadIPHistory(ip);
+
+    // Initialize map after DOM update — prefer ipapi.co coords for accuracy
+    var mapLat, mapLng, hasCoords = false;
+    if (geoData && geoData.lat && geoData.lng) {
+        mapLat = geoData.lat;
+        mapLng = geoData.lng;
+        hasCoords = true;
+    } else if (d.loc) {
+        var parts = d.loc.split(',');
+        mapLat = parseFloat(parts[0]);
+        mapLng = parseFloat(parts[1]);
+        hasCoords = true;
+    }
+    if (hasCoords) {
+        var mapCity = (geoData && geoData.city) || d.city;
+        var mapCountry = d.country;
+        setTimeout(function() {
+            var mapEl = document.getElementById('ip-map');
+            if (mapEl && mapEl._leaflet_id) return;
+            var map = L.map('ip-map', { zoomControl: true, scrollWheelZoom: false, dragging: true, attributionControl: true }).setView([mapLat, mapLng], 10);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
+                maxZoom: 18
+            }).addTo(map);
+            var marker = L.circleMarker([mapLat, mapLng], { radius: 8, fillColor: '#3b82f6', color: '#1d4ed8', weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+            marker.bindPopup('<span style="font-family:JetBrains Mono,monospace;font-size:12px;">' + ip + '<br>' + [mapCity, mapCountry].filter(Boolean).join(', ') + '</span>');
+        }, 100);
+    }
+}
+
+// ── Share link ──────────────────────────────────────────────────────────────
+function copyShareLink() {
+    if (!lastLookupData) return;
+    var url = 'https://ignixip.com/?tab=ip&ip=' + encodeURIComponent(lastLookupData.originalDomain || lastLookupData.ip);
+    navigator.clipboard.writeText(url).then(function() { showToast('Link copied to clipboard'); });
+}
+
+// ── DNS Lookup ───────────────────────────────────────────────────────────────
+var dnsInput = document.getElementById('dns-input');
+var dnsBtn = document.getElementById('dns-btn');
+var dnsResults = document.getElementById('dns-results');
+
+dnsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupDNS(); });
+
+function lookupDNS() {
+    var domain = dnsInput.value.trim();
+    if (!domain) return;
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(domain)) {
+        dnsResults.innerHTML = '<div class="error-card">DNS lookup is for domain names. For IP addresses use the IP Lookup tab.</div>';
+        return;
+    }
+    dnsBtn.disabled = true;
+    dnsBtn.textContent = 'Looking up...';
+    dnsResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying DNS records</span></div>';
+    var types = ['A', 'AAAA', 'MX', 'NS', 'TXT', 'CNAME'];
+    var promises = types.map(function(type) {
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=' + type)
+            .then(function(r) { return r.json(); })
+            .then(function(d) { return { type: type, data: d }; })
+            .catch(function() { return { type: type, data: null }; });
+    });
+    Promise.all(promises).then(function(results) {
+        renderDNSResults(domain, results);
+        dnsBtn.disabled = false;
+        dnsBtn.textContent = 'Look Up';
+        history.pushState({}, '', '?tab=dns&q=' + encodeURIComponent(domain));
+        var prevCerts = document.querySelectorAll('.cert-section');
+        prevCerts.forEach(function(el) { el.remove(); });
+        fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
+            .then(function(r) { return r.json(); })
+            .then(function(certs) { renderCerts(domain, certs); })
+            .catch(function(e) {
+                var el = document.getElementById('dns-results');
+                if (el) el.innerHTML += '<div class="dns-section fade-in"><div class="card-title">SSL / TLS Certificates</div><div class="dns-empty">Certificate data unavailable</div></div>';
+            });
+    });
+}
+
+function renderDNSResults(domain, results) {
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + domain + '</div></div>';
+    var hasAny = false;
+    results.forEach(function(r) {
+        if (!r.data || !r.data.Answer || r.data.Answer.length === 0) return;
+        hasAny = true;
+        html += '<div class="dns-section fade-in"><div class="card-title">' + r.type + ' Records</div>';
+        r.data.Answer.forEach(function(rec) {
+            var data = rec.data;
+            if (r.type === 'TXT') data = data.replace(/^"|"$/g, '');
+            html += '<div class="dns-record"><span class="dns-type-badge dns-' + r.type + '">' + r.type + '</span><span class="dns-record-data">' + data + '</span><span class="dns-ttl">TTL ' + rec.TTL + 's</span></div>';
+        });
+        html += '</div>';
+    });
+    if (!hasAny) {
+        html += '<div class="error-card">No DNS records found for "' + domain + '"</div>';
+    }
+    dnsResults.innerHTML = html;
+}
+
+// ── SSL Certificates ─────────────────────────────────────────────────────────
+function renderCerts(domain, certs) {
+    if (!certs || certs.length === 0) return;
+    var seen = {};
+    var unique = [];
+    certs.sort(function(a, b) { return new Date(b.not_before) - new Date(a.not_before); });
+    for (var i = 0; i < certs.length; i++) {
+        var key = certs[i].serial_number;
+        if (!seen[key]) {
+            seen[key] = true;
+            unique.push(certs[i]);
+            if (unique.length >= 8) break;
+        }
+    }
+    var html = '<div class="dns-section fade-in"><div class="card-title">SSL / TLS Certificates (recent)</div>';
+    for (var j = 0; j < unique.length; j++) {
+        var c = unique[j];
+        var name = c.common_name || c.name_value || '—';
+        var issuer = c.issuer_name ? c.issuer_name.replace(/.*CN=/, '').replace(/,.*/, '') : '—';
+        var from = c.not_before ? new Date(c.not_before).toLocaleDateString('en-GB') : '—';
+        var to = c.not_after ? new Date(c.not_after).toLocaleDateString('en-GB') : '—';
+        var expired = c.not_after && new Date(c.not_after) < new Date();
+        html += '<div class="dns-record" style="flex-wrap:wrap;gap:6px;">' +
+            '<span class="dns-type-badge dns-A" style="background:rgba(167,139,250,0.15);color:#a78bfa;min-width:32px;">SSL</span>' +
+            '<span class="dns-record-data" style="flex:1;min-width:200px;">' +
+                '<span style="color:var(--text);">' + name + '</span>' +
+                '<span style="color:var(--text-faint);margin-left:8px;font-size:11px;">' + issuer + '</span>' +
+            '</span>' +
+            '<span class="dns-ttl" style="color:' + (expired ? 'var(--red)' : 'var(--green)') + ';">' + from + ' → ' + to + '</span>' +
+        '</div>';
+    }
+    html += '</div>';
+    document.getElementById('dns-results').innerHTML += html;
+}
+
+// ── Blacklist Check ──────────────────────────────────────────────────────────
+var blInput = document.getElementById('bl-input');
+var blBtn = document.getElementById('bl-btn');
+var blResults = document.getElementById('bl-results');
+
+blInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') checkBlacklist(); });
+
+function checkBlacklist() {
+    var ip = blInput.value.trim();
+    if (!ip || !isIPAddress(ip)) {
+        blResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
+        return;
+    }
+    blBtn.disabled = true;
+    blBtn.textContent = 'Checking...';
+    blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking blacklists</span></div>';
+    var reversed = reverseIP(ip);
+    var activeLists = getDnsblLists(ip);
+
+    var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var promises = activeLists.map(function(list) {
+        var lookup = reversed + '.' + list.host;
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var listed = d.Answer && d.Answer.length > 0;
+                return { name: list.name, listed: listed, status: listed ? 'listed' : 'clean' };
+            })
+            .catch(function() {
+                return { name: list.name, listed: false, status: 'error' };
+            });
+    });
+    Promise.all([abusePromise, Promise.all(promises)]).then(function(combined) {
+        var abuseData = combined[0];
+        var results = combined[1];
+        renderBlacklistResults(ip, results, abuseData);
+        blBtn.disabled = false;
+        blBtn.textContent = 'Check';
+        history.pushState({}, '', '?tab=bl&ip=' + encodeURIComponent(ip));
+    });
+}
+
+function renderBlacklistResults(ip, results, abuseData) {
+    var abuseHtml = '';
+    if (abuseData && abuseData.data) {
+        var d = abuseData.data;
+        var score = d.abuseConfidenceScore || 0;
+        var scoreColor = score >= 50 ? 'var(--red)' : score >= 10 ? 'var(--amber)' : 'var(--green)';
+        var scoreLabel = score >= 50 ? 'High Risk' : score >= 10 ? 'Suspicious' : 'Clean';
+        var lastReported = d.lastReportedAt ? new Date(d.lastReportedAt).toLocaleDateString('en-GB') : 'Never';
+        abuseHtml = '<div class="result-card fade-in" style="margin-bottom:10px;">' +
+            '<div class="card-title">AbuseIPDB</div>' +
+            '<div class="data-row"><span class="data-key">Confidence Score</span><span class="data-val" style="color:' + scoreColor + ';font-size:20px;font-weight:700;">' + score + '%</span></div>' +
+            '<div class="data-row"><span class="data-key">Risk Level</span><span class="data-val" style="color:' + scoreColor + ';">' + scoreLabel + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Total Reports</span><span class="data-val">' + (d.totalReports || 0) + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Last Reported</span><span class="data-val muted">' + lastReported + '</span></div>' +
+            '<div class="data-row"><span class="data-key">ISP</span><span class="data-val muted" style="font-size:11px;">' + (d.isp || '—') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Usage Type</span><span class="data-val muted">' + (d.usageType || '—') + '</span></div>' +
+        '</div>';
+    }
+
+    var listed = results.filter(function(r) { return r.listed; }).length;
+    var clean = results.filter(function(r) { return !r.listed && r.status !== 'error'; }).length;
+    var errors = results.filter(function(r) { return r.status === 'error'; }).length;
+    var listColor = listed > 0 ? 'var(--red)' : 'var(--green)';
+    var html = abuseHtml + '<div class="ip-header fade-in">' +
+        '<div class="ip-address-display">' + ip + '</div>' +
+        '<div class="ip-tags"><span class="tag" style="' + (listed > 0 ? 'background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25)' : 'background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.25)') + '">' + (listed > 0 ? listed + ' LISTED' : 'CLEAN') + '</span></div>' +
+    '</div>';
+    html += '<div class="bl-summary fade-in">' +
+        '<div class="bl-stat"><div class="bl-stat-num" style="color:' + listColor + ';">' + listed + '</div><div class="bl-stat-label">Listed</div></div>' +
+        '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--green);">' + clean + '</div><div class="bl-stat-label">Clean</div></div>' +
+        '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--text-dim);">' + results.length + '</div><div class="bl-stat-label">Checked</div></div>' +
+    '</div>';
+    html += '<div class="bl-list fade-in">';
+    results.forEach(function(r) {
+        html += '<div class="bl-row">' +
+            '<div class="bl-dot bl-dot-' + r.status + '"></div>' +
+            '<span class="bl-name">' + r.name + '</span>' +
+            '<span class="' + (r.listed ? 'bl-status-listed' : 'bl-status-clean') + '">' + (r.listed ? 'LISTED' : r.status === 'error' ? 'error' : 'clean') + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+
+    // Contextual advice based on results
+    var advice = '';
+    var listedNames = results.filter(function(r) { return r.listed; }).map(function(r) { return r.name; });
+    var hasPBL = listedNames.indexOf('Spamhaus PBL') >= 0;
+    var hasSBL = listedNames.indexOf('Spamhaus SBL') >= 0;
+    var hasXBL = listedNames.indexOf('Spamhaus XBL') >= 0;
+    var hasAbuse = listedNames.indexOf('Abuse.ch SSLBL') >= 0;
+    var abuseScore = abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : 0;
+    var pblOnly = listed === 1 && hasPBL;
+
+    if (listed === 0 && abuseScore < 10) {
+        advice = '<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:6px;">&#10003; Clean</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP is not listed on any checked blacklists and has no significant abuse reports. No action required.</p></div>';
+    } else if (pblOnly) {
+        advice = '<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:6px;">&#8505; PBL listing — no concern</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP is only listed on the Spamhaus PBL (Policy Block List). This is completely normal for residential and business IPs — it means your ISP does not allow direct email sending from this connection. This is standard policy, not a security issue. No action needed.</p></div>';
+    } else if (hasSBL || hasXBL || hasAbuse) {
+        advice = '<div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:6px;">&#9888; Significant listing — investigation recommended</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">' +
+            (hasSBL ? 'This IP is on the Spamhaus SBL, which means it has been specifically identified as a spam source. ' : '') +
+            (hasXBL ? 'This IP is on the Spamhaus XBL, which indicates it is associated with malware, botnets, or exploited devices. Check your network for infected devices. ' : '') +
+            (hasAbuse ? 'This IP is on the Abuse.ch SSLBL, which is associated with malware command-and-control infrastructure. ' : '') +
+            '<a href="/guide.html#delist" style="color:var(--blue-bright);text-decoration:none;">Read our delisting guide \u2192</a></p></div>';
+    } else if (listed >= 3 || abuseScore >= 50) {
+        advice = '<div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:6px;">&#9888; Multiple listings — action recommended</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP appears on multiple blacklists' + (abuseScore >= 50 ? ' and has a high AbuseIPDB score (' + abuseScore + '%)' : '') + ', suggesting a significant reputation problem. If this is your IP, investigate for compromised devices or accounts. <a href="/guide.html#delist" style="color:var(--blue-bright);text-decoration:none;">Read our delisting guide \u2192</a></p></div>';
+    } else if (listed >= 1) {
+        advice = '<div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--amber);font-weight:600;margin-bottom:6px;">&#8505; Minor listing</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP appears on ' + listed + ' blacklist' + (listed > 1 ? 's' : '') + '. This may be due to a previous user of this IP address (common with dynamic IPs) or a temporary issue. Most reputation-based listings auto-expire within days to weeks if the activity stops. <a href="/guide.html" style="color:var(--blue-bright);text-decoration:none;">Learn more \u2192</a></p></div>';
+    }
+    html += advice;
+
+    blResults.innerHTML = html;
+}
+
+// ── WHOIS Lookup ────────────────────────────────────────────────────────────
+var whoisInput = document.getElementById('whois-input');
+var whoisBtn = document.getElementById('whois-btn');
+var whoisResults = document.getElementById('whois-results');
+
+whoisInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupWHOIS(); });
+
+function lookupWHOIS() {
+    var query = whoisInput.value.trim();
+    if (!query) return;
+    whoisBtn.disabled = true;
+    whoisBtn.textContent = 'Looking up...';
+    whoisResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying RDAP</span></div>';
+    fetch('https://rdap.org/ip/' + encodeURIComponent(query))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            renderWHOIS(query, d);
+            whoisBtn.disabled = false;
+            whoisBtn.textContent = 'Look Up';
+            history.pushState({}, '', '?tab=whois&ip=' + encodeURIComponent(query));
+        })
+        .catch(function() {
+            whoisResults.innerHTML = '<div class="error-card">WHOIS lookup failed — please check the IP and try again.</div>';
+            whoisBtn.disabled = false;
+            whoisBtn.textContent = 'Look Up';
+        });
+}
+
+function getVcard(entity, field) {
+    try {
+        var vcard = entity.vcardArray[1];
+        for (var i = 0; i < vcard.length; i++) {
+            if (vcard[i][0] === field) return vcard[i][3] || '';
+        }
+    } catch(e) {}
+    return '';
+}
+
+function getEntityByRole(entities, role) {
+    if (!entities) return null;
+    for (var i = 0; i < entities.length; i++) {
+        if (entities[i].roles && entities[i].roles.indexOf(role) >= 0) return entities[i];
+        if (entities[i].entities) {
+            var nested = getEntityByRole(entities[i].entities, role);
+            if (nested) return nested;
+        }
+    }
+    return null;
+}
+
+function getEvent(events, action) {
+    if (!events) return '—';
+    for (var i = 0; i < events.length; i++) {
+        if (events[i].eventAction === action) {
+            return new Date(events[i].eventDate).toLocaleDateString('en-GB');
+        }
+    }
+    return '—';
+}
+
+function renderWHOIS(query, d) {
+    var registrant = getEntityByRole(d.entities, 'registrant');
+    var abuse = getEntityByRole(d.entities, 'abuse');
+    var name = d.name || '—';
+    var network = (d.startAddress && d.endAddress) ? d.startAddress + ' — ' + d.endAddress : '—';
+    var cidr = (d.cidr0_cidrs && d.cidr0_cidrs.length > 0) ? d.cidr0_cidrs[0].v4prefix + '/' + d.cidr0_cidrs[0].length : '—';
+    var registered = getEvent(d.events, 'registration');
+    var lastChanged = getEvent(d.events, 'last changed');
+    var status = (d.status && d.status.length > 0) ? d.status.join(', ') : '—';
+    var type = d.type || '—';
+    var registrantName = registrant ? getVcard(registrant, 'fn') : '—';
+    var registrantAddr = registrant ? (registrant.vcardArray ? (function() {
+        try { var a = registrant.vcardArray[1]; for(var i=0;i<a.length;i++) { if(a[i][0]==='adr') return a[i][1].label || '—'; } } catch(e) {} return '—';
+    })() : '—') : '—';
+    var abuseEmail = abuse ? getVcard(abuse, 'email') : '—';
+    var abusePhone = abuse ? getVcard(abuse, 'tel') : '—';
+    var registry = d.port43 ? d.port43.replace('whois.', '').replace('.net', '').replace('.org', '').toUpperCase() : '—';
+
+    whoisResults.innerHTML =
+        '<div class="ip-header fade-in"><div class="ip-address-display">' + query + '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">' + name + '</span></div></div>' +
+        '<div class="results-grid fade-in">' +
+            '<div class="result-card"><div class="card-title">Network</div>' +
+                '<div class="data-row"><span class="data-key">Name</span><span class="data-val">' + name + '</span></div>' +
+                '<div class="data-row"><span class="data-key">CIDR</span><span class="data-val blue">' + cidr + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Range</span><span class="data-val muted" style="font-size:11px;">' + network + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Type</span><span class="data-val muted">' + type + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Status</span><span class="data-val green">' + status + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Registry</span><span class="data-val muted">' + registry + '</span></div>' +
+            '</div>' +
+            '<div class="result-card"><div class="card-title">Registrant</div>' +
+                '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val">' + registrantName + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Address</span><span class="data-val muted" style="font-size:11px;text-align:right;white-space:pre-line;">' + registrantAddr.replace(/\n/g, ', ') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Registered</span><span class="data-val muted">' + registered + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Last Changed</span><span class="data-val muted">' + lastChanged + '</span></div>' +
+            '</div>' +
+            '<div class="result-card"><div class="card-title">Abuse Contact</div>' +
+                '<div class="data-row"><span class="data-key">Email</span><span class="data-val blue" style="font-size:11px;">' + (abuseEmail !== '—' ? '<a href="mailto:' + abuseEmail + '" style="color:var(--blue-bright);text-decoration:none;">' + abuseEmail + '</a>' : '—') + '</span></div>' +
+                '<div class="data-row"><span class="data-key">Phone</span><span class="data-val muted">' + abusePhone + '</span></div>' +
+            '</div>' +
+        '</div>';
+}
+
+// ── Network Tools ───────────────────────────────────────────────────────────
+var toolsInput = document.getElementById('tools-input');
+var toolsBtn = document.getElementById('tools-btn');
+var toolsResults = document.getElementById('tools-results');
+
+toolsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') runTools(); });
+
+function runTools() {
+    var ip = toolsInput.value.trim();
+    if (!ip || !isIPAddress(ip)) {
+        toolsResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
+        return;
+    }
+    toolsBtn.disabled = true;
+    toolsBtn.textContent = 'Running...';
+    toolsResults.innerHTML = '<div class="loading"><span class="loading-dots">Running ping, port scan and traceroute</span></div>';
+    history.pushState({}, '', '?tab=tools&ip=' + encodeURIComponent(ip));
+
+    var pingPromise = fetch('https://tools.ignixip.com/ping/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var scanPromise = fetch('https://tools.ignixip.com/scan/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var tracePromise = fetch('https://tools.ignixip.com/traceroute/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // Render ping and scan first, traceroute takes longer
+    Promise.all([pingPromise, scanPromise]).then(function(res) {
+        renderTools(ip, res[0], res[1]);
+        toolsBtn.disabled = false;
+        toolsBtn.textContent = 'Run';
+        // Add traceroute when it arrives
+        tracePromise.then(function(trace) {
+            appendTraceroute(ip, trace);
+        }).catch(function() {
+            appendTraceroute(ip, null);
+        });
+    });
+}
+
+function renderTools(ip, ping, scan) {
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + ip + '</div></div>';
+    html += '<div class="results-grid fade-in">';
+
+    if (ping) {
+        var alive = ping.alive;
+        var s = ping.stats || {};
+        html += '<div class="result-card"><div class="card-title">Ping</div>';
+        html += '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + (alive ? 'green' : 'red') + '">' + (alive ? 'Reachable' : 'Unreachable') + '</span></div>';
+        if (s.rtt_avg !== undefined) {
+            html += '<div class="data-row"><span class="data-key">Avg RTT</span><span class="data-val">' + s.rtt_avg.toFixed(2) + ' ms</span></div>';
+            html += '<div class="data-row"><span class="data-key">Min RTT</span><span class="data-val muted">' + s.rtt_min.toFixed(2) + ' ms</span></div>';
+            html += '<div class="data-row"><span class="data-key">Max RTT</span><span class="data-val muted">' + s.rtt_max.toFixed(2) + ' ms</span></div>';
+        }
+        if (s.loss !== undefined) {
+            html += '<div class="data-row"><span class="data-key">Packet Loss</span><span class="data-val ' + (s.loss > 0 ? 'amber' : 'green') + '">' + s.loss + '%</span></div>';
+        }
+        html += '<div class="data-row"><span class="data-key">Packets</span><span class="data-val muted">' + (s.transmitted || 4) + ' sent / ' + (s.received || 0) + ' received</span></div>';
+        html += '</div>';
+    }
+
+    if (scan) {
+        html += '<div class="result-card"><div class="card-title">Port Scan</div>';
+        html += '<div class="data-row"><span class="data-key">Host Status</span><span class="data-val ' + (scan.alive ? 'green' : 'red') + '">' + (scan.alive ? 'Up' : 'Down') + '</span></div>';
+        html += '<div class="data-row"><span class="data-key">Ports Scanned</span><span class="data-val muted">' + (scan.scanned || 23) + ' common ports</span></div>';
+        html += '<div class="data-row"><span class="data-key">Open Ports</span><span class="data-val ' + (scan.ports && scan.ports.length > 0 ? 'amber' : 'green') + '">' + (scan.ports ? scan.ports.length : 0) + '</span></div>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    if (scan && scan.ports && scan.ports.length > 0) {
+        html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Open Ports</div>';
+        for (var i = 0; i < scan.ports.length; i++) {
+            var p = scan.ports[i];
+            html += '<div class="dns-record">';
+            html += '<span class="dns-type-badge dns-A" style="min-width:48px;">' + p.port + '</span>';
+            html += '<span class="dns-record-data"><span style="color:var(--text);">' + p.service + '</span></span>';
+            html += '<span class="dns-ttl" style="color:var(--amber);">open</span>';
+            html += '</div>';
+        }
+        html += '</div>';
+    } else if (scan && scan.ports && scan.ports.length === 0) {
+        html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Open Ports</div>';
+        html += '<div class="dns-empty">No open ports found on scanned ports</div>';
+        html += '</div>';
+    }
+
+    // Traceroute placeholder
+    html += '<div id="traceroute-section" class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Traceroute</div>';
+    html += '<div class="loading" style="padding:16px;"><span class="loading-dots">Running traceroute</span></div>';
+    html += '</div>';
+
+    toolsResults.innerHTML = html;
+}
+
+function appendTraceroute(ip, trace) {
+    var el = document.getElementById('traceroute-section');
+    if (!el) return;
+    if (!trace || trace.error) {
+        el.innerHTML = '<div class="card-title">Traceroute</div><div class="dns-empty">' + (trace && trace.error ? trace.error : 'Traceroute failed') + '</div>';
+        return;
+    }
+    var html = '<div class="card-title">Traceroute</div>';
+    if (trace.hops && trace.hops.length > 0) {
+        for (var i = 0; i < trace.hops.length; i++) {
+            var h = trace.hops[i];
+            var hopColor = h.ip === '*' ? 'var(--text-faint)' : h.ip === ip ? 'var(--green)' : 'var(--text-muted)';
+            var rttText = h.rtt !== null ? h.rtt.toFixed(2) + ' ms' : '';
+            html += '<div class="dns-record">';
+            html += '<span class="dns-type-badge dns-NS" style="min-width:32px;font-size:10px;">' + h.hop + '</span>';
+            if (h.ip === '*') {
+                html += '<span class="dns-record-data" style="color:var(--text-faint);">* * *</span>';
+            } else {
+                var hostDisplay = h.host !== h.ip ? h.host + ' <span style="color:var(--text-faint);">(' + h.ip + ')</span>' : h.ip;
+                html += '<span class="dns-record-data" style="color:' + hopColor + ';">' + hostDisplay + '</span>';
+            }
+            html += '<span class="dns-ttl" style="color:' + (h.rtt !== null && h.rtt > 100 ? 'var(--amber)' : 'var(--text-dim)') + ';">' + rttText + '</span>';
+            html += '</div>';
+        }
+        html += '<div style="padding:8px 0;font-size:11px;color:var(--text-faint);font-family:JetBrains Mono,monospace;">' +
+            trace.total_hops + ' hops' + (trace.reached ? ' — destination reached' : ' — destination not reached') + '</div>';
+    } else {
+        html += '<div class="dns-empty">No hops returned</div>';
+    }
+    el.innerHTML = html;
+}
+
+// ── ASN Lookup ──────────────────────────────────────────────────────────────
+var asnInput = document.getElementById('asn-input');
+var asnBtn = document.getElementById('asn-btn');
+var asnResults = document.getElementById('asn-results');
+
+asnInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookupASN(); });
+
+function lookupASN() {
+    var raw = asnInput.value.trim();
+    var num = raw.replace(/^AS/i, '');
+    if (!num) return;
+    asnBtn.disabled = true;
+    asnBtn.textContent = 'Looking up...';
+    asnResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying ASN data</span></div>';
+    var rdapUrl = 'https://rdap.org/autnum/' + encodeURIComponent(num);
+    var htUrl = 'https://api.hackertarget.com/aslookup/?q=AS' + encodeURIComponent(num);
+    Promise.all([
+        fetch(rdapUrl).then(function(r) { return r.json(); }).catch(function() { return null; }),
+        fetch(htUrl).then(function(r) { return r.text(); }).catch(function() { return null; })
+    ]).then(function(res) {
+        renderASN('AS' + num, res[0], res[1]);
+        asnBtn.disabled = false;
+        asnBtn.textContent = 'Look Up';
+        history.pushState({}, '', '?tab=asn&asn=AS' + encodeURIComponent(num));
+    });
+}
+
+function renderASN(asn, rdap, prefixText) {
+    if (!rdap && !prefixText) {
+        asnResults.innerHTML = '<div class="error-card">ASN lookup failed</div>';
+        return;
+    }
+    var name = rdap ? (rdap.name || 'Unknown') : 'Unknown';
+    var registrant = rdap ? getEntityByRole(rdap.entities, 'registrant') : null;
+    var abuse = rdap ? getEntityByRole(rdap.entities, 'abuse') : null;
+    var orgName = registrant ? getVcard(registrant, 'fn') : 'Unknown';
+    var abuseEmail = abuse ? getVcard(abuse, 'email') : '';
+    var registered = rdap ? getEvent(rdap.events, 'registration') : '';
+    var status = rdap && rdap.status ? rdap.status.join(', ') : '';
+    var registry = rdap && rdap.port43 ? rdap.port43.replace('whois.','').replace('.net','').replace('.org','').toUpperCase() : '';
+    var prefixes = [];
+    if (prefixText) {
+        var lines = prefixText.split('\n');
+        for (var i = 1; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (line && line.indexOf('/') > 0 && !line.startsWith('"')) {
+                prefixes.push(line);
+            }
+        }
+    }
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + asn;
+    html += '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">' + name + '</span></div></div>';
+    html += '<div class="results-grid fade-in">';
+    html += '<div class="result-card"><div class="card-title">ASN Details</div>';
+    html += '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue">' + asn + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Name</span><span class="data-val">' + name + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Organisation</span><span class="data-val">' + orgName + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Registry</span><span class="data-val muted">' + registry + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Registered</span><span class="data-val muted">' + registered + '</span></div>';
+    html += '<div class="data-row"><span class="data-key">Status</span><span class="data-val green">' + status + '</span></div>';
+    html += '</div>';
+    html += '<div class="result-card"><div class="card-title">Abuse Contact</div>';
+    if (abuseEmail) {
+        html += '<div class="data-row"><span class="data-key">Email</span><span class="data-val blue" style="font-size:11px;"><a href="mailto:' + abuseEmail + '" style="color:var(--blue-bright);text-decoration:none;">' + abuseEmail + '</a></span></div>';
+    }
+    html += '<div class="data-row"><span class="data-key">Prefixes</span><span class="data-val">' + prefixes.length + ' announced</span></div>';
+    html += '</div></div>';
+    if (prefixes.length > 0) {
+        html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Announced Prefixes (' + prefixes.length + ')</div>';
+        var show = prefixes.slice(0, 50);
+        for (var j = 0; j < show.length; j++) {
+            html += '<div class="dns-record"><span class="dns-type-badge dns-NS" style="min-width:48px;">IPv4</span><span class="dns-record-data">' + show[j] + '</span></div>';
+        }
+        if (prefixes.length > 50) {
+            html += '<div class="dns-empty" style="padding:8px 0;">... and ' + (prefixes.length - 50) + ' more</div>';
+        }
+        html += '</div>';
+    }
+    asnResults.innerHTML = html;
+}
+
+// ── Bulk Lookup ─────────────────────────────────────────────────────────────
+var TOOLS_API = 'https://tools.ignixip.com';
+
+function getBulkToken() {
+    return localStorage.getItem('ignixip_token') || null;
+}
+function setBulkToken(token) {
+    localStorage.setItem('ignixip_token', token);
+}
+function clearBulkToken() {
+    localStorage.removeItem('ignixip_token');
+}
+
+function initBulkTab() {
+    var token = getBulkToken();
+    if (token) {
+        // Verify token is still valid
+        fetch(TOOLS_API + '/user/status', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.error) {
+                    clearBulkToken();
+                    showBulkAuth();
+                } else {
+                    showBulkInput(d);
+                }
+            })
+            .catch(function() { showBulkAuth(); });
+    } else {
+        showBulkAuth();
+    }
+}
+
+function showBulkAuth() {
+    document.getElementById('bulk-auth-area').innerHTML =
+        '<div style="text-align:center;padding:40px 20px;">' +
+            '<div style="font-size:40px;margin-bottom:16px;">&#9776;</div>' +
+            '<h3 style="font-size:18px;color:var(--text);margin-bottom:8px;">Bulk IP Lookup</h3>' +
+            '<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.6;">Check up to 25 IP addresses at once. Get risk scores, location, and blacklist status in one table. Enter your email to unlock — free, no password needed.</p>' +
+            '<button class="search-btn" onclick="openRegModal()" style="font-size:14px;padding:12px 28px;">Sign Up Free</button>' +
+        '</div>';
+    document.getElementById('bulk-input-area').style.display = 'none';
+}
+
+function showBulkInput(userInfo) {
+    document.getElementById('bulk-auth-area').innerHTML = '';
+    document.getElementById('bulk-input-area').style.display = 'block';
+    document.getElementById('bulk-user-info').textContent = userInfo.email + ' \u2014 ' + (userInfo.bulk_count_today || 0) + '/' + userInfo.daily_bulk_limit + ' bulk lookups today';
+    // Load monitoring section
+    document.getElementById('monitor-section').style.display = 'block';
+    loadMonitoredIPs();
+    loadWebhookUrl();
+}
+
+function openRegModal() {
+    var modal = document.getElementById('reg-modal');
+    modal.style.display = 'flex';
+    document.getElementById('reg-email').focus();
+    document.getElementById('reg-status').textContent = '';
+}
+
+function closeRegModal() {
+    document.getElementById('reg-modal').style.display = 'none';
+}
+
+function submitRegistration() {
+    var email = document.getElementById('reg-email').value.trim();
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        document.getElementById('reg-status').innerHTML = '<span style="color:var(--red);">Please enter a valid email</span>';
+        return;
+    }
+    var btn = document.getElementById('reg-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    document.getElementById('reg-status').innerHTML = '<span style="color:var(--text-dim);">Sending verification email...</span>';
+
+    fetch(TOOLS_API + '/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            document.getElementById('reg-status').innerHTML = '<span style="color:var(--red);">' + d.error + '</span>';
+        } else if (d.status === 'already_verified') {
+            // Already verified — log them in directly
+            setBulkToken(d.token);
+            closeRegModal();
+            initBulkTab();
+            showToast('Welcome back!');
+        } else if (d.dev_verify_url) {
+            // Dev mode — no email sending
+            document.getElementById('reg-status').innerHTML = '<span style="color:var(--amber);">Dev mode: <a href="' + d.dev_verify_url + '" target="_blank" style="color:var(--blue-bright);">Click to verify</a></span>';
+        } else {
+            document.getElementById('reg-status').innerHTML = '<span style="color:var(--green);">&#10003; Check your inbox — click the link to verify</span>';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Sign Up';
+    })
+    .catch(function() {
+        document.getElementById('reg-status').innerHTML = '<span style="color:var(--red);">Something went wrong — try again</span>';
+        btn.disabled = false;
+        btn.textContent = 'Sign Up';
+    });
+}
+
+function bulkLogout() {
+    clearBulkToken();
+    showBulkAuth();
+    document.getElementById('bulk-results').innerHTML = '';
+    showToast('Signed out');
+}
+
+// Count IPs in textarea
+var bulkTextarea = document.getElementById('bulk-ips');
+if (bulkTextarea) {
+    bulkTextarea.addEventListener('input', function() {
+        var ips = extractIPs(bulkTextarea.value);
+        document.getElementById('bulk-count').textContent = ips.length;
+    });
+}
+
+function extractIPs(text) {
+    // Extract IPv4
+    var v4matches = text.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g) || [];
+    // Extract IPv6 — matches common formats including :: shorthand
+    var v6matches = text.match(/(?:^|[\s,;|])([0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{0,4}){2,7}|::(?:[0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}|[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){1,6}:)(?=$|[\s,;|])/g) || [];
+    v6matches = v6matches.map(function(m) { return m.trim().replace(/^[,;|]/, '').trim(); });
+    var all = v4matches.concat(v6matches);
+    // Deduplicate and validate
+    var seen = {};
+    var valid = [];
+    for (var i = 0; i < all.length; i++) {
+        var ip = all[i].trim();
+        if (!ip || seen[ip]) continue;
+        seen[ip] = true;
+        if (isIPAddress(ip)) valid.push(ip);
+    }
+    return valid;
+}
+
+function clearBulk() {
+    document.getElementById('bulk-ips').value = '';
+    document.getElementById('bulk-count').textContent = '0';
+    document.getElementById('bulk-results').innerHTML = '';
+}
+
+function runBulkLookup() {
+    var token = getBulkToken();
+    if (!token) { openRegModal(); return; }
+
+    var ips = extractIPs(document.getElementById('bulk-ips').value);
+    if (ips.length === 0) {
+        document.getElementById('bulk-results').innerHTML = '<div class="error-card">No valid IP addresses found</div>';
+        return;
+    }
+    if (ips.length > 25) {
+        document.getElementById('bulk-results').innerHTML = '<div class="error-card">Maximum 25 IPs per lookup (found ' + ips.length + ')</div>';
+        return;
+    }
+
+    var btn = document.getElementById('bulk-btn');
+    btn.disabled = true;
+    btn.textContent = 'Looking up ' + ips.length + ' IPs...';
+    document.getElementById('bulk-results').innerHTML = '<div class="loading"><span class="loading-dots">Checking ' + ips.length + ' IP addresses</span></div>';
+
+    fetch(TOOLS_API + '/bulk-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ ips: ips })
+    })
+    .then(function(r) {
+        if (r.status === 401) {
+            clearBulkToken();
+            showBulkAuth();
+            document.getElementById('bulk-results').innerHTML = '<div class="error-card">Session expired — please sign up again</div>';
+            throw new Error('auth');
+        }
+        if (r.status === 429) {
+            return r.json().then(function(d) {
+                document.getElementById('bulk-results').innerHTML = '<div class="error-card">' + (d.error || 'Rate limit exceeded') + '</div>';
+                throw new Error('ratelimit');
+            });
+        }
+        return r.json();
+    })
+    .then(function(d) {
+        if (d && d.results) {
+            renderBulkResults(d);
+            // Refresh user info
+            initBulkTab();
+        }
+        btn.disabled = false;
+        btn.textContent = 'Look Up All';
+    })
+    .catch(function(e) {
+        if (e.message !== 'auth' && e.message !== 'ratelimit') {
+            document.getElementById('bulk-results').innerHTML = '<div class="error-card">Lookup failed — check your connection</div>';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Look Up All';
+    });
+}
+
+var lastBulkResults = null;
+
+function renderBulkResults(data) {
+    lastBulkResults = data;
+    var results = data.results;
+    var highCount = 0, medCount = 0, lowCount = 0, blCount = 0;
+    for (var i = 0; i < results.length; i++) {
+        var r = results[i];
+        if (r.risk_label === 'High') highCount++;
+        else if (r.risk_label === 'Medium') medCount++;
+        else lowCount++;
+        if (r.blacklist_count > 0) blCount++;
+    }
+
+    var html = '';
+    // Summary cards
+    html += '<div class="bulk-summary-grid fade-in">';
+    html += '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--text);">' + results.length + '</div><div class="bl-stat-label">IPs Checked</div></div>';
+    html += '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--red);">' + highCount + '</div><div class="bl-stat-label">High Risk</div></div>';
+    html += '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--amber);">' + medCount + '</div><div class="bl-stat-label">Medium Risk</div></div>';
+    html += '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--green);">' + lowCount + '</div><div class="bl-stat-label">Low Risk</div></div>';
+    html += '</div>';
+
+    // Action bar
+    html += '<div class="action-bar fade-in">';
+    html += '<button class="action-btn" onclick="exportBulkCSV()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>';
+    html += '<button class="action-btn" onclick="exportBulkJSON()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON</button>';
+    html += '</div>';
+
+    // Invalid IPs warning
+    if (data.invalid && data.invalid.length > 0) {
+        html += '<div style="font-size:11px;color:var(--amber);font-family:JetBrains Mono,monospace;margin-bottom:10px;">&#9888; Skipped ' + data.invalid.length + ' invalid/private: ' + data.invalid.join(', ') + '</div>';
+    }
+
+    // Results table
+    html += '<div class="dns-section fade-in" style="padding:0;overflow-x:auto;">';
+    html += '<table class="bulk-table"><thead><tr>';
+    html += '<th onclick="sortBulkTable(0)">IP</th>';
+    html += '<th onclick="sortBulkTable(1)">Risk</th>';
+    html += '<th onclick="sortBulkTable(2)">Score</th>';
+    html += '<th onclick="sortBulkTable(3)">Country</th>';
+    html += '<th onclick="sortBulkTable(4)">Org</th>';
+    html += '<th onclick="sortBulkTable(5)">Blacklists</th>';
+    html += '<th onclick="sortBulkTable(6)">Type</th>';
+    html += '</tr></thead><tbody id="bulk-table-body">';
+
+    for (var j = 0; j < results.length; j++) {
+        html += buildBulkRow(results[j]);
+    }
+    html += '</tbody></table></div>';
+
+    // CTA
+    if (highCount > 0 || medCount > 0) {
+        html += '<div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-faint);">Seeing suspicious IPs on your network? <a href="https://ignix.co.uk" target="_blank" style="color:var(--blue-bright);text-decoration:none;">Get 24/7 AI-powered monitoring \u2192</a></div>';
+    }
+
+    document.getElementById('bulk-results').innerHTML = html;
+}
+
+function buildBulkRow(r) {
+    var riskClass = r.risk_label === 'High' ? 'risk-high' : r.risk_label === 'Medium' ? 'risk-medium' : 'risk-low';
+    var org = r.org || '—';
+    if (org.length > 30) org = org.substring(0, 30) + '...';
+    var blText = r.blacklist_count > 0 ? r.blacklist_count + ' listed' : 'Clean';
+    var blClass = r.blacklist_count > 0 ? 'style="color:var(--red);"' : '';
+    var typeText = r.is_hosting ? 'Hosting' : 'Residential';
+    return '<tr>' +
+        '<td><a class="ip-link" onclick="setAndLookup(\'ip\',\'' + r.ip + '\')">' + r.ip + '</a></td>' +
+        '<td class="' + riskClass + '">' + r.risk_label + '</td>' +
+        '<td class="' + riskClass + '">' + r.risk_score + '</td>' +
+        '<td>' + (r.country || '—') + '</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="' + (r.org || '') + '">' + org + '</td>' +
+        '<td ' + blClass + '>' + blText + '</td>' +
+        '<td>' + typeText + '</td>' +
+    '</tr>';
+}
+
+var bulkSortCol = -1;
+var bulkSortAsc = true;
+
+function sortBulkTable(col) {
+    if (!lastBulkResults) return;
+    if (bulkSortCol === col) { bulkSortAsc = !bulkSortAsc; }
+    else { bulkSortCol = col; bulkSortAsc = true; }
+
+    var keys = ['ip', 'risk_label', 'risk_score', 'country', 'org', 'blacklist_count', 'is_hosting'];
+    var key = keys[col];
+    lastBulkResults.results.sort(function(a, b) {
+        var va = a[key] || '', vb = b[key] || '';
+        if (typeof va === 'number' && typeof vb === 'number') return bulkSortAsc ? va - vb : vb - va;
+        va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+        if (va < vb) return bulkSortAsc ? -1 : 1;
+        if (va > vb) return bulkSortAsc ? 1 : -1;
+        return 0;
+    });
+
+    var tbody = document.getElementById('bulk-table-body');
+    var html = '';
+    for (var i = 0; i < lastBulkResults.results.length; i++) {
+        html += buildBulkRow(lastBulkResults.results[i]);
+    }
+    tbody.innerHTML = html;
+}
+
+function exportBulkCSV() {
+    if (!lastBulkResults) return;
+    var lines = ['IP,Risk,Score,Country,Region,City,Organisation,Blacklists,Blacklist Names,Type'];
+    lastBulkResults.results.forEach(function(r) {
+        lines.push([
+            r.ip, r.risk_label, r.risk_score, r.country || '', r.region || '', r.city || '',
+            '"' + (r.org || '').replace(/"/g, '""') + '"',
+            r.blacklist_count, '"' + (r.blacklist_names || []).join('; ') + '"',
+            r.is_hosting ? 'Hosting' : 'Residential'
+        ].join(','));
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ignixip-bulk-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exported');
+}
+
+function exportBulkJSON() {
+    if (!lastBulkResults) return;
+    var blob = new Blob([JSON.stringify(lastBulkResults, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ignixip-bulk-' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('JSON exported');
+}
+
+// ── IP History Timeline ──────────────────────────────────────────────────────
+function loadIPHistory(ip) {
+    fetch(TOOLS_API + '/history/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var el = document.getElementById('ip-history');
+            if (!el) return;
+            if (!d.timeline || d.timeline.length < 2) return; // Only show if we have multiple data points
+
+            var html = '<div class="result-card" style="margin-top:8px;">';
+            html += '<div class="card-title">History</div>';
+            html += '<div class="data-row"><span class="data-key">First Seen</span><span class="data-val muted">' + formatHistoryDate(d.first_seen) + '</span></div>';
+            html += '<div class="data-row"><span class="data-key">Last Seen</span><span class="data-val muted">' + formatHistoryDate(d.last_seen) + '</span></div>';
+            html += '<div class="data-row"><span class="data-key">Total Lookups</span><span class="data-val muted">' + d.total_lookups + '</span></div>';
+            if (d.report_count > 0) {
+                html += '<div class="data-row"><span class="data-key">Reports</span><span class="data-val" style="color:var(--amber);">' + d.report_count + ' community reports</span></div>';
+            }
+
+            // Risk timeline chart
+            html += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">';
+            html += '<div style="font-size:10px;color:var(--text-faint);font-family:JetBrains Mono,monospace;margin-bottom:8px;">RISK SCORE OVER TIME</div>';
+            html += '<div style="display:flex;align-items:flex-end;gap:2px;height:60px;">';
+            var maxScore = Math.max.apply(null, d.timeline.map(function(t) { return t.risk_score; }));
+            if (maxScore < 10) maxScore = 10;
+            for (var i = 0; i < d.timeline.length; i++) {
+                var t = d.timeline[i];
+                var h = Math.max(4, Math.round((t.risk_score / maxScore) * 56));
+                var barColor = t.risk_score >= 40 ? 'var(--red)' : t.risk_score >= 16 ? 'var(--amber)' : 'var(--green)';
+                var barWidth = Math.max(4, Math.min(20, Math.floor(300 / d.timeline.length)));
+                var dateLabel = t.date.substring(5); // MM-DD
+                html += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:' + barWidth + 'px;" title="' + t.date + ': Risk ' + t.risk_score + ' (' + t.risk_label + ') — ' + t.lookups + ' lookups">';
+                html += '<div style="width:100%;height:' + h + 'px;background:' + barColor + ';border-radius:2px 2px 0 0;min-width:4px;opacity:0.8;"></div>';
+                html += '</div>';
+            }
+            html += '</div>';
+            // Date labels — show first and last
+            html += '<div style="display:flex;justify-content:space-between;margin-top:4px;">';
+            html += '<span style="font-size:9px;color:var(--text-faint);font-family:JetBrains Mono,monospace;">' + d.timeline[0].date + '</span>';
+            html += '<span style="font-size:9px;color:var(--text-faint);font-family:JetBrains Mono,monospace;">' + d.timeline[d.timeline.length - 1].date + '</span>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '</div>';
+            el.innerHTML = html;
+        })
+        .catch(function() {});
+}
+
+function formatHistoryDate(dt) {
+    if (!dt) return '—';
+    try {
+        var d = new Date(dt + 'Z');
+        return d.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    } catch(e) { return dt; }
+}
+
+// ── Community Reporting ──────────────────────────────────────────────────────
+function loadCommunityReports(ip) {
+    fetch(TOOLS_API + '/reports/' + encodeURIComponent(ip))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var el = document.getElementById('community-reports');
+            if (!el) return;
+            if (d.total_reports === 0) return; // Don't show if no reports
+            var catLabels = {spam:'Spam',malware:'Malware',brute_force:'Brute Force',scanning:'Scanning',phishing:'Phishing',botnet:'Botnet',fraud:'Fraud',other:'Other'};
+            var html = '<div class="result-card" style="margin-top:8px;">';
+            html += '<div class="card-title" style="color:var(--amber);">Community Reports (' + d.total_reports + ')</div>';
+            for (var i = 0; i < d.categories.length; i++) {
+                var cat = d.categories[i];
+                html += '<span class="risk-factor risk-factor-red" style="margin-right:6px;">' + (catLabels[cat.category] || cat.category) + ' (' + cat.count + ')</span>';
+            }
+            if (d.recent && d.recent.length > 0) {
+                html += '<div style="margin-top:10px;">';
+                for (var j = 0; j < d.recent.length; j++) {
+                    var r = d.recent[j];
+                    var date = new Date(r.date + 'Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+                    html += '<div style="font-size:11px;color:var(--text-faint);padding:3px 0;border-top:1px solid var(--border);">';
+                    html += '<span style="color:var(--text-muted);">' + (catLabels[r.category] || r.category) + '</span>';
+                    if (r.comment) html += ' — ' + r.comment;
+                    html += ' <span style="color:var(--text-faint);">(' + date + ')</span>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            el.innerHTML = html;
+        })
+        .catch(function() {});
+}
+
+function showReportForm(ip) {
+    var existing = document.getElementById('report-form-container');
+    if (existing) { existing.remove(); return; }
+    var catLabels = [
+        {val:'spam', label:'Spam'},
+        {val:'malware', label:'Malware'},
+        {val:'brute_force', label:'Brute Force'},
+        {val:'scanning', label:'Port Scanning'},
+        {val:'phishing', label:'Phishing'},
+        {val:'botnet', label:'Botnet'},
+        {val:'fraud', label:'Fraud'},
+        {val:'other', label:'Other'}
+    ];
+    var html = '<div id="report-form-container" class="result-card fade-in" style="margin-top:8px;border-color:var(--amber);">';
+    html += '<div class="card-title" style="color:var(--amber);">Report ' + ip + '</div>';
+    html += '<div style="margin-bottom:10px;font-size:12px;color:var(--text-muted);">Help the community by reporting malicious activity from this IP.</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">';
+    for (var i = 0; i < catLabels.length; i++) {
+        html += '<button class="filter-btn" onclick="selectReportCat(this,\'' + catLabels[i].val + '\')" data-cat="' + catLabels[i].val + '" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-size:11px;cursor:pointer;">' + catLabels[i].label + '</button>';
+    }
+    html += '</div>';
+    html += '<input type="text" id="report-comment" placeholder="Optional: brief description of what you observed" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:12px;outline:none;margin-bottom:10px;">';
+    html += '<div style="display:flex;gap:8px;align-items:center;">';
+    html += '<button class="action-btn" onclick="submitReport(\'' + ip + '\')" style="background:var(--amber);color:var(--bg);font-weight:600;">Submit Report</button>';
+    html += '<button class="action-btn" onclick="document.getElementById(\'report-form-container\').remove()">Cancel</button>';
+    html += '<span id="report-status" style="font-size:11px;color:var(--text-faint);"></span>';
+    html += '</div></div>';
+
+    var actionBar = document.querySelector('.action-bar');
+    if (actionBar) actionBar.insertAdjacentHTML('afterend', html);
+}
+
+var selectedReportCat = '';
+function selectReportCat(btn, cat) {
+    document.querySelectorAll('#report-form-container .filter-btn').forEach(function(b) {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-dim)';
+        b.style.borderColor = 'var(--border2)';
+    });
+    btn.style.background = 'rgba(251,191,36,0.12)';
+    btn.style.color = 'var(--amber)';
+    btn.style.borderColor = 'var(--amber)';
+    selectedReportCat = cat;
+}
+
+function submitReport(ip) {
+    if (!selectedReportCat) {
+        document.getElementById('report-status').textContent = 'Please select a category';
+        document.getElementById('report-status').style.color = 'var(--red)';
+        return;
+    }
+    var comment = document.getElementById('report-comment').value.trim();
+    var status = document.getElementById('report-status');
+    status.textContent = 'Submitting...';
+    status.style.color = 'var(--text-dim)';
+
+    fetch(TOOLS_API + '/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip: ip, category: selectedReportCat, comment: comment })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = d.error;
+            status.style.color = 'var(--red)';
+        } else {
+            status.textContent = 'Reported — thank you!';
+            status.style.color = 'var(--green)';
+            showToast('IP reported — ' + d.report_count + ' total reports');
+            selectedReportCat = '';
+            setTimeout(function() {
+                var form = document.getElementById('report-form-container');
+                if (form) form.remove();
+                loadCommunityReports(ip);
+            }, 1500);
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Failed to submit';
+        status.style.color = 'var(--red)';
+    });
+}
+
+// ── Webhook Configuration ────────────────────────────────────────────────────
+function loadWebhookUrl() {
+    var token = getBulkToken();
+    if (!token) return;
+    fetch(TOOLS_API + '/user/webhook', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.webhook_url) {
+                document.getElementById('webhook-url-input').value = d.webhook_url;
+                document.getElementById('webhook-status').textContent = 'Webhook configured — alerts will be sent here.';
+                document.getElementById('webhook-status').style.color = 'var(--green)';
+            }
+        })
+        .catch(function() {});
+}
+
+function saveWebhook() {
+    var token = getBulkToken();
+    if (!token) return;
+    var url = document.getElementById('webhook-url-input').value.trim();
+    var status = document.getElementById('webhook-status');
+    fetch(TOOLS_API + '/user/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ webhook_url: url })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = d.error;
+            status.style.color = 'var(--red)';
+        } else if (url) {
+            status.textContent = 'Webhook saved — alerts will be sent here.';
+            status.style.color = 'var(--green)';
+            showToast('Webhook saved');
+        } else {
+            status.textContent = 'Webhook removed.';
+            status.style.color = 'var(--text-faint)';
+            showToast('Webhook removed');
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Failed to save webhook.';
+        status.style.color = 'var(--red)';
+    });
+}
+
+function testWebhook() {
+    var token = getBulkToken();
+    if (!token) return;
+    var status = document.getElementById('webhook-status');
+    status.textContent = 'Sending test...';
+    status.style.color = 'var(--text-dim)';
+    fetch(TOOLS_API + '/user/webhook/test', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = 'Test failed: ' + d.error;
+            status.style.color = 'var(--red)';
+        } else {
+            status.textContent = 'Test sent successfully!';
+            status.style.color = 'var(--green)';
+            showToast('Webhook test sent');
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Test failed — check your URL.';
+        status.style.color = 'var(--red)';
+    });
+}
+
+// ── IP Monitoring ────────────────────────────────────────────────────────────
+function loadMonitoredIPs() {
+    var token = getBulkToken();
+    if (!token) return;
+    fetch(TOOLS_API + '/monitor/list', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.ips) renderMonitorList(d.ips, d.limit);
+        })
+        .catch(function() {});
+}
+
+function renderMonitorList(ips, limit) {
+    var el = document.getElementById('monitor-list');
+    if (ips.length === 0) {
+        el.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-family:JetBrains Mono,monospace;padding:12px 0;">No IPs monitored yet. Add an IP above to get blacklist alerts every 6 hours. Up to ' + limit + ' IPs free.</div>';
+        return;
+    }
+    var html = '<div class="dns-section" style="padding:0;">';
+    for (var i = 0; i < ips.length; i++) {
+        var m = ips[i];
+        var statusColor = m.last_status === 'High' || m.last_status === 'Critical' ? 'var(--red)' : m.last_status === 'Medium' ? 'var(--amber)' : m.last_status === 'unknown' ? 'var(--text-faint)' : 'var(--green)';
+        var blText = m.last_blacklist_count > 0 ? m.last_blacklist_count + ' listed' : m.last_status === 'unknown' ? 'Not checked' : 'Clean';
+        var blColor = m.last_blacklist_count > 0 ? 'var(--red)' : 'var(--green)';
+        var checked = m.last_checked ? new Date(m.last_checked + 'Z').toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
+        html += '<div class="dns-record" style="align-items:center;">';
+        html += '<div class="bl-dot" style="background:' + statusColor + ';"></div>';
+        html += '<span style="flex:1;min-width:0;">';
+        html += '<a class="ip-link" onclick="setAndLookup(\'ip\',\'' + m.ip + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:12px;">' + m.ip + '</a>';
+        if (m.label) html += ' <span style="color:var(--text-faint);font-size:11px;">' + m.label + '</span>';
+        html += '</span>';
+        html += '<span style="color:' + blColor + ';font-size:11px;font-family:JetBrains Mono,monospace;margin-right:10px;">' + blText + '</span>';
+        html += '<span style="color:var(--text-faint);font-size:10px;font-family:JetBrains Mono,monospace;margin-right:10px;">' + checked + '</span>';
+        html += '<button class="action-btn" onclick="removeMonitorIP(\'' + m.ip + '\')" style="font-size:10px;padding:2px 6px;color:var(--red);">&times;</button>';
+        html += '</div>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+    html += '<button class="action-btn" onclick="checkMonitorNow()" style="font-size:11px;">Check All Now</button>';
+    html += '<span style="font-size:11px;color:var(--text-faint);font-family:JetBrains Mono,monospace;line-height:30px;">' + ips.length + '/' + limit + ' IPs monitored &middot; Checked every 6 hours</span>';
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+function addMonitorIP() {
+    var token = getBulkToken();
+    if (!token) return;
+    var ip = document.getElementById('monitor-ip-input').value.trim();
+    var label = document.getElementById('monitor-label-input').value.trim();
+    if (!ip || !isIPAddress(ip)) {
+        showToast('Enter a valid IP address');
+        return;
+    }
+    fetch(TOOLS_API + '/monitor/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ ip: ip, label: label })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) { showToast(d.error); }
+        else {
+            document.getElementById('monitor-ip-input').value = '';
+            document.getElementById('monitor-label-input').value = '';
+            showToast('Monitoring ' + ip);
+            loadMonitoredIPs();
+        }
+    })
+    .catch(function() { showToast('Failed to add IP'); });
+}
+
+function removeMonitorIP(ip) {
+    var token = getBulkToken();
+    if (!token) return;
+    fetch(TOOLS_API + '/monitor/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ ip: ip })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+        showToast('Removed ' + ip);
+        loadMonitoredIPs();
+    })
+    .catch(function() { showToast('Failed to remove IP'); });
+}
+
+function checkMonitorNow() {
+    var token = getBulkToken();
+    if (!token) return;
+    showToast('Checking all monitored IPs...');
+    fetch(TOOLS_API + '/monitor/check-now', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        showToast('Checked ' + d.checked + ' IPs');
+        loadMonitoredIPs();
+    })
+    .catch(function() { showToast('Check failed'); });
+}
+
+// ── Email Header Analyser ────────────────────────────────────────────────────
+function clearHeaders() {
+    document.getElementById('headers-input').value = '';
+    document.getElementById('headers-results').innerHTML = '';
+}
+
+function parseReceivedHeaders(raw) {
+    // Join continuation lines (lines starting with whitespace are continuations)
+    var joined = raw.replace(/\r\n/g, '\n').replace(/\n[ \t]+/g, ' ');
+    var lines = joined.split('\n');
+    var received = [];
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (/^Received:/i.test(line)) {
+            received.push(line);
+        }
+    }
+    // Received headers are in reverse order — first one added is the last hop
+    // We reverse so index 0 = origin
+    received.reverse();
+
+    var hops = [];
+    for (var j = 0; j < received.length; j++) {
+        var header = received[j];
+        // Extract IPs — look for IPs in brackets or after "from"
+        var ips = [];
+        var ipMatches = header.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/g);
+        if (ipMatches) {
+            for (var k = 0; k < ipMatches.length; k++) {
+                ips.push(ipMatches[k].replace(/[\[\]]/g, ''));
+            }
+        }
+        // Also try IPv6 in brackets
+        var ip6Matches = header.match(/\[([0-9a-fA-F:]{3,39})\]/g);
+        if (ip6Matches) {
+            for (var m = 0; m < ip6Matches.length; m++) {
+                var v6 = ip6Matches[m].replace(/[\[\]]/g, '');
+                if (isIPv6(v6) && ips.indexOf(v6) < 0) ips.push(v6);
+            }
+        }
+        // Also match bare IPs after "from" or "by"
+        var bareMatch = header.match(/(?:from|by)\s+\S+\s+\((?:[^)]*?)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/i);
+        if (bareMatch && ips.indexOf(bareMatch[1]) < 0) {
+            ips.push(bareMatch[1]);
+        }
+
+        // Extract hostnames from "from hostname" and "by hostname"
+        var fromMatch = header.match(/from\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+        var byMatch = header.match(/by\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+
+        // Extract timestamp
+        var dateMatch = header.match(/;\s*(.+)$/);
+        var timestamp = dateMatch ? dateMatch[1].trim() : '';
+
+        // Filter out private IPs for the "main" IP
+        var publicIps = ips.filter(function(ip) {
+            var parts = ip.split('.');
+            if (parts.length !== 4) return !ip.startsWith('fe80') && !ip.startsWith('::1'); // IPv6 private
+            var a = parseInt(parts[0]), b = parseInt(parts[1]);
+            return !(a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a === 127);
+        });
+
+        hops.push({
+            hop: j + 1,
+            raw: header,
+            from: fromMatch ? fromMatch[1] : '',
+            by: byMatch ? byMatch[1] : '',
+            ips: ips,
+            publicIps: publicIps,
+            mainIp: publicIps.length > 0 ? publicIps[0] : (ips.length > 0 ? ips[0] : ''),
+            timestamp: timestamp
+        });
+    }
+    return hops;
+}
+
+function analyseHeaders() {
+    var raw = document.getElementById('headers-input').value.trim();
+    if (!raw) return;
+    var btn = document.getElementById('headers-btn');
+    var results = document.getElementById('headers-results');
+    btn.disabled = true;
+    btn.textContent = 'Analysing...';
+
+    var hops = parseReceivedHeaders(raw);
+
+    if (hops.length === 0) {
+        results.innerHTML = '<div class="error-card">No Received: headers found. Make sure you paste the full email headers.</div>';
+        btn.disabled = false;
+        btn.textContent = 'Analyse';
+        return;
+    }
+
+    // Also extract other useful headers
+    var subjectMatch = raw.match(/^Subject:\s*(.+)$/im);
+    var fromHeaderMatch = raw.match(/^From:\s*(.+)$/im);
+    var toMatch = raw.match(/^To:\s*(.+)$/im);
+    var dateHeaderMatch = raw.match(/^Date:\s*(.+)$/im);
+    var spfMatch = raw.match(/spf=(\w+)/i);
+    var dkimMatch = raw.match(/dkim=(\w+)/i);
+    var dmarcMatch = raw.match(/dmarc=(\w+)/i);
+    var returnPathMatch = raw.match(/^Return-Path:\s*<?([^>\s]+)>?/im);
+
+    // Render header summary first, then look up IPs
+    var html = '';
+
+    // Email summary card
+    html += '<div class="result-card fade-in" style="margin-bottom:12px;">';
+    html += '<div class="card-title">Email Summary</div>';
+    if (fromHeaderMatch) html += '<div class="data-row"><span class="data-key">From</span><span class="data-val muted" style="font-size:11px;">' + escHtml(fromHeaderMatch[1]) + '</span></div>';
+    if (toMatch) html += '<div class="data-row"><span class="data-key">To</span><span class="data-val muted" style="font-size:11px;">' + escHtml(toMatch[1]) + '</span></div>';
+    if (subjectMatch) html += '<div class="data-row"><span class="data-key">Subject</span><span class="data-val" style="font-size:11px;">' + escHtml(subjectMatch[1]) + '</span></div>';
+    if (dateHeaderMatch) html += '<div class="data-row"><span class="data-key">Date</span><span class="data-val muted" style="font-size:11px;">' + escHtml(dateHeaderMatch[1]) + '</span></div>';
+    if (returnPathMatch) html += '<div class="data-row"><span class="data-key">Return-Path</span><span class="data-val muted" style="font-size:11px;">' + escHtml(returnPathMatch[1]) + '</span></div>';
+    // Auth results
+    if (spfMatch || dkimMatch || dmarcMatch) {
+        var authHtml = '';
+        if (spfMatch) { var spfOk = spfMatch[1].toLowerCase() === 'pass'; authHtml += '<span class="risk-factor risk-factor-' + (spfOk ? 'green' : 'red') + '">SPF ' + spfMatch[1] + '</span> '; }
+        if (dkimMatch) { var dkimOk = dkimMatch[1].toLowerCase() === 'pass'; authHtml += '<span class="risk-factor risk-factor-' + (dkimOk ? 'green' : 'red') + '">DKIM ' + dkimMatch[1] + '</span> '; }
+        if (dmarcMatch) { var dmarcOk = dmarcMatch[1].toLowerCase() === 'pass'; authHtml += '<span class="risk-factor risk-factor-' + (dmarcOk ? 'green' : 'red') + '">DMARC ' + dmarcMatch[1] + '</span> '; }
+        html += '<div class="data-row"><span class="data-key">Auth</span><span class="data-val">' + authHtml + '</span></div>';
+    }
+    html += '<div class="data-row"><span class="data-key">Hops</span><span class="data-val">' + hops.length + ' servers</span></div>';
+    html += '</div>';
+
+    // Route chain
+    html += '<div class="dns-section fade-in"><div class="card-title">Email Route (' + hops.length + ' hops)</div>';
+    for (var i = 0; i < hops.length; i++) {
+        var h = hops[i];
+        var label = h.from || h.mainIp || 'unknown';
+        var isPrivate = h.publicIps.length === 0 && h.ips.length > 0;
+        html += '<div class="dns-record" style="flex-wrap:wrap;gap:6px;">';
+        html += '<span class="dns-type-badge dns-NS" style="min-width:28px;font-size:10px;">' + h.hop + '</span>';
+        html += '<span class="dns-record-data" style="flex:1;min-width:200px;">';
+        if (h.from) html += '<span style="color:var(--text);">' + h.from + '</span> ';
+        if (h.mainIp) {
+            html += '<a class="ip-link" onclick="setAndLookup(\'ip\',\'' + h.mainIp + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:11px;">' + h.mainIp + '</a> ';
+        }
+        if (h.by) html += '<span style="color:var(--text-faint);font-size:11px;">→ ' + h.by + '</span>';
+        if (isPrivate && h.ips.length > 0) html += ' <span style="color:var(--text-faint);font-size:10px;">(internal: ' + h.ips[0] + ')</span>';
+        html += '</span>';
+        // Placeholder for risk badge — will be filled by lookups
+        html += '<span class="header-hop-risk" id="hop-risk-' + i + '" style="font-size:10px;"></span>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // IP lookup section placeholder
+    html += '<div id="header-ip-results"><div class="loading" style="padding:16px;"><span class="loading-dots">Looking up IP addresses</span></div></div>';
+
+    results.innerHTML = html;
+    btn.disabled = false;
+    btn.textContent = 'Analyse';
+
+    // Now look up all public IPs
+    var uniqueIps = [];
+    var seenIps = {};
+    var hopIpMap = {}; // ip -> [hop indices]
+    for (var n = 0; n < hops.length; n++) {
+        var mip = hops[n].mainIp;
+        if (mip && isIPAddress(mip) && !seenIps[mip]) {
+            var parts = mip.split('.');
+            var isPrivateIp = false;
+            if (parts.length === 4) {
+                var a = parseInt(parts[0]), b = parseInt(parts[1]);
+                isPrivateIp = (a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a === 127);
+            }
+            if (!isPrivateIp) {
+                seenIps[mip] = true;
+                uniqueIps.push(mip);
+            }
+        }
+        if (mip) {
+            if (!hopIpMap[mip]) hopIpMap[mip] = [];
+            hopIpMap[mip].push(n);
+        }
+    }
+
+    if (uniqueIps.length === 0) {
+        document.getElementById('header-ip-results').innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-family:JetBrains Mono,monospace;padding:8px 0;">No public IPs found in headers — all hops are internal.</div>';
+        return;
+    }
+
+    // Look up each IP
+    var lookupPromises = uniqueIps.map(function(lookupIp) {
+        return fetch('https://tools.ignixip.com/ipinfo/' + encodeURIComponent(lookupIp))
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var org = d.org || '';
+                var isHost = /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|google|cloudflare|akamai|fastly|cdn/i.test(org);
+                return { ip: lookupIp, country: d.country || '', city: d.city || '', org: org, hostname: d.hostname || '', is_hosting: isHost };
+            })
+            .catch(function() { return { ip: lookupIp, error: true }; });
+    });
+
+    Promise.all(lookupPromises).then(function(lookupResults) {
+        var ipResultsHtml = '<div class="dns-section fade-in"><div class="card-title">IP Analysis (' + lookupResults.length + ' public IPs)</div>';
+        var suspicious = 0;
+        for (var r = 0; r < lookupResults.length; r++) {
+            var lr = lookupResults[r];
+            if (lr.error) continue;
+            var flag = '';
+            if (lr.country && lr.country.length === 2) {
+                var c = lr.country.toUpperCase();
+                flag = String.fromCodePoint(0x1F1E0 + c.charCodeAt(0) - 65) + String.fromCodePoint(0x1F1E0 + c.charCodeAt(1) - 65) + ' ';
+            }
+            ipResultsHtml += '<div class="dns-record" style="flex-wrap:wrap;gap:6px;">';
+            ipResultsHtml += '<span class="dns-type-badge ' + (lr.is_hosting ? 'dns-TXT' : 'dns-A') + '" style="min-width:32px;font-size:10px;">' + (lr.is_hosting ? 'DC' : 'ISP') + '</span>';
+            ipResultsHtml += '<span class="dns-record-data" style="flex:1;min-width:200px;">';
+            ipResultsHtml += '<a class="ip-link" onclick="setAndLookup(\'ip\',\'' + lr.ip + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;">' + lr.ip + '</a> ';
+            ipResultsHtml += '<span style="color:var(--text-faint);font-size:11px;">' + flag + lr.org + '</span>';
+            if (lr.hostname) ipResultsHtml += '<br><span style="color:var(--text-faint);font-size:10px;">' + lr.hostname + '</span>';
+            ipResultsHtml += '</span>';
+            ipResultsHtml += '<span class="dns-ttl"><a onclick="setAndLookup(\'ip\',\'' + lr.ip + '\')" style="color:var(--blue-bright);text-decoration:none;font-size:10px;cursor:pointer;">Full report →</a></span>';
+            ipResultsHtml += '</div>';
+
+            // Update hop risk badges
+            if (hopIpMap[lr.ip]) {
+                for (var hi = 0; hi < hopIpMap[lr.ip].length; hi++) {
+                    var badge = document.getElementById('hop-risk-' + hopIpMap[lr.ip][hi]);
+                    if (badge) {
+                        badge.innerHTML = '<span class="risk-factor risk-factor-' + (lr.is_hosting ? 'blue' : 'green') + '">' + flag + lr.country + '</span>';
+                    }
+                }
+            }
+        }
+        ipResultsHtml += '</div>';
+
+        // CTA
+        ipResultsHtml += '<div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-faint);">Click any IP for a full risk assessment with blacklist checking and threat intelligence.</div>';
+
+        document.getElementById('header-ip-results').innerHTML = ipResultsHtml;
+    });
+}
+
+function escHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── URL Check ────────────────────────────────────────────────────────────────
+document.getElementById('url-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkURL(); });
+
+function extractDomain(url) {
+    try {
+        url = url.trim();
+        if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
+        var a = new URL(url);
+        return a.hostname;
+    } catch(e) {
+        // Try as plain domain
+        return url.replace(/^https?:\/\//i, '').replace(/\/.*/, '').trim();
+    }
+}
+
+function checkURL() {
+    var url = document.getElementById('url-input').value.trim();
+    if (!url) return;
+    var btn = document.getElementById('url-btn');
+    var results = document.getElementById('url-results');
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    results.innerHTML = '<div class="loading"><span class="loading-dots">Analysing URL</span></div>';
+
+    var domain = extractDomain(url);
+    if (!domain) {
+        results.innerHTML = '<div class="error-card">Could not extract domain from URL</div>';
+        btn.disabled = false; btn.textContent = 'Check URL';
+        return;
+    }
+
+    // Parallel lookups
+    var dnsPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=A')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var mxPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var txtPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=TXT')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var nsPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=NS')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // WHOIS via RDAP for domain age
+    var rdapPromise = fetch('https://rdap.org/domain/' + encodeURIComponent(domain))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // Google Safe Browsing check via DNS (experimental)
+    // Check if domain resolves at all
+    var aaaaPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=AAAA')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    Promise.all([dnsPromise, mxPromise, txtPromise, nsPromise, rdapPromise, aaaaPromise]).then(function(res) {
+        var dns = res[0], mx = res[1], txt = res[2], ns = res[3], rdap = res[4], aaaa = res[5];
+        var html = '';
+
+        // Risk assessment
+        var risks = [];
+        var score = 0;
+
+        // Check if domain resolves
+        var resolvedIP = '';
+        if (dns && dns.Answer && dns.Answer.length > 0) {
+            resolvedIP = dns.Answer[dns.Answer.length - 1].data;
+        }
+        if (!resolvedIP && (!aaaa || !aaaa.Answer || aaaa.Answer.length === 0)) {
+            risks.push({level: 'red', text: 'Domain does not resolve — may not exist or is offline'});
+            score += 30;
+        }
+
+        // Domain age from RDAP
+        var regDate = '';
+        var domainAge = '';
+        if (rdap && rdap.events) {
+            for (var i = 0; i < rdap.events.length; i++) {
+                if (rdap.events[i].eventAction === 'registration') {
+                    regDate = rdap.events[i].eventDate || '';
+                    if (regDate) {
+                        var reg = new Date(regDate);
+                        var now = new Date();
+                        var days = Math.floor((now - reg) / (1000 * 60 * 60 * 24));
+                        if (days < 30) { risks.push({level: 'red', text: 'Domain registered ' + days + ' days ago — very new'}); score += 35; }
+                        else if (days < 90) { risks.push({level: 'amber', text: 'Domain registered ' + days + ' days ago — relatively new'}); score += 15; }
+                        else if (days < 365) { domainAge = days + ' days'; }
+                        else { domainAge = Math.floor(days / 365) + ' years'; }
+                    }
+                }
+            }
+        }
+
+        // Check for no MX (no email capability — not necessarily bad)
+        var hasMX = mx && mx.Answer && mx.Answer.length > 0;
+
+        // Check SPF
+        var hasSPF = false;
+        var spfRecord = '';
+        if (txt && txt.Answer) {
+            for (var t = 0; t < txt.Answer.length; t++) {
+                var txtData = txt.Answer[t].data || '';
+                if (txtData.indexOf('v=spf1') >= 0) { hasSPF = true; spfRecord = txtData; }
+            }
+        }
+
+        // Check NS
+        var hasNS = ns && ns.Answer && ns.Answer.length > 0;
+        if (!hasNS) { risks.push({level: 'amber', text: 'No nameservers found'}); score += 10; }
+
+        // Calculate risk
+        if (score >= 40) { var riskLabel = 'High Risk'; var riskColor = 'var(--red)'; }
+        else if (score >= 16) { var riskLabel = 'Medium Risk'; var riskColor = 'var(--amber)'; }
+        else { var riskLabel = 'Low Risk'; var riskColor = 'var(--green)'; }
+
+        // Render results
+        // URL header
+        html += '<div class="ip-header fade-in"><div class="ip-address-display" style="font-size:16px;word-break:break-all;">' + url.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+        html += '<div class="ip-tags"><span class="tag" style="background:rgba(59,130,246,0.12);color:var(--blue-bright);border:1px solid rgba(59,130,246,0.25);">' + domain + '</span></div></div>';
+
+        // Risk card
+        html += '<div class="result-card fade-in" style="border-color:' + riskColor + '30;"><div class="card-title" style="color:' + riskColor + ';">URL Assessment: ' + riskLabel + '</div>';
+        if (risks.length > 0) {
+            for (var r = 0; r < risks.length; r++) {
+                html += '<div style="margin-bottom:4px;"><span class="risk-factor risk-factor-' + risks[r].level + '">' + risks[r].text + '</span></div>';
+            }
+        } else {
+            html += '<div style="color:var(--green);font-size:13px;">No significant risk indicators detected.</div>';
+        }
+        html += '</div>';
+
+        // Results grid
+        html += '<div class="results-grid fade-in">';
+
+        // Domain info
+        html += '<div class="result-card"><div class="card-title">Domain</div>';
+        html += '<div class="data-row"><span class="data-key">Domain</span><span class="data-val">' + domain + '</span></div>';
+        if (regDate) {
+            var regDisplay = new Date(regDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+            html += '<div class="data-row"><span class="data-key">Registered</span><span class="data-val ' + (score >= 30 ? 'red' : 'muted') + '">' + regDisplay + '</span></div>';
+        }
+        if (domainAge) html += '<div class="data-row"><span class="data-key">Age</span><span class="data-val green">' + domainAge + '</span></div>';
+        if (hasNS && ns.Answer) {
+            html += '<div class="data-row"><span class="data-key">Nameservers</span><span class="data-val muted" style="font-size:11px;">' + ns.Answer.slice(0,2).map(function(n) { return n.data.replace(/\.$/,''); }).join(', ') + '</span></div>';
+        }
+        // Registrar
+        if (rdap && rdap.entities) {
+            for (var e = 0; e < rdap.entities.length; e++) {
+                if (rdap.entities[e].roles && rdap.entities[e].roles.indexOf('registrar') >= 0) {
+                    var registrar = rdap.entities[e].vcardArray ? '' : (rdap.entities[e].handle || '');
+                    if (rdap.entities[e].publicIds) registrar = rdap.entities[e].publicIds[0].identifier || registrar;
+                    if (registrar) html += '<div class="data-row"><span class="data-key">Registrar</span><span class="data-val muted" style="font-size:11px;">' + registrar + '</span></div>';
+                }
+            }
+        }
+        html += '</div>';
+
+        // DNS resolution
+        html += '<div class="result-card"><div class="card-title">DNS</div>';
+        if (resolvedIP) {
+            html += '<div class="data-row"><span class="data-key">Resolves To</span><span class="data-val"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;">' + resolvedIP + '</a></span></div>';
+        } else {
+            html += '<div class="data-row"><span class="data-key">Resolves To</span><span class="data-val red">Does not resolve</span></div>';
+        }
+        if (aaaa && aaaa.Answer && aaaa.Answer.length > 0) {
+            html += '<div class="data-row"><span class="data-key">IPv6</span><span class="data-val muted" style="font-size:11px;">' + aaaa.Answer[0].data + '</span></div>';
+        }
+        if (hasMX) {
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val green">Yes (' + mx.Answer.length + ')</span></div>';
+        } else {
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val muted">None</span></div>';
+        }
+        html += '<div class="data-row"><span class="data-key">SPF</span><span class="data-val ' + (hasSPF ? 'green' : 'amber') + '">' + (hasSPF ? 'Present' : 'Not found') + '</span></div>';
+        html += '</div>';
+
+        html += '</div>'; // close results-grid
+
+        // IP lookup link
+        if (resolvedIP) {
+            html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
+        }
+
+        // Report button
+        html += '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;">';
+        html += '<button class="action-btn" onclick="showDomainReportForm(\'' + domain + '\', \'url\')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg> Report this URL</button>';
+        html += '</div>';
+        html += '<div id="domain-report-form"></div>';
+        html += '<div id="domain-reports"></div>';
+
+        results.innerHTML = html;
+
+        // Log check to tools server
+        try {
+            fetch(TOOLS_API + '/log-domain-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain: domain, check_type: 'url', risk_score: score, risk_label: riskLabel, data: { has_mx: hasMX, has_spf: hasSPF, resolved_ip: resolvedIP, domain_age: domainAge } })
+            }).catch(function() {});
+        } catch(e) {}
+
+        // Load community reports
+        loadDomainReports(domain);
+
+        btn.disabled = false; btn.textContent = 'Check URL';
+    });
+}
+
+// ── Email Sender Check ───────────────────────────────────────────────────────
+document.getElementById('email-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkEmail(); });
+
+function checkEmail() {
+    var input = document.getElementById('email-input').value.trim();
+    if (!input) return;
+    var btn = document.getElementById('email-btn');
+    var results = document.getElementById('email-results');
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    results.innerHTML = '<div class="loading"><span class="loading-dots">Checking sender</span></div>';
+
+    // Extract domain from email or use as-is if it's a domain
+    var domain = input.indexOf('@') >= 0 ? input.split('@')[1].trim() : input.trim();
+    var email = input.indexOf('@') >= 0 ? input : '';
+
+    if (!domain || domain.indexOf('.') < 0) {
+        results.innerHTML = '<div class="error-card">Enter a valid email address or domain</div>';
+        btn.disabled = false; btn.textContent = 'Check Sender';
+        return;
+    }
+
+    // Parallel lookups
+    var mxPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var txtPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=TXT')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var aPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=A')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    var nsPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=NS')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // DMARC
+    var dmarcPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent('_dmarc.' + domain) + '&type=TXT')
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    // DKIM selector guess (common selectors)
+    var dkimPromise = fetch('https://dns.google/resolve?name=' + encodeURIComponent('google._domainkey.' + domain) + '&type=TXT')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d && d.Answer && d.Answer.length > 0) return {found: true, selector: 'google'};
+            return fetch('https://dns.google/resolve?name=' + encodeURIComponent('default._domainkey.' + domain) + '&type=TXT')
+                .then(function(r) { return r.json(); })
+                .then(function(d2) {
+                    if (d2 && d2.Answer && d2.Answer.length > 0) return {found: true, selector: 'default'};
+                    return fetch('https://dns.google/resolve?name=' + encodeURIComponent('selector1._domainkey.' + domain) + '&type=TXT')
+                        .then(function(r) { return r.json(); })
+                        .then(function(d3) {
+                            return (d3 && d3.Answer && d3.Answer.length > 0) ? {found: true, selector: 'selector1'} : {found: false};
+                        });
+                });
+        })
+        .catch(function() { return {found: false}; });
+
+    // RDAP for domain age
+    var rdapPromise = fetch('https://rdap.org/domain/' + encodeURIComponent(domain))
+        .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+    Promise.all([mxPromise, txtPromise, aPromise, nsPromise, dmarcPromise, dkimPromise, rdapPromise]).then(function(res) {
+        var mx = res[0], txt = res[1], a = res[2], ns = res[3], dmarc = res[4], dkim = res[5], rdap = res[6];
+        var html = '';
+
+        var risks = [];
+        var score = 0;
+
+        // Check MX
+        var hasMX = mx && mx.Answer && mx.Answer.length > 0;
+        if (!hasMX) { risks.push({level: 'red', text: 'No mail servers — domain cannot receive email'}); score += 25; }
+
+        // Check SPF
+        var hasSPF = false;
+        var spfRecord = '';
+        if (txt && txt.Answer) {
+            for (var t = 0; t < txt.Answer.length; t++) {
+                var txtData = txt.Answer[t].data || '';
+                if (txtData.indexOf('v=spf1') >= 0) { hasSPF = true; spfRecord = txtData; }
+            }
+        }
+        if (!hasSPF) { risks.push({level: 'amber', text: 'No SPF record — email authentication not configured'}); score += 10; }
+
+        // Check DMARC
+        var hasDMARC = dmarc && dmarc.Answer && dmarc.Answer.length > 0;
+        var dmarcRecord = '';
+        if (hasDMARC) {
+            dmarcRecord = dmarc.Answer[0].data || '';
+        } else {
+            risks.push({level: 'amber', text: 'No DMARC record — domain not protected against spoofing'}); score += 10;
+        }
+
+        // Check DKIM
+        var hasDKIM = dkim && dkim.found;
+
+        // Domain age
+        var regDate = '';
+        var domainAge = '';
+        if (rdap && rdap.events) {
+            for (var i = 0; i < rdap.events.length; i++) {
+                if (rdap.events[i].eventAction === 'registration') {
+                    regDate = rdap.events[i].eventDate || '';
+                    if (regDate) {
+                        var reg = new Date(regDate);
+                        var now = new Date();
+                        var days = Math.floor((now - reg) / (1000 * 60 * 60 * 24));
+                        if (days < 30) { risks.push({level: 'red', text: 'Domain registered ' + days + ' days ago — very new'}); score += 30; }
+                        else if (days < 90) { risks.push({level: 'amber', text: 'Domain registered ' + days + ' days ago'}); score += 10; }
+                        else if (days < 365) { domainAge = days + ' days'; }
+                        else { domainAge = Math.floor(days / 365) + ' years'; }
+                    }
+                }
+            }
+        }
+
+        // Domain doesn't resolve
+        var resolvedIP = '';
+        if (a && a.Answer && a.Answer.length > 0) {
+            resolvedIP = a.Answer[a.Answer.length - 1].data;
+        } else {
+            if (!hasMX) { risks.push({level: 'red', text: 'Domain does not resolve — may not exist'}); score += 20; }
+        }
+
+        // Risk level
+        if (score >= 40) { var riskLabel = 'Suspicious'; var riskColor = 'var(--red)'; }
+        else if (score >= 16) { var riskLabel = 'Some Concerns'; var riskColor = 'var(--amber)'; }
+        else { var riskLabel = 'Looks Legitimate'; var riskColor = 'var(--green)'; }
+
+        // Render
+        html += '<div class="ip-header fade-in"><div class="ip-address-display" style="font-size:18px;">' + (email || domain) + '</div>';
+        html += '<div class="ip-tags"><span class="tag" style="background:rgba(59,130,246,0.12);color:var(--blue-bright);border:1px solid rgba(59,130,246,0.25);">' + domain + '</span></div></div>';
+
+        // Assessment
+        html += '<div class="result-card fade-in" style="border-color:' + riskColor + '30;"><div class="card-title" style="color:' + riskColor + ';">Sender Assessment: ' + riskLabel + '</div>';
+        if (risks.length > 0) {
+            for (var r = 0; r < risks.length; r++) {
+                html += '<div style="margin-bottom:4px;"><span class="risk-factor risk-factor-' + risks[r].level + '">' + risks[r].text + '</span></div>';
+            }
+        } else {
+            html += '<div style="color:var(--green);font-size:13px;">Domain has proper email authentication and appears legitimate.</div>';
+        }
+        html += '</div>';
+
+        html += '<div class="results-grid fade-in">';
+
+        // Email authentication
+        html += '<div class="result-card"><div class="card-title">Email Authentication</div>';
+        html += '<div class="data-row"><span class="data-key">SPF</span><span class="data-val ' + (hasSPF ? 'green' : 'red') + '">' + (hasSPF ? 'Configured' : 'Not Found') + '</span></div>';
+        html += '<div class="data-row"><span class="data-key">DKIM</span><span class="data-val ' + (hasDKIM ? 'green' : 'amber') + '">' + (hasDKIM ? 'Found (selector: ' + dkim.selector + ')' : 'Not detected') + '</span></div>';
+        html += '<div class="data-row"><span class="data-key">DMARC</span><span class="data-val ' + (hasDMARC ? 'green' : 'red') + '">' + (hasDMARC ? 'Configured' : 'Not Found') + '</span></div>';
+        if (hasMX) {
+            var mxServers = mx.Answer.sort(function(a, b) { return (a.data || '').localeCompare(b.data || ''); });
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val muted" style="font-size:11px;">' + mxServers.slice(0,3).map(function(m) { return m.data.replace(/\.$/,''); }).join('<br>') + '</span></div>';
+        } else {
+            html += '<div class="data-row"><span class="data-key">Mail Servers</span><span class="data-val red">None — cannot receive email</span></div>';
+        }
+        html += '</div>';
+
+        // Domain info
+        html += '<div class="result-card"><div class="card-title">Domain Info</div>';
+        html += '<div class="data-row"><span class="data-key">Domain</span><span class="data-val">' + domain + '</span></div>';
+        if (regDate) {
+            var regDisplay = new Date(regDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+            html += '<div class="data-row"><span class="data-key">Registered</span><span class="data-val ' + (score >= 30 ? 'red' : 'muted') + '">' + regDisplay + '</span></div>';
+        }
+        if (domainAge) html += '<div class="data-row"><span class="data-key">Age</span><span class="data-val green">' + domainAge + '</span></div>';
+        if (resolvedIP) {
+            html += '<div class="data-row"><span class="data-key">IP</span><span class="data-val"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;">' + resolvedIP + '</a></span></div>';
+        }
+        if (ns && ns.Answer) {
+            html += '<div class="data-row"><span class="data-key">Nameservers</span><span class="data-val muted" style="font-size:11px;">' + ns.Answer.slice(0,2).map(function(n) { return n.data.replace(/\.$/,''); }).join(', ') + '</span></div>';
+        }
+        html += '</div>';
+
+        html += '</div>'; // close results-grid
+
+        // SPF/DMARC details
+        if (hasSPF || hasDMARC) {
+            html += '<div class="dns-section fade-in" style="margin-top:10px;"><div class="card-title">Record Details</div>';
+            if (hasSPF) {
+                html += '<div class="dns-record"><span class="dns-type-badge dns-TXT">SPF</span><span class="dns-record-data" style="font-size:11px;word-break:break-all;">' + spfRecord.replace(/"/g, '') + '</span></div>';
+            }
+            if (hasDMARC && dmarcRecord) {
+                html += '<div class="dns-record"><span class="dns-type-badge dns-TXT">DMARC</span><span class="dns-record-data" style="font-size:11px;word-break:break-all;">' + dmarcRecord.replace(/"/g, '') + '</span></div>';
+            }
+            html += '</div>';
+        }
+
+        // Full IP report link
+        if (resolvedIP) {
+            html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
+        }
+
+        // Report button
+        html += '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;">';
+        html += '<button class="action-btn" onclick="showDomainReportForm(\'' + domain + '\', \'sender\')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg> Report this sender</button>';
+        html += '</div>';
+        html += '<div id="domain-report-form"></div>';
+        html += '<div id="domain-reports"></div>';
+
+        results.innerHTML = html;
+
+        // Log check to tools server
+        try {
+            fetch(TOOLS_API + '/log-domain-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain: domain, check_type: 'sender', risk_score: score, risk_label: riskLabel, data: { has_mx: hasMX, has_spf: hasSPF, has_dkim: hasDKIM, has_dmarc: hasDMARC } })
+            }).catch(function() {});
+        } catch(e) {}
+
+        // Load community reports
+        loadDomainReports(domain);
+
+        btn.disabled = false; btn.textContent = 'Check Sender';
+    });
+}
+
+// ── Domain Reporting Functions ───────────────────────────────────────────────
+function loadDomainReports(domain) {
+    fetch(TOOLS_API + '/domain-reports/' + encodeURIComponent(domain))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var el = document.getElementById('domain-reports');
+            if (!el || d.total_reports === 0) return;
+            var catLabels = {spam:'Spam',phishing:'Phishing',malware:'Malware',scam:'Scam',impersonation:'Impersonation',other:'Other'};
+            var html = '<div class="result-card" style="margin-top:10px;">';
+            html += '<div class="card-title" style="color:var(--amber);">Community Reports (' + d.total_reports + ')</div>';
+            if (d.total_checks > 0) html += '<div style="font-size:11px;color:var(--text-faint);margin-bottom:8px;">Checked ' + d.total_checks + ' times by ignixip users</div>';
+            for (var i = 0; i < d.categories.length; i++) {
+                var cat = d.categories[i];
+                html += '<span class="risk-factor risk-factor-red" style="margin-right:6px;">' + (catLabels[cat.category] || cat.category) + ' (' + cat.count + ')</span>';
+            }
+            if (d.recent && d.recent.length > 0) {
+                html += '<div style="margin-top:10px;">';
+                for (var j = 0; j < d.recent.length; j++) {
+                    var r = d.recent[j];
+                    var date = new Date(r.date + 'Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+                    html += '<div style="font-size:11px;color:var(--text-faint);padding:3px 0;border-top:1px solid var(--border);">';
+                    html += '<span style="color:var(--text-muted);">' + (catLabels[r.category] || r.category) + '</span>';
+                    if (r.comment) html += ' — ' + r.comment;
+                    html += ' <span style="color:var(--text-faint);">(' + date + ')</span>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            el.innerHTML = html;
+        })
+        .catch(function() {});
+}
+
+var selectedDomainReportCat = '';
+function showDomainReportForm(domain, checkType) {
+    var existing = document.getElementById('domain-report-form');
+    if (!existing) return;
+    if (existing.innerHTML) { existing.innerHTML = ''; return; }
+    var catLabels = [
+        {val:'spam', label:'Spam'},
+        {val:'phishing', label:'Phishing'},
+        {val:'malware', label:'Malware'},
+        {val:'scam', label:'Scam'},
+        {val:'impersonation', label:'Impersonation'},
+        {val:'other', label:'Other'}
+    ];
+    var html = '<div class="result-card" style="margin-top:8px;border-color:var(--amber);">';
+    html += '<div class="card-title" style="color:var(--amber);">Report ' + domain + '</div>';
+    html += '<div style="margin-bottom:10px;font-size:12px;color:var(--text-muted);">Help the community — flag this ' + (checkType === 'sender' ? 'sender' : 'URL') + ' as suspicious.</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">';
+    for (var i = 0; i < catLabels.length; i++) {
+        html += '<button class="filter-btn" onclick="selectDomainReportCat(this,\'' + catLabels[i].val + '\')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-size:11px;cursor:pointer;">' + catLabels[i].label + '</button>';
+    }
+    html += '</div>';
+    html += '<input type="text" id="domain-report-comment" placeholder="Optional: describe what you received" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:12px;outline:none;margin-bottom:10px;">';
+    html += '<div style="display:flex;gap:8px;align-items:center;">';
+    html += '<button class="action-btn" onclick="submitDomainReport(\'' + domain + '\', \'' + checkType + '\')" style="background:var(--amber);color:var(--bg);font-weight:600;">Submit Report</button>';
+    html += '<button class="action-btn" onclick="document.getElementById(\'domain-report-form\').innerHTML=\'\'">Cancel</button>';
+    html += '<span id="domain-report-status" style="font-size:11px;color:var(--text-faint);"></span>';
+    html += '</div></div>';
+    existing.innerHTML = html;
+}
+
+function selectDomainReportCat(btn, cat) {
+    var form = document.getElementById('domain-report-form');
+    if (!form) return;
+    form.querySelectorAll('.filter-btn').forEach(function(b) {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-dim)';
+        b.style.borderColor = 'var(--border2)';
+    });
+    btn.style.background = 'rgba(251,191,36,0.12)';
+    btn.style.color = 'var(--amber)';
+    btn.style.borderColor = 'var(--amber)';
+    selectedDomainReportCat = cat;
+}
+
+function submitDomainReport(domain, checkType) {
+    if (!selectedDomainReportCat) {
+        document.getElementById('domain-report-status').textContent = 'Select a category';
+        document.getElementById('domain-report-status').style.color = 'var(--red)';
+        return;
+    }
+    var comment = document.getElementById('domain-report-comment').value.trim();
+    var status = document.getElementById('domain-report-status');
+    status.textContent = 'Submitting...';
+    status.style.color = 'var(--text-dim)';
+
+    fetch(TOOLS_API + '/report-domain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: domain, check_type: checkType, category: selectedDomainReportCat, comment: comment })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) {
+            status.textContent = d.error;
+            status.style.color = 'var(--red)';
+        } else {
+            status.textContent = 'Reported — thank you!';
+            status.style.color = 'var(--green)';
+            showToast('Domain reported — ' + d.report_count + ' total reports');
+            selectedDomainReportCat = '';
+            setTimeout(function() {
+                document.getElementById('domain-report-form').innerHTML = '';
+                loadDomainReports(domain);
+            }, 1500);
+        }
+    })
+    .catch(function() {
+        status.textContent = 'Failed to submit';
+        status.style.color = 'var(--red)';
+    });
+}
+
+// ── Page load ────────────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var tab = params.get('tab') || 'ip';
+
+    // Handle token from verification redirect
+    var tokenParam = params.get('token');
+    if (tokenParam) {
+        localStorage.setItem('ignixip_token', tokenParam);
+        // Clean URL
+        var cleanUrl = '?tab=bulk';
+        history.replaceState({}, '', cleanUrl);
+        tab = 'bulk';
+    }
+
+    switchTab(tab);
+    if (tab === 'ip') {
+        var ip = params.get('ip');
+        if (ip) { ipInput.value = ip; lookupIP(); }
+        else { lookupSelf(); }
+    } else if (tab === 'dns') {
+        var q = params.get('q');
+        if (q) { dnsInput.value = q; lookupDNS(); }
+    } else if (tab === 'bl') {
+        var blip = params.get('ip');
+        if (blip) { blInput.value = blip; checkBlacklist(); }
+    } else if (tab === 'whois') {
+        var whoisip = params.get('ip');
+        if (whoisip) { whoisInput.value = whoisip; lookupWHOIS(); }
+    } else if (tab === 'asn') {
+        var asnq = params.get('asn');
+        if (asnq) { asnInput.value = asnq; lookupASN(); }
+    } else if (tab === 'tools') {
+        var toolsip = params.get('ip');
+        if (toolsip) { toolsInput.value = toolsip; runTools(); }
+    }
+});
+</script>
+</body>
+</html>
