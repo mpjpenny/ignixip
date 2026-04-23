@@ -103,16 +103,83 @@
 var TOOLS_API = 'https://tools.ignixip.com';
 
 function loadDashboard() {
-    fetch(TOOLS_API + '/stats')
-        .then(function(r) { return r.json(); })
-        .then(function(data) { renderDashboard(data); })
-        .catch(function() {
-            document.getElementById('dashboard-content').innerHTML =
-                '<div class="empty-state">Could not load threat data — please try again later.</div>';
-        });
+    var statsPromise = fetch(TOOLS_API + '/stats').then(function(r) { return r.json(); });
+    var iocsPromise = fetch(TOOLS_API + '/iocs').then(function(r) { return r.json(); }).catch(function() { return { iocs: [] }; });
+    Promise.all([statsPromise, iocsPromise]).then(function(results) {
+        renderDashboard(results[0], results[1]);
+    }).catch(function() {
+        document.getElementById('dashboard-content').innerHTML =
+            '<div class="empty-state">Could not load threat data — please try again later.</div>';
+    });
 }
 
-function renderDashboard(d) {
+function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+
+function formatDate(s) {
+    if (!s) return '';
+    var d = s.split(' ')[0];
+    return d;
+}
+
+function renderObservedThreats(iocsData) {
+    if (!iocsData || !iocsData.iocs || iocsData.iocs.length === 0) {
+        return '';
+    }
+    var iocs = iocsData.iocs;
+    var sevColors = { 'critical': 'var(--red)', 'high': 'var(--red)', 'medium': 'var(--amber)', 'low': 'var(--green)' };
+    var catLabels = {
+        'email-impersonation': 'Email Impersonation',
+        'phishing': 'Phishing',
+        'c2': 'C2 / Malware',
+        'scanner': 'Scanner / Recon',
+        'credential-theft': 'Credential Theft',
+        'malware-distribution': 'Malware Distribution',
+        'spam': 'Spam',
+        'brand-abuse': 'Brand Abuse',
+        'other': 'Other'
+    };
+
+    var html = '<div class="section-title">Observed Threats <span style="font-size:10px;color:var(--text-faint);font-weight:400;letter-spacing:0;text-transform:none;">first-party observations by Ignix</span></div>';
+    html += '<div class="panel" style="padding:8px;">';
+    for (var i = 0; i < iocs.length; i++) {
+        var t = iocs[i];
+        var sev = (t.severity || 'medium').toLowerCase();
+        var sevColor = sevColors[sev] || 'var(--amber)';
+        var cat = catLabels[t.category] || t.category || 'Other';
+        var iocLink = t.ioc_type === 'ip'
+            ? '/?tab=ip&ip=' + encodeURIComponent(t.ioc_value)
+            : '/?tab=dns&q=' + encodeURIComponent(t.ioc_value);
+
+        html += '<div style="padding:14px 14px;border-bottom:1px solid var(--border);">';
+        html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">';
+        html += '<a href="' + iocLink + '" style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:600;color:var(--blue-bright);text-decoration:none;">' + escapeHtml(t.ioc_value) + '</a>';
+        html += '<span style="padding:2px 8px;border-radius:4px;background:rgba(248,113,113,0.1);border:1px solid ' + sevColor + ';color:' + sevColor + ';font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">' + escapeHtml(sev) + '</span>';
+        html += '<span style="padding:2px 8px;border-radius:4px;background:var(--surface2);color:var(--text-dim);font-size:10px;font-weight:500;">' + escapeHtml(cat) + '</span>';
+        if (t.target) {
+            html += '<span style="color:var(--text-faint);font-size:11px;">Target: ' + escapeHtml(t.target) + '</span>';
+        }
+        html += '</div>';
+        if (t.evidence_summary) {
+            html += '<div style="color:var(--text-dim);font-size:12px;line-height:1.5;margin-bottom:6px;">' + escapeHtml(t.evidence_summary) + '</div>';
+        }
+        html += '<div style="color:var(--text-faint);font-size:10px;font-family:\'JetBrains Mono\',monospace;">';
+        html += 'First seen: ' + formatDate(t.first_seen);
+        if (t.last_seen && t.last_seen !== t.first_seen) {
+            html += ' · Last seen: ' + formatDate(t.last_seen);
+        }
+        html += '</div>';
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+
+function renderDashboard(d, iocsData) {
     var totalLookups = d.total_lookups || 0;
     var totalUnique = d.total_unique_ips || 0;
     var rb = d.risk_breakdown || {};
@@ -129,6 +196,9 @@ function renderDashboard(d) {
     html += '<div class="stat-card"><div class="stat-num" style="color:var(--red);">' + highCount + '</div><div class="stat-label">High Risk</div></div>';
     html += '<div class="stat-card"><div class="stat-num" style="color:var(--green);">' + (d.total_users || 0) + '</div><div class="stat-label">Registered Users</div></div>';
     html += '</div>';
+
+    // Observed Threats (first-party IOCs)
+    html += renderObservedThreats(iocsData);
 
     // Map
     html += '<div class="section-title">Global Distribution</div>';
