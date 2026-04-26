@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mail Authentication Lookup — DMARC, SPF, DKIM in Plain English | ignixip</title>
+    <meta name="description" content="Live DMARC, SPF, and DKIM lookup with plain-English explanations. Bypasses recursive resolver caching when needed. Free, no signup.">
+    <meta name="keywords" content="DMARC lookup, SPF lookup, DKIM lookup, mail authentication, DMARC checker, SPF checker, DKIM checker">
+    <link rel="canonical" href="https://ignixip.com/mail-auth.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <style>
+        :root { --bg:#0a0f1a; --surface:#111827; --surface2:#1a2332; --border:#1e293b; --border2:#334155; --text:#e2e8f0; --text-muted:#94a3b8; --text-dim:#64748b; --text-faint:#475569; --blue:#3b82f6; --blue-bright:#60a5fa; --blue-dim:#1d4ed8; --green:#4ade80; --amber:#fbbf24; --red:#f87171; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+        header { z-index:10; padding:0 24px; border-bottom:1px solid var(--border); background:rgba(10,15,26,0.8); backdrop-filter:blur(12px); position:sticky; top:0; }
+        .header-inner { max-width:1000px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .logo-mark { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; font-family:'JetBrains Mono',monospace; box-shadow:0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.5px; }
+        .logo-text span { color:var(--blue-bright); }
+        .header-nav { display:flex; align-items:center; gap:20px; font-size:13px; }
+        .header-nav a { color:var(--text-dim); text-decoration:none; transition:color 0.2s; }
+        .header-nav a:hover { color:var(--text); }
+        .content { position:relative; z-index:1; max-width:1000px; margin:0 auto; padding:32px 24px 80px; }
+        h1 { font-size:clamp(22px,4vw,28px); font-weight:700; letter-spacing:-0.5px; line-height:1.2; margin-bottom:8px; }
+        h1 span { background:linear-gradient(135deg,var(--blue-bright),#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .subtitle { font-size:14px; color:var(--text-muted); line-height:1.7; margin-bottom:24px; }
+        .lookup-form { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin-bottom:24px; }
+        .form-row { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+        .form-field { flex:1; min-width:240px; }
+        .form-label { font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; font-family:'JetBrains Mono',monospace; display:block; }
+        .form-input { width:100%; padding:10px 14px; background:var(--bg); border:1px solid var(--border2); border-radius:6px; color:var(--text); font-size:14px; font-family:'JetBrains Mono',monospace; }
+        .form-input:focus { outline:none; border-color:var(--blue-bright); }
+        .form-options { margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:13px; color:var(--text-muted); }
+        .form-options label { display:flex; gap:6px; align-items:center; cursor:pointer; }
+        .form-options input[type="checkbox"] { accent-color:var(--blue-bright); }
+        .form-help { font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.5; }
+        .btn { padding:10px 22px; border-radius:8px; border:none; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); color:white; font-size:14px; font-weight:600; cursor:pointer; }
+        .btn:hover { opacity:0.9; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .results { display:none; }
+        .results.show { display:block; }
+        .domain-header { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+        .domain-name { font-size:22px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--text); }
+        .ns-info { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+        .ns-info.authoritative { color:var(--green); }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:14px; }
+        .card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+        .card-title { font-size:14px; font-weight:700; color:var(--text); font-family:'JetBrains Mono',monospace; letter-spacing:0.5px; }
+        .card-status { font-size:11px; padding:3px 10px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-weight:600; text-transform:uppercase; }
+        .card-status.ok { background:rgba(74,222,128,0.12); color:var(--green); }
+        .card-status.warn { background:rgba(251,191,36,0.12); color:var(--amber); }
+        .card-status.absent { background:rgba(248,113,113,0.12); color:var(--red); }
+        .card-status.info { background:rgba(96,165,250,0.12); color:var(--blue-bright); }
+        .raw-record { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-muted); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:10px 12px; margin-bottom:12px; word-break:break-all; line-height:1.5; }
+        .summary { font-size:13px; color:var(--text); line-height:1.6; padding:10px 14px; background:rgba(96,165,250,0.05); border-left:3px solid var(--blue-bright); border-radius:0 6px 6px 0; margin-bottom:12px; }
+        .tag-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; margin-top:8px; }
+        .tag-item { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-family:'JetBrains Mono',monospace; }
+        .tag-key { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+        .tag-value { font-size:12px; color:var(--text); word-break:break-all; }
+        .mech-list { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+        .mech-item { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-muted); padding:6px 10px; background:var(--bg); border:1px solid var(--border); border-radius:4px; }
+        .all-handler { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; padding:4px 10px; border-radius:4px; font-weight:600; }
+        .all-handler.strict { background:rgba(74,222,128,0.12); color:var(--green); }
+        .all-handler.soft { background:rgba(251,191,36,0.12); color:var(--amber); }
+        .all-handler.weak { background:rgba(248,113,113,0.12); color:var(--red); }
+        .selector-row { display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--bg); border:1px solid var(--border); border-radius:4px; margin-bottom:6px; flex-wrap:wrap; }
+        .selector-name { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--blue-bright); font-weight:600; flex-shrink:0; }
+        .selector-record { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-muted); word-break:break-all; flex:1; min-width:200px; }
+        .empty-state { padding:14px; background:var(--bg); border:1px dashed var(--border2); border-radius:6px; font-size:12px; color:var(--text-dim); text-align:center; line-height:1.5; }
+        .warning-box { padding:10px 14px; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25); border-radius:6px; font-size:12px; color:var(--amber); margin-bottom:10px; line-height:1.5; }
+        .loading { display:none; text-align:center; padding:32px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:13px; }
+        .loading.show { display:block; }
+        .error-box { padding:14px 16px; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.25); border-radius:8px; color:var(--red); font-size:13px; margin-bottom:14px; display:none; }
+        .error-box.show { display:block; }
+        footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:18px 24px; text-align:center; font-size:12px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:48px; }
+        footer a { color:var(--text-dim); text-decoration:none; }
+        footer a:hover { color:var(--blue-bright); }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo"><div class="logo-mark">IX</div><span class="logo-text">ignix<span>ip</span></span></a>
+        <nav class="header-nav">
+            <a href="/">Lookup Tool</a>
+            <a href="/dmarc.html">DMARC Reports</a>
+            <a href="/mail-auth.html">Mail Auth</a>
+            <a href="/threats.html">Threats</a>
+            <a href="https://ignix.co.uk">ignix.co.uk</a>
+        </nav>
+    </div>
+</header>
+
+<main class="content">
+    <h1>Mail authentication <span>lookup</span></h1>
+    <p class="subtitle">Check DMARC, SPF, and DKIM for any domain in plain English. Tells you what's published, what it means, and flags common configuration issues.</p>
+
+    <form class="lookup-form" id="lookup-form">
+        <div class="form-row">
+            <div class="form-field">
+                <label class="form-label" for="domain-input">Domain</label>
+                <input type="text" id="domain-input" class="form-input" placeholder="example.com" autocomplete="off" required>
+            </div>
+            <button type="submit" class="btn" id="submit-btn">Look up</button>
+        </div>
+        <div class="form-options">
+            <label>
+                <input type="checkbox" id="authoritative-toggle">
+                Query authoritative nameserver (bypasses local DNS cache)
+            </label>
+        </div>
+        <p class="form-help">Use the authoritative option immediately after a DNS change to confirm the new record is actually published, before recursive resolvers have caught up.</p>
+    </form>
+
+    <div class="loading" id="loading">Querying DNS…</div>
+    <div class="error-box" id="error-box"></div>
+
+    <div class="results" id="results">
+        <div class="domain-header">
+            <span class="domain-name" id="result-domain"></span>
+            <span class="ns-info" id="ns-info"></span>
+        </div>
+
+        <!-- DMARC card -->
+        <div class="card" id="dmarc-card">
+            <div class="card-head">
+                <span class="card-title">DMARC</span>
+                <span class="card-status" id="dmarc-status">—</span>
+            </div>
+            <div id="dmarc-body"></div>
+        </div>
+
+        <!-- SPF card -->
+        <div class="card" id="spf-card">
+            <div class="card-head">
+                <span class="card-title">SPF</span>
+                <span class="card-status" id="spf-status">—</span>
+            </div>
+            <div id="spf-body"></div>
+        </div>
+
+        <!-- DKIM card -->
+        <div class="card" id="dkim-card">
+            <div class="card-head">
+                <span class="card-title">DKIM</span>
+                <span class="card-status" id="dkim-status">—</span>
+            </div>
+            <div id="dkim-body"></div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>ignixip.com · Ignix · Free, no ads, no signup<br>
+    <a href="/">Lookup</a> · <a href="/dmarc.html">DMARC</a> · <a href="/mail-auth.html">Mail Auth</a> · <a href="/threats.html">Threats</a> · <a href="/guide.html">Blacklist Guide</a> · <a href="/api.html">API</a></p>
+</footer>
+
+<script>
+const API_BASE = 'https://tools.ignixip.com';
+
+const form = document.getElementById('lookup-form');
+const domainInput = document.getElementById('domain-input');
+const authToggle = document.getElementById('authoritative-toggle');
+const submitBtn = document.getElementById('submit-btn');
+const loading = document.getElementById('loading');
+const errorBox = document.getElementById('error-box');
+const results = document.getElementById('results');
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const domain = domainInput.value.trim().toLowerCase();
+    if (!domain) return;
+
+    submitBtn.disabled = true;
+    loading.classList.add('show');
+    errorBox.classList.remove('show');
+    results.classList.remove('show');
+
+    const url = `${API_BASE}/dns/mail-auth/${encodeURIComponent(domain)}${authToggle.checked ? '?authoritative=1' : ''}`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        renderResults(data);
+        results.classList.add('show');
+    } catch (err) {
+        errorBox.textContent = `Lookup failed: ${err.message}`;
+        errorBox.classList.add('show');
+    } finally {
+        submitBtn.disabled = false;
+        loading.classList.remove('show');
+    }
+});
+
+function renderResults(data) {
+    document.getElementById('result-domain').textContent = data.domain;
+
+    const nsInfo = document.getElementById('ns-info');
+    if (data.queried_via_authoritative && data.authoritative_nameserver) {
+        nsInfo.textContent = `via authoritative NS: ${data.authoritative_nameserver}`;
+        nsInfo.classList.add('authoritative');
+    } else {
+        nsInfo.textContent = 'via local recursive resolver';
+        nsInfo.classList.remove('authoritative');
+    }
+
+    renderDmarc(data.dmarc);
+    renderSpf(data.spf);
+    renderDkim(data.dkim_selectors_found, data.dkim_selectors_probed);
+}
+
+function renderDmarc(dmarc) {
+    const status = document.getElementById('dmarc-status');
+    const body = document.getElementById('dmarc-body');
+
+    if (!dmarc || dmarc.present === false) {
+        status.textContent = 'Not Published';
+        status.className = 'card-status absent';
+        body.innerHTML = '<div class="empty-state">No DMARC record found at <code>_dmarc.' + escapeHtml(document.getElementById('result-domain').textContent) + '</code>. The domain has no DMARC protection — anyone can spoof it without being challenged by major receivers.</div>';
+        return;
+    }
+
+    const policy = dmarc.tags.p || 'none';
+    if (policy === 'reject' || policy === 'quarantine') {
+        status.textContent = 'Active';
+        status.className = 'card-status ok';
+    } else if (policy === 'none') {
+        status.textContent = 'Reporting Only';
+        status.className = 'card-status info';
+    } else {
+        status.textContent = 'Unknown';
+        status.className = 'card-status warn';
+    }
+
+    let html = '';
+
+    if (dmarc.warnings && dmarc.warnings.length) {
+        html += '<div class="warning-box"><strong>Warnings:</strong><br>' +
+            dmarc.warnings.map(w => '• ' + escapeHtml(w)).join('<br>') +
+            '</div>';
+    }
+
+    html += '<div class="raw-record">' + escapeHtml(dmarc.raw) + '</div>';
+    html += '<div class="summary">' + escapeHtml(dmarc.policy_summary) + '</div>';
+
+    html += '<div class="tag-grid">';
+    for (const [key, val] of Object.entries(dmarc.tags)) {
+        html += '<div class="tag-item"><div class="tag-key">' + escapeHtml(key) + '</div><div class="tag-value">' + escapeHtml(val) + '</div></div>';
+    }
+    html += '</div>';
+
+    body.innerHTML = html;
+}
+
+function renderSpf(spf) {
+    const status = document.getElementById('spf-status');
+    const body = document.getElementById('spf-body');
+
+    if (!spf || spf.present === false) {
+        status.textContent = 'Not Published';
+        status.className = 'card-status absent';
+        body.innerHTML = '<div class="empty-state">No SPF record found. Without SPF, receivers have no way to verify which servers are authorised to send mail for this domain.</div>';
+        return;
+    }
+
+    const allHandler = spf.all_handler || '';
+    if (allHandler === '-all') {
+        status.textContent = 'Strict';
+        status.className = 'card-status ok';
+    } else if (allHandler === '~all') {
+        status.textContent = 'Soft Fail';
+        status.className = 'card-status info';
+    } else if (allHandler === '?all' || allHandler === '+all') {
+        status.textContent = 'Permissive';
+        status.className = 'card-status warn';
+    } else {
+        status.textContent = 'Unusual';
+        status.className = 'card-status warn';
+    }
+
+    let html = '';
+    html += '<div class="raw-record">' + escapeHtml(spf.raw) + '</div>';
+    html += '<div class="summary">' + escapeHtml(spf.summary) + '</div>';
+
+    if (spf.mechanisms && spf.mechanisms.length) {
+        html += '<div class="form-label" style="margin-top:12px">Authorised senders</div>';
+        html += '<div class="mech-list">';
+        for (const m of spf.mechanisms) {
+            html += '<div class="mech-item">' + escapeHtml(m) + '</div>';
+        }
+        html += '</div>';
+    }
+
+    if (spf.all_handler) {
+        let cls = 'soft';
+        if (spf.all_handler === '-all') cls = 'strict';
+        else if (spf.all_handler === '?all' || spf.all_handler === '+all') cls = 'weak';
+        html += '<div class="form-label" style="margin-top:12px">All-handler</div>';
+        html += '<span class="all-handler ' + cls + '">' + escapeHtml(spf.all_handler) + '</span>';
+    }
+
+    body.innerHTML = html;
+}
+
+function renderDkim(found, probed) {
+    const status = document.getElementById('dkim-status');
+    const body = document.getElementById('dkim-body');
+
+    if (!found || found.length === 0) {
+        status.textContent = 'None Found';
+        status.className = 'card-status warn';
+        body.innerHTML = '<div class="empty-state">No DKIM records found across ' + probed + ' common selectors probed (default, selector1, selector2, google, k1, etc.).<br><br>This does NOT mean DKIM is not configured — it could use a custom selector name we did not try. Check your mail provider for the correct selector name.</div>';
+        return;
+    }
+
+    status.textContent = found.length + ' Found';
+    status.className = 'card-status ok';
+
+    let html = '<div class="form-label">Selectors probed: ' + probed + ' · found: ' + found.length + '</div>';
+    for (const sel of found) {
+        html += '<div class="selector-row">';
+        html += '<div class="selector-name">' + escapeHtml(sel.selector) + '</div>';
+        html += '<div class="selector-record">' + escapeHtml(truncate(sel.record, 200)) + '</div>';
+        html += '</div>';
+    }
+
+    body.innerHTML = html;
+}
+
+function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function truncate(s, n) {
+    s = String(s);
+    return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+// Optional: pre-fill from URL hash like #domain=eon.co.uk
+const hashMatch = window.location.hash.match(/domain=([^&]+)/);
+if (hashMatch) {
+    domainInput.value = decodeURIComponent(hashMatch[1]);
+    form.dispatchEvent(new Event('submit'));
+}
+</script>
+</body>
+</html>
