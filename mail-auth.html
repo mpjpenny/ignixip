@@ -113,6 +113,13 @@
             </label>
         </div>
         <p class="form-help">Use the authoritative option immediately after a DNS change to confirm the new record is actually published, before recursive resolvers have caught up.</p>
+        <div class="form-row" style="margin-top:14px">
+            <div class="form-field">
+                <label class="form-label" for="selector-input">DKIM selector (optional)</label>
+                <input type="text" id="selector-input" class="form-input" placeholder="e.g. selector1, mail, or your custom selector" autocomplete="off">
+            </div>
+        </div>
+        <p class="form-help">If you know your DKIM selector name (often shown in your DNS or mail provider's control panel), enter it here. Custom selectors with opaque names cannot be discovered by probing — DNS protocol limitation that affects every DKIM tool.</p>
     </form>
 
     <div class="loading" id="loading">Querying DNS…</div>
@@ -179,7 +186,11 @@ form.addEventListener('submit', async (e) => {
     errorBox.classList.remove('show');
     results.classList.remove('show');
 
-    const url = `${API_BASE}/dns/mail-auth/${encodeURIComponent(domain)}${authToggle.checked ? '?authoritative=1' : ''}`;
+    const selector = document.getElementById('selector-input').value.trim();
+    const params = [];
+    if (authToggle.checked) params.push('authoritative=1');
+    if (selector) params.push('selector=' + encodeURIComponent(selector));
+    const url = `${API_BASE}/dns/mail-auth/${encodeURIComponent(domain)}${params.length ? '?' + params.join('&') : ''}`;
 
     try {
         const response = await fetch(url);
@@ -318,7 +329,7 @@ function renderDkim(found, probed) {
     if (!found || found.length === 0) {
         status.textContent = 'None Found';
         status.className = 'card-status warn';
-        body.innerHTML = '<div class="empty-state">No DKIM records found across ' + probed + ' common selectors probed (default, selector1, selector2, google, k1, etc.).<br><br>This does NOT mean DKIM is not configured — it could use a custom selector name we did not try. Check your mail provider for the correct selector name.</div>';
+        body.innerHTML = '<div class="empty-state">No DKIM records found across ' + probed + ' common selectors probed (default, selector1, selector2, google, k1, etc.).<br><br>This does NOT mean DKIM is not configured — many providers use opaque custom selector names that cannot be discovered by probing (DNS protocol limitation). If you know the selector, enter it in the form above and try again.</div>';
         return;
     }
 
@@ -329,6 +340,9 @@ function renderDkim(found, probed) {
     for (const sel of found) {
         html += '<div class="selector-row">';
         html += '<div class="selector-name">' + escapeHtml(sel.selector) + '</div>';
+        if (sel.user_supplied) {
+            html += '<span class="badge info" style="font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(96,165,250,0.12);color:var(--blue-bright);font-family:JetBrains Mono,monospace;text-transform:uppercase;font-weight:600">user-supplied</span>';
+        }
         html += '<div class="selector-record">' + escapeHtml(truncate(sel.record, 200)) + '</div>';
         html += '</div>';
     }
@@ -351,10 +365,14 @@ function truncate(s, n) {
     return s.length > n ? s.slice(0, n) + '…' : s;
 }
 
-// Optional: pre-fill from URL hash like #domain=eon.co.uk
-const hashMatch = window.location.hash.match(/domain=([^&]+)/);
-if (hashMatch) {
-    domainInput.value = decodeURIComponent(hashMatch[1]);
+// Optional: pre-fill from URL hash like #domain=eon.co.uk&selector=foo
+const hashDomain = window.location.hash.match(/domain=([^&]+)/);
+const hashSelector = window.location.hash.match(/selector=([^&]+)/);
+if (hashDomain) {
+    domainInput.value = decodeURIComponent(hashDomain[1]);
+    if (hashSelector) {
+        document.getElementById('selector-input').value = decodeURIComponent(hashSelector[1]);
+    }
     form.dispatchEvent(new Event('submit'));
 }
 </script>
