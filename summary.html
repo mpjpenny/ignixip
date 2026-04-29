@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain & IP Investigation Summary | ignixip</title>
+    <meta name="description" content="Look up any domain or IP — WHOIS, DMARC/SPF/DKIM, threat indicators, blacklist status. One page, plain English, free.">
+    <meta name="keywords" content="domain lookup, IP lookup, WHOIS, DMARC checker, blacklist check, threat intelligence, security investigation">
+    <link rel="canonical" href="https://ignixip.com/summary.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
+    <style>
+        :root { --bg:#0a0f1a; --surface:#111827; --surface2:#1a2332; --border:#1e293b; --border2:#334155; --text:#e2e8f0; --text-muted:#94a3b8; --text-dim:#64748b; --text-faint:#475569; --blue:#3b82f6; --blue-bright:#60a5fa; --blue-dim:#1d4ed8; --green:#4ade80; --amber:#fbbf24; --red:#f87171; --purple:#a78bfa; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+        header { z-index:10; padding:0 24px; border-bottom:1px solid var(--border); background:rgba(10,15,26,0.8); backdrop-filter:blur(12px); position:sticky; top:0; }
+        .header-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .logo-mark { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; font-family:'JetBrains Mono',monospace; box-shadow:0 0 16px rgba(59,130,246,0.35); }
+        .logo-text { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.5px; }
+        .logo-text span { color:var(--blue-bright); }
+        .header-nav { display:flex; align-items:center; gap:20px; font-size:13px; }
+        .header-nav a { color:var(--text-dim); text-decoration:none; transition:color 0.2s; }
+        .header-nav a:hover { color:var(--text); }
+        .header-nav a.active { color:var(--text); }
+        .content { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:32px 24px 80px; }
+        h1 { font-size:clamp(22px,4vw,30px); font-weight:700; letter-spacing:-0.5px; line-height:1.2; margin-bottom:8px; }
+        h1 span { background:linear-gradient(135deg,var(--blue-bright),var(--purple)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .subtitle { font-size:14px; color:var(--text-muted); line-height:1.7; margin-bottom:24px; max-width:780px; }
+
+        .lookup-form { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:24px; }
+        .form-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        .form-input { flex:1; min-width:240px; padding:11px 14px; background:var(--bg); border:1px solid var(--border2); border-radius:8px; color:var(--text); font-size:15px; font-family:'JetBrains Mono',monospace; }
+        .form-input:focus { outline:none; border-color:var(--blue-bright); box-shadow:0 0 0 3px rgba(96,165,250,0.18); }
+        .form-input::placeholder { color:var(--text-faint); }
+        .btn { padding:11px 26px; border-radius:8px; border:none; background:linear-gradient(135deg,var(--blue),var(--blue-dim)); color:white; font-size:14px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
+        .btn:hover { opacity:0.92; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--text); padding:9px 16px; font-size:13px; }
+        .btn-ghost:hover { background:var(--surface2); }
+        .form-help { font-size:12px; color:var(--text-dim); margin-top:10px; line-height:1.5; }
+
+        .loading { display:none; padding:30px; text-align:center; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:13px; }
+        .loading.show { display:block; }
+        .loading-dots { display:inline-block; }
+        .loading-dots::after { content:'...'; animation:dots 1.4s infinite; }
+        @keyframes dots { 0%,20%{content:'.';} 40%{content:'..';} 60%,100%{content:'...';} }
+
+        .error-box { padding:14px 18px; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.25); border-radius:8px; color:var(--red); font-size:13px; margin-bottom:14px; display:none; }
+        .error-box.show { display:block; }
+
+        .results { display:none; }
+        .results.show { display:block; }
+
+        /* Verdict banner — the killer feature */
+        .verdict-banner { background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(167,139,250,0.05)); border:1px solid rgba(96,165,250,0.25); border-radius:14px; padding:24px 26px; margin-bottom:18px; }
+        .verdict-label { font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--blue-bright); font-family:'JetBrains Mono',monospace; font-weight:600; margin-bottom:10px; }
+        .verdict-text { font-size:clamp(16px,2.4vw,20px); color:var(--text); font-family:'JetBrains Mono',monospace; line-height:1.6; word-break:break-word; }
+        .verdict-actions { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .verdict-share-status { font-size:11px; color:var(--green); font-family:'JetBrains Mono',monospace; }
+
+        /* Cards (drill-down sections) */
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:14px; }
+        .card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+        .card-title { font-size:13px; font-weight:700; color:var(--text); font-family:'JetBrains Mono',monospace; letter-spacing:0.8px; text-transform:uppercase; }
+        .card-status { font-size:10.5px; padding:3px 9px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; }
+        .card-status.ok { background:rgba(74,222,128,0.12); color:var(--green); }
+        .card-status.warn { background:rgba(251,191,36,0.12); color:var(--amber); }
+        .card-status.bad { background:rgba(248,113,113,0.12); color:var(--red); }
+        .card-status.info { background:rgba(96,165,250,0.12); color:var(--blue-bright); }
+        .card-status.muted { background:rgba(100,116,139,0.12); color:var(--text-dim); }
+
+        .kv-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; }
+        .kv-item { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:9px 12px; }
+        .kv-key { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; font-family:'JetBrains Mono',monospace; }
+        .kv-value { font-size:12.5px; color:var(--text); font-family:'JetBrains Mono',monospace; word-break:break-all; }
+
+        .list-rows { display:flex; flex-direction:column; gap:5px; }
+        .list-row { padding:7px 11px; background:var(--bg); border:1px solid var(--border); border-radius:5px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-muted); word-break:break-all; }
+
+        .raw-record { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-muted); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:9px 12px; word-break:break-all; line-height:1.5; }
+        .summary-line { font-size:13px; color:var(--text); line-height:1.6; padding:10px 14px; background:rgba(96,165,250,0.05); border-left:3px solid var(--blue-bright); border-radius:0 6px 6px 0; }
+
+        .empty-state { padding:14px; background:var(--bg); border:1px dashed var(--border2); border-radius:6px; font-size:12px; color:var(--text-dim); text-align:center; line-height:1.5; }
+
+        .ioc-row { display:flex; align-items:center; gap:10px; padding:9px 12px; background:rgba(248,113,113,0.06); border:1px solid rgba(248,113,113,0.2); border-radius:6px; margin-bottom:6px; }
+        .ioc-indicator { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text); font-weight:600; }
+        .ioc-meta { font-size:11px; color:var(--text-dim); margin-left:auto; }
+
+        .blacklist-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; }
+        .blacklist-item { padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        .blacklist-name { color:var(--text-muted); }
+        .blacklist-status { font-size:10px; padding:2px 7px; border-radius:3px; font-weight:600; text-transform:uppercase; }
+        .blacklist-status.clean { background:rgba(74,222,128,0.12); color:var(--green); }
+        .blacklist-status.listed { background:rgba(248,113,113,0.18); color:var(--red); }
+
+        .row-detail-key { color:var(--blue-bright); font-weight:600; flex-shrink:0; }
+        .row-detail-value { color:var(--text-muted); flex:1; word-break:break-all; }
+
+        .section-meta { font-size:11px; color:var(--text-dim); margin-top:8px; font-family:'JetBrains Mono',monospace; }
+
+        footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:18px 24px; text-align:center; font-size:12px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:48px; }
+        footer a { color:var(--text-dim); text-decoration:none; }
+        footer a:hover { color:var(--blue-bright); }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-inner">
+        <a href="/" class="logo"><div class="logo-mark">IX</div><span class="logo-text">ignix<span>ip</span></span></a>
+        <nav class="header-nav">
+            <a href="/">Lookup Tool</a>
+            <a href="/dmarc.html">DMARC</a>
+            <a href="/mail-auth.html">Mail Auth</a>
+            <a href="/summary.html" class="active">Summary</a>
+            <a href="/threats.html">Threats</a>
+            <a href="https://ignix.co.uk">ignix.co.uk</a>
+        </nav>
+    </div>
+</header>
+
+<main class="content">
+    <h1>Domain & IP <span>investigation summary</span></h1>
+    <p class="subtitle">Look up any domain or IP and see WHOIS, DNS, mail authentication, threat indicators, and blacklist status on one page. Plain English. No signup. Free.</p>
+
+    <form class="lookup-form" id="lookup-form">
+        <div class="form-row">
+            <input type="text" id="query-input" class="form-input" placeholder="example.com  or  83.244.195.66" autocomplete="off" required>
+            <button type="submit" class="btn" id="submit-btn">Investigate</button>
+        </div>
+        <p class="form-help">Auto-detects whether you've entered a domain or an IPv4 address. WHOIS, DNS records, mail-auth, threat data, and 4 major blacklists are checked in parallel — typical lookup completes in 2–5 seconds.</p>
+    </form>
+
+    <div class="loading" id="loading">Investigating<span class="loading-dots"></span></div>
+    <div class="error-box" id="error-box"></div>
+
+    <div class="results" id="results">
+
+        <!-- Verdict banner -->
+        <div class="verdict-banner">
+            <div class="verdict-label">At-a-glance verdict</div>
+            <div class="verdict-text" id="verdict-text"></div>
+            <div class="verdict-actions">
+                <button class="btn btn-ghost" id="share-btn">Share this report</button>
+                <span class="verdict-share-status" id="share-status"></span>
+            </div>
+        </div>
+
+        <!-- Per-section drill-downs (always open) -->
+        <div id="section-whois" class="card" style="display:none">
+            <div class="card-head">
+                <span class="card-title">WHOIS</span>
+                <span class="card-status info" id="whois-status">Lookup</span>
+            </div>
+            <div id="whois-body"></div>
+        </div>
+
+        <div id="section-dns" class="card" style="display:none">
+            <div class="card-head">
+                <span class="card-title">DNS Records</span>
+                <span class="card-status info" id="dns-status">Records</span>
+            </div>
+            <div id="dns-body"></div>
+        </div>
+
+        <div id="section-mail-auth" class="card" style="display:none">
+            <div class="card-head">
+                <span class="card-title">Mail Authentication</span>
+                <span class="card-status info" id="mail-auth-status">DMARC / SPF / DKIM</span>
+            </div>
+            <div id="mail-auth-body"></div>
+        </div>
+
+        <div id="section-iocs" class="card" style="display:none">
+            <div class="card-head">
+                <span class="card-title">Threat Indicators</span>
+                <span class="card-status muted" id="iocs-status">Checked</span>
+            </div>
+            <div id="iocs-body"></div>
+        </div>
+
+        <div id="section-blacklists" class="card" style="display:none">
+            <div class="card-head">
+                <span class="card-title">Blacklists</span>
+                <span class="card-status muted" id="blacklists-status">Checked</span>
+            </div>
+            <div id="blacklists-body"></div>
+        </div>
+
+        <div id="section-reverse" class="card" style="display:none">
+            <div class="card-head">
+                <span class="card-title">Reverse DNS</span>
+                <span class="card-status info" id="reverse-status">PTR</span>
+            </div>
+            <div id="reverse-body"></div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>ignixip.com · Ignix · Free, no ads, no signup<br>
+    <a href="/">Lookup</a> · <a href="/dmarc.html">DMARC</a> · <a href="/mail-auth.html">Mail Auth</a> · <a href="/summary.html">Summary</a> · <a href="/threats.html">Threats</a> · <a href="/guide.html">Blacklist Guide</a> · <a href="/api.html">API</a></p>
+</footer>
+
+<script>
+const API_BASE = 'https://tools.ignixip.com';
+
+const form = document.getElementById('lookup-form');
+const queryInput = document.getElementById('query-input');
+const submitBtn = document.getElementById('submit-btn');
+const loading = document.getElementById('loading');
+const errorBox = document.getElementById('error-box');
+const results = document.getElementById('results');
+const shareBtn = document.getElementById('share-btn');
+const shareStatus = document.getElementById('share-status');
+
+let lastResult = null;
+let lastQuery = null;
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const query = queryInput.value.trim().toLowerCase();
+    if (!query) return;
+
+    submitBtn.disabled = true;
+    loading.classList.add('show');
+    errorBox.classList.remove('show');
+    results.classList.remove('show');
+    shareStatus.textContent = '';
+
+    try {
+        const response = await fetch(`${API_BASE}/summary/${encodeURIComponent(query)}`);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({error: `HTTP ${response.status}`}));
+            throw new Error(err.error || `HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        lastResult = data;
+        lastQuery = query;
+        renderResults(data);
+        results.classList.add('show');
+    } catch (err) {
+        errorBox.textContent = `Lookup failed: ${err.message}`;
+        errorBox.classList.add('show');
+    } finally {
+        submitBtn.disabled = false;
+        loading.classList.remove('show');
+    }
+});
+
+shareBtn.addEventListener('click', async () => {
+    if (!lastResult || !lastQuery) return;
+    shareStatus.textContent = 'Creating snapshot...';
+    try {
+        const response = await fetch(`${API_BASE}/summary/snapshot`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: lastQuery, result: lastResult})
+        });
+        const data = await response.json();
+        if (!data.id) throw new Error('Snapshot creation failed');
+        const url = `${window.location.origin}/summary.html#snap=${data.id}`;
+        try {
+            await navigator.clipboard.writeText(url);
+            shareStatus.textContent = '✓ Snapshot URL copied to clipboard';
+        } catch (e) {
+            shareStatus.textContent = `Snapshot URL: ${url}`;
+        }
+    } catch (err) {
+        shareStatus.textContent = `Share failed: ${err.message}`;
+    }
+});
+
+function renderResults(data) {
+    document.getElementById('verdict-text').textContent = data.verdict || data.query;
+
+    if (data.kind === 'domain') {
+        renderWhois(data.whois);
+        renderDns(data.dns);
+        renderMailAuth(data.mail_auth);
+        renderIocs(data.iocs);
+        renderBlacklists(data.blacklists, data.blacklists_checked, data.blacklists_ips_checked);
+        document.getElementById('section-reverse').style.display = 'none';
+    } else if (data.kind === 'ip') {
+        renderWhois(data.whois);
+        document.getElementById('section-dns').style.display = 'none';
+        document.getElementById('section-mail-auth').style.display = 'none';
+        renderIocs(data.iocs);
+        renderBlacklists(data.blacklists, data.blacklists_checked, data.blacklists_ips_checked);
+        renderReverse(data.reverse_dns);
+    }
+}
+
+function renderWhois(whois) {
+    const sec = document.getElementById('section-whois');
+    const body = document.getElementById('whois-body');
+    const status = document.getElementById('whois-status');
+    if (!whois || whois.error) {
+        sec.style.display = 'block';
+        status.textContent = whois && whois.error ? 'Error' : 'No data';
+        status.className = 'card-status muted';
+        body.innerHTML = '<div class="empty-state">' + escapeHtml(whois?.error || 'WHOIS data unavailable.') + '</div>';
+        return;
+    }
+    sec.style.display = 'block';
+    status.textContent = `${whois.raw_lines || 0} lines parsed`;
+    status.className = 'card-status info';
+    let html = '<div class="kv-grid">';
+    const fields = [
+        ['registrar', 'Registrar'],
+        ['created', 'Created'],
+        ['expires', 'Expires'],
+        ['org', 'Organisation'],
+        ['netname', 'Net Name'],
+        ['country', 'Country'],
+        ['descr', 'Description'],
+    ];
+    for (const [key, label] of fields) {
+        if (whois[key]) {
+            html += `<div class="kv-item"><div class="kv-key">${escapeHtml(label)}</div><div class="kv-value">${escapeHtml(whois[key])}</div></div>`;
+        }
+    }
+    html += '</div>';
+    body.innerHTML = html;
+}
+
+function renderDns(dns) {
+    const sec = document.getElementById('section-dns');
+    const body = document.getElementById('dns-body');
+    const status = document.getElementById('dns-status');
+    if (!dns) { sec.style.display = 'none'; return; }
+    sec.style.display = 'block';
+    const counts = [];
+    if (dns.a?.length) counts.push(`${dns.a.length} A`);
+    if (dns.mx?.length) counts.push(`${dns.mx.length} MX`);
+    if (dns.ns?.length) counts.push(`${dns.ns.length} NS`);
+    status.textContent = counts.length ? counts.join(' · ') : 'No records';
+    status.className = counts.length ? 'card-status info' : 'card-status muted';
+    let html = '';
+    if (dns.a?.length) {
+        html += '<div class="kv-key" style="margin-bottom:6px">A Records</div>';
+        html += '<div class="list-rows" style="margin-bottom:12px">';
+        for (const ip of dns.a) html += `<div class="list-row">${escapeHtml(ip)}</div>`;
+        html += '</div>';
+    }
+    if (dns.mx?.length) {
+        html += '<div class="kv-key" style="margin-bottom:6px">MX Records</div>';
+        html += '<div class="list-rows" style="margin-bottom:12px">';
+        for (const mx of dns.mx) html += `<div class="list-row">${escapeHtml(mx)}</div>`;
+        html += '</div>';
+        if (dns.mx_resolved_ips?.length) {
+            html += '<div class="kv-key" style="margin-bottom:6px">MX Resolved IPs</div>';
+            html += '<div class="list-rows" style="margin-bottom:12px">';
+            for (const ip of dns.mx_resolved_ips) html += `<div class="list-row">${escapeHtml(ip)}</div>`;
+            html += '</div>';
+        }
+    }
+    if (dns.ns?.length) {
+        html += '<div class="kv-key" style="margin-bottom:6px">Name Servers</div>';
+        html += '<div class="list-rows">';
+        for (const ns of dns.ns) html += `<div class="list-row">${escapeHtml(ns)}</div>`;
+        html += '</div>';
+    }
+    if (!html) html = '<div class="empty-state">No DNS records found.</div>';
+    body.innerHTML = html;
+}
+
+function renderMailAuth(mailAuth) {
+    const sec = document.getElementById('section-mail-auth');
+    const body = document.getElementById('mail-auth-body');
+    const status = document.getElementById('mail-auth-status');
+    if (!mailAuth || mailAuth.error) {
+        sec.style.display = 'block';
+        status.textContent = 'Error';
+        status.className = 'card-status muted';
+        body.innerHTML = '<div class="empty-state">' + escapeHtml(mailAuth?.error || 'Mail-auth data unavailable.') + '</div>';
+        return;
+    }
+    sec.style.display = 'block';
+    const dmarc = mailAuth.dmarc || {};
+    const spf = mailAuth.spf || {};
+    const dkim = mailAuth.dkim_selectors_found || [];
+    const policy = (dmarc.tags || {}).p;
+    if (policy === 'reject') { status.textContent = 'DMARC Strict'; status.className = 'card-status ok'; }
+    else if (policy === 'quarantine') { status.textContent = 'DMARC Active'; status.className = 'card-status ok'; }
+    else if (policy === 'none') { status.textContent = 'DMARC Reporting Only'; status.className = 'card-status warn'; }
+    else if (!dmarc.tags) { status.textContent = 'No DMARC'; status.className = 'card-status bad'; }
+
+    let html = '';
+    if (dmarc.raw) {
+        html += '<div class="kv-key" style="margin-bottom:6px">DMARC</div>';
+        html += '<div class="raw-record" style="margin-bottom:8px">' + escapeHtml(dmarc.raw) + '</div>';
+        if (dmarc.policy_summary) html += '<div class="summary-line" style="margin-bottom:14px">' + escapeHtml(dmarc.policy_summary) + '</div>';
+    } else {
+        html += '<div class="kv-key" style="margin-bottom:6px">DMARC</div>';
+        html += '<div class="empty-state" style="margin-bottom:14px">No DMARC record published.</div>';
+    }
+    if (spf.raw) {
+        html += '<div class="kv-key" style="margin-bottom:6px">SPF</div>';
+        html += '<div class="raw-record" style="margin-bottom:8px">' + escapeHtml(spf.raw) + '</div>';
+        if (spf.summary) html += '<div class="summary-line" style="margin-bottom:14px">' + escapeHtml(spf.summary) + '</div>';
+    } else {
+        html += '<div class="kv-key" style="margin-bottom:6px">SPF</div>';
+        html += '<div class="empty-state" style="margin-bottom:14px">No SPF record published.</div>';
+    }
+    html += '<div class="kv-key" style="margin-bottom:6px">DKIM (' + (mailAuth.dkim_selectors_probed || 0) + ' selectors probed, ' + dkim.length + ' found)</div>';
+    if (dkim.length) {
+        html += '<div class="list-rows">';
+        for (const sel of dkim) {
+            html += '<div class="list-row"><span class="row-detail-key">' + escapeHtml(sel.selector) + '</span> ' + escapeHtml(truncate(sel.record, 140)) + '</div>';
+        }
+        html += '</div>';
+    } else {
+        html += '<div class="empty-state">No DKIM selectors found via probing. Custom selectors require knowing the name — see <a href="/mail-auth.html" style="color:var(--blue-bright)">Mail Auth</a> tool for selector input.</div>';
+    }
+    body.innerHTML = html;
+}
+
+function renderIocs(iocs) {
+    const sec = document.getElementById('section-iocs');
+    const body = document.getElementById('iocs-body');
+    const status = document.getElementById('iocs-status');
+    sec.style.display = 'block';
+    if (!iocs || !iocs.length) {
+        status.textContent = 'No hits';
+        status.className = 'card-status ok';
+        body.innerHTML = '<div class="empty-state">No threat indicators in our curated feed for this query.</div>';
+        return;
+    }
+    status.textContent = `${iocs.length} hit${iocs.length>1?'s':''}`;
+    status.className = 'card-status bad';
+    let html = '';
+    for (const ioc of iocs) {
+        html += '<div class="ioc-row">';
+        html += '<span class="ioc-indicator">' + escapeHtml(ioc.indicator) + '</span>';
+        html += '<span class="ioc-meta">' + escapeHtml(ioc.type || '') + ' · ' + escapeHtml(ioc.severity || '') + ' · ' + escapeHtml(ioc.source || '') + '</span>';
+        html += '</div>';
+    }
+    body.innerHTML = html;
+}
+
+function renderBlacklists(listed, checked, ipsChecked) {
+    const sec = document.getElementById('section-blacklists');
+    const body = document.getElementById('blacklists-body');
+    const status = document.getElementById('blacklists-status');
+    sec.style.display = 'block';
+    const checkedList = checked || [];
+    const listedNames = Object.keys(listed || {});
+    if (!listedNames.length) {
+        status.textContent = `${checkedList.length}/0 listings`;
+        status.className = 'card-status ok';
+    } else {
+        status.textContent = `${listedNames.length}/${checkedList.length} listings`;
+        status.className = 'card-status bad';
+    }
+    let html = '<div class="blacklist-grid">';
+    for (const bl of checkedList) {
+        const isListed = listed && listed[bl];
+        html += '<div class="blacklist-item">';
+        html += '<span class="blacklist-name">' + escapeHtml(bl) + '</span>';
+        if (isListed) {
+            html += '<span class="blacklist-status listed">Listed</span>';
+        } else {
+            html += '<span class="blacklist-status clean">Clean</span>';
+        }
+        html += '</div>';
+    }
+    html += '</div>';
+    if (ipsChecked && ipsChecked.length) {
+        html += '<div class="section-meta">Checked against ' + ipsChecked.length + ' IP' + (ipsChecked.length>1?'s':'') + ': ' + ipsChecked.map(escapeHtml).join(', ') + '</div>';
+    }
+    if (listedNames.length) {
+        html += '<div style="margin-top:12px"><div class="kv-key" style="margin-bottom:6px">Listed IPs by blacklist</div>';
+        for (const bl of listedNames) {
+            html += '<div class="list-row"><span class="row-detail-key">' + escapeHtml(bl) + '</span>: ' + listed[bl].map(escapeHtml).join(', ') + '</div>';
+        }
+        html += '</div>';
+    }
+    body.innerHTML = html;
+}
+
+function renderReverse(reverse) {
+    const sec = document.getElementById('section-reverse');
+    const body = document.getElementById('reverse-body');
+    const status = document.getElementById('reverse-status');
+    sec.style.display = 'block';
+    if (!reverse) {
+        status.textContent = 'None';
+        status.className = 'card-status muted';
+        body.innerHTML = '<div class="empty-state">No reverse DNS record (PTR) found for this IP.</div>';
+        return;
+    }
+    status.textContent = 'Found';
+    status.className = 'card-status info';
+    body.innerHTML = '<div class="raw-record">' + escapeHtml(reverse) + '</div>';
+}
+
+function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+function truncate(s, n) {
+    s = String(s);
+    return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+// URL hash support: #q=eon.co.uk auto-runs lookup; #snap=abc123 loads snapshot
+async function handleHash() {
+    const snapMatch = window.location.hash.match(/snap=([^&]+)/);
+    if (snapMatch) {
+        const snapId = decodeURIComponent(snapMatch[1]);
+        loading.classList.add('show');
+        try {
+            const r = await fetch(`${API_BASE}/summary/snapshot/${snapId}`);
+            const data = await r.json();
+            if (data.error) throw new Error(data.error);
+            queryInput.value = data.query;
+            lastQuery = data.query;
+            lastResult = data.result;
+            renderResults(data.result);
+            results.classList.add('show');
+        } catch (e) {
+            errorBox.textContent = 'Could not load snapshot: ' + e.message;
+            errorBox.classList.add('show');
+        } finally {
+            loading.classList.remove('show');
+        }
+        return;
+    }
+    const queryMatch = window.location.hash.match(/q=([^&]+)/);
+    if (queryMatch) {
+        queryInput.value = decodeURIComponent(queryMatch[1]);
+        form.dispatchEvent(new Event('submit'));
+    }
+}
+handleHash();
+</script>
+</body>
+</html>
