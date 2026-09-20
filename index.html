@@ -248,6 +248,7 @@
             <span class="logo-text">ignix<span>ip</span></span>
         </a>
         <nav class="header-nav">
+            <a href="/my-ip.html">My IP</a>
             <a href="/dmarc.html">DMARC</a>
             <a href="/mail-auth.html">Mail Auth</a>
             <a href="/summary.html">Summary</a>
@@ -262,7 +263,7 @@
 <div class="hero">
     <div class="hero-badge">&#9889; IP &amp; DNS Intelligence</div>
     <h1>Look up any <span>IP address</span> or domain</h1>
-    <p>Geolocation, DNS records and blacklist checking. Fast, clean, no clutter.</p>
+    <p>Geolocation, DNS records and blacklist checking. Fast, clean, no clutter. <a href="/my-ip.html" style="color:var(--blue-bright);">What is my IP?</a></p>
 </div>
 
 <div style="max-width:900px;margin:0 auto 28px;padding:18px 22px;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.2);border-radius:12px;">
@@ -300,7 +301,8 @@
             <button class="search-btn" id="ip-btn" onclick="lookupIP()">Look Up</button>
         </div>
         <div class="search-hint">
-            Try: <a onclick="lookupSelf()">your own IP</a> &middot;
+            Try: <a href="/my-ip.html">What is my IP?</a> &middot;
+            <a onclick="lookupSelf()">this connection</a> &middot;
             <a onclick="setAndLookup('ip', '8.8.8.8')">8.8.8.8</a> &middot;
             <a onclick="setAndLookup('ip', '1.1.1.1')">1.1.1.1</a>
         </div>
@@ -498,6 +500,10 @@
                 <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin-bottom:20px;letter-spacing:-0.3px;">Frequently asked questions</h2>
 
                 <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:40px;">
+                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
+                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is my IP address?</h3>
+                        <p style="font-size:13px;color:#64748b;line-height:1.7;">Your public IP is the address the internet sees when you visit a site. See it instantly on the <a href="/my-ip.html" style="color:var(--blue-bright);">What is my IP</a> page, including your ISP and whether that address appears on major blacklists. The lookup tool on this page can also detect this connection automatically.</p>
+                    </div>
                     <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
                         <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is an IP address lookup?</h3>
                         <p style="font-size:13px;color:#64748b;line-height:1.7;">An IP address lookup queries databases to find information about an IP address — including its geographic location, the organisation that owns it, and its internet service provider. This is useful for understanding where network traffic is coming from and who controls a particular IP range.</p>
