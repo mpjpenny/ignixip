@@ -269,7 +269,7 @@
 <div id="ioc-banner" style="max-width:900px;margin:0 auto 28px;padding:18px 22px;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.2);border-radius:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
         <div style="min-width:0;flex:1;">
-            <div id="ioc-banner-title" style="font-size:14px;font-weight:600;margin-bottom:3px;">New: DMARC report analyser</div>
+            <div id="ioc-banner-title" style="font-size:14px;font-weight:600;margin-bottom:3px;line-height:1.4;">New: DMARC report analyser</div>
             <div id="ioc-banner-sub" style="font-size:12px;color:#94a3b8;line-height:1.5;">Drop your DMARC aggregate reports and get a plain-English breakdown. Identifies spoofers, mixed-auth senders, and misconfigured keys.</div>
         </div>
         <a id="ioc-banner-cta" href="/dmarc.html" style="padding:8px 18px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;">Open tool</a>
@@ -3309,81 +3309,165 @@ function submitDomainReport(domain, checkType) {
     });
 }
 
-// ── Observed threat banner (replaces DMARC promo when IOCs exist) ───────────
-var iocBannerTimer = null;
-var IOC_BANNER_CATS = {
-    'email-impersonation': 'Email impersonation',
-    'phishing': 'Phishing',
-    'c2': 'C2 / malware',
-    'scanner': 'Scanner / recon',
-    'credential-theft': 'Credential theft',
-    'malware-distribution': 'Malware',
-    'spam': 'Spam',
-    'brand-abuse': 'Brand abuse',
-    'other': 'Observed threat'
-};
+// ── News banner (NCSC, The Register Security, Krebs). DMARC promo is fallback. ─
+var newsBannerTimer = null;
+var NEWS_FEEDS = [
+    { source: 'NCSC', rss: 'https://www.ncsc.gov.uk/api/1/services/v1/news-rss-feed.xml', hosts: ['ncsc.gov.uk'] },
+    { source: 'The Register', rss: 'https://www.theregister.com/security/headlines.atom', hosts: ['theregister.com'] },
+    { source: 'Krebs', rss: 'https://krebsonsecurity.com/feed/', hosts: ['krebsonsecurity.com'] }
+];
+var NEWS_CACHE_KEY = 'ignixip_news_v1';
+var NEWS_CACHE_MS = 15 * 60 * 1000;
 
-function iocBannerDate(s) {
+function newsHostOk(url, hosts) {
+    try {
+        var u = new URL(url);
+        if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+        var host = (u.hostname || '').replace(/^www\./, '').toLowerCase();
+        return hosts.some(function(h) { return host === h || host.endsWith('.' + h); });
+    } catch (e) {
+        return false;
+    }
+}
+
+function newsPlain(html) {
+    var d = document.createElement('div');
+    d.innerHTML = String(html || '');
+    return (d.textContent || d.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+function newsClip(s, n) {
+    s = String(s || '').replace(/\s+/g, ' ').trim();
+    if (s.length <= n) return s;
+    return s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…';
+}
+
+function newsDate(s) {
     if (!s) return '';
     var d = new Date(String(s).replace(' ', 'T') + 'Z');
+    if (isNaN(d.getTime())) d = new Date(s);
     if (isNaN(d.getTime())) return String(s).split(' ')[0];
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-function iocBannerEvidence(t) {
-    var text = String(t.evidence_summary || '').replace(/\s+/g, ' ').trim();
-    if (t.target) {
-        text = text.split(t.target).join('');
-        text = text.replace(/\s+/g, ' ').trim();
-    }
-    if (text.length > 180) text = text.slice(0, 177).replace(/\s+\S*$/, '') + '…';
-    return text;
+function newsStamp(s) {
+    var d = new Date(String(s || '').replace(' ', 'T') + 'Z');
+    if (isNaN(d.getTime())) d = new Date(s);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
-function iocBannerHref(t) {
-    if (!t || !t.ioc_value) return '/threats.html';
-    if (t.ioc_type === 'ip') return '/?tab=ip&ip=' + encodeURIComponent(t.ioc_value);
-    return '/?tab=dns&q=' + encodeURIComponent(t.ioc_value);
-}
-
-function showIocBannerItem(t) {
+function showNewsBannerItem(item) {
     var title = document.getElementById('ioc-banner-title');
     var sub = document.getElementById('ioc-banner-sub');
     var cta = document.getElementById('ioc-banner-cta');
-    if (!title || !sub || !cta || !t) return;
-    var cat = IOC_BANNER_CATS[t.category] || 'Observed threat';
-    var when = iocBannerDate(t.last_seen || t.first_seen);
-    title.textContent = 'Observed · ' + cat + ' · ' + t.ioc_value + (when ? ' · ' + when : '');
-    sub.textContent = iocBannerEvidence(t) || 'First-party observation from Ignix. Client names are not shown.';
-    cta.href = iocBannerHref(t);
-    cta.textContent = 'Look up';
+    if (!title || !sub || !cta || !item) return;
+    var when = newsDate(item.pubDate);
+    title.textContent = item.source + ' · ' + newsClip(item.title, 110);
+    sub.textContent = (when ? when + ' · ' : '') + (item.summary || 'Open the article for the full story.');
+    cta.href = item.link;
+    cta.textContent = 'Read';
+    cta.target = '_blank';
+    cta.rel = 'noopener noreferrer';
 }
 
-function loadIocBanner() {
-    fetch('https://tools.ignixip.com/iocs')
-        .then(function(r) { return r.json(); })
+function startNewsRotation(items) {
+    if (!items.length) return;
+    showNewsBannerItem(items[0]);
+    if (items.length < 2) return;
+    var i = 0;
+    if (newsBannerTimer) clearInterval(newsBannerTimer);
+    newsBannerTimer = setInterval(function() {
+        i = (i + 1) % items.length;
+        showNewsBannerItem(items[i]);
+    }, 12000);
+}
+
+function parseNewsFeed(feed, data) {
+    var items = (data && data.status === 'ok' && data.items) ? data.items : [];
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < items.length && out.length < 4; i++) {
+        var it = items[i];
+        var link = it && it.link ? String(it.link).trim() : '';
+        var title = newsPlain(it && it.title);
+        if (!title || !newsHostOk(link, feed.hosts) || seen[link]) continue;
+        seen[link] = true;
+        out.push({
+            source: feed.source,
+            title: title,
+            summary: newsClip(newsPlain(it.description || it.content), 180),
+            link: link,
+            pubDate: it.pubDate || ''
+        });
+    }
+    return out;
+}
+
+function loadNewsFromRss() {
+    return Promise.all(NEWS_FEEDS.map(function(feed) {
+        var url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feed.rss);
+        return fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+            return parseNewsFeed(feed, d);
+        }).catch(function() { return []; });
+    })).then(function(groups) {
+        var items = [];
+        groups.forEach(function(g) { items = items.concat(g); });
+        items.sort(function(a, b) { return newsStamp(b.pubDate) - newsStamp(a.pubDate); });
+        return items.slice(0, 12);
+    });
+}
+
+function readNewsCache() {
+    try {
+        var raw = localStorage.getItem(NEWS_CACHE_KEY);
+        if (!raw) return null;
+        var cached = JSON.parse(raw);
+        if (!cached || !cached.at || !cached.items || !cached.items.length) return null;
+        if (Date.now() - cached.at > NEWS_CACHE_MS) return null;
+        return cached.items;
+    } catch (e) {
+        return null;
+    }
+}
+
+function writeNewsCache(items) {
+    try {
+        localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({ at: Date.now(), items: items }));
+    } catch (e) {}
+}
+
+function loadNewsBanner() {
+    var cached = readNewsCache();
+    if (cached) {
+        startNewsRotation(cached);
+        return;
+    }
+    new Promise(function(resolve, reject) {
+        var t = setTimeout(function() { reject(new Error('timeout')); }, 2500);
+        fetch('https://tools.ignixip.com/news')
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function(d) { clearTimeout(t); resolve(d); })
+            .catch(function(e) { clearTimeout(t); reject(e); });
+    })
         .then(function(d) {
-            var iocs = (d && d.iocs) ? d.iocs.filter(function(t) {
-                return t && t.ioc_value && t.status !== 'inactive';
+            var items = (d && d.items) ? d.items.filter(function(it) {
+                return it && it.title && it.link && it.source;
             }) : [];
-            if (!iocs.length) return;
-            iocs.sort(function(a, b) {
-                return String(b.last_seen || b.first_seen || '').localeCompare(String(a.last_seen || a.first_seen || ''));
-            });
-            showIocBannerItem(iocs[0]);
-            if (iocs.length < 2) return;
-            var i = 0;
-            if (iocBannerTimer) clearInterval(iocBannerTimer);
-            iocBannerTimer = setInterval(function() {
-                i = (i + 1) % iocs.length;
-                showIocBannerItem(iocs[i]);
-            }, 12000);
+            if (!items.length) throw new Error('empty');
+            writeNewsCache(items.slice(0, 12));
+            startNewsRotation(items.slice(0, 12));
         })
-        .catch(function() {});
+        .catch(function() {
+            return loadNewsFromRss().then(function(items) {
+                if (!items.length) return;
+                writeNewsCache(items);
+                startNewsRotation(items);
+            });
+        });
 }
 
 window.addEventListener('load', function() {
-    loadIocBanner();
+    loadNewsBanner();
     var params = new URLSearchParams(window.location.search);
     var tab = params.get('tab') || 'ip';
 
