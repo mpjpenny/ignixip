@@ -266,13 +266,13 @@
     <p>Geolocation, DNS records and blacklist checking. Fast, clean, no clutter. <a href="/my-ip.html" style="color:var(--blue-bright);">What is my IP?</a></p>
 </div>
 
-<div style="max-width:900px;margin:0 auto 28px;padding:18px 22px;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.2);border-radius:12px;">
+<div id="ioc-banner" style="max-width:900px;margin:0 auto 28px;padding:18px 22px;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.2);border-radius:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
-        <div>
-            <div style="font-size:14px;font-weight:600;margin-bottom:3px;">New: DMARC report analyser</div>
-            <div style="font-size:12px;color:#94a3b8;line-height:1.5;">Drop your DMARC aggregate reports and get a plain-English breakdown. Identifies spoofers, mixed-auth senders, and misconfigured keys.</div>
+        <div style="min-width:0;flex:1;">
+            <div id="ioc-banner-title" style="font-size:14px;font-weight:600;margin-bottom:3px;">New: DMARC report analyser</div>
+            <div id="ioc-banner-sub" style="font-size:12px;color:#94a3b8;line-height:1.5;">Drop your DMARC aggregate reports and get a plain-English breakdown. Identifies spoofers, mixed-auth senders, and misconfigured keys.</div>
         </div>
-        <a href="/dmarc.html" style="padding:8px 18px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;">Open tool</a>
+        <a id="ioc-banner-cta" href="/dmarc.html" style="padding:8px 18px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;">Open tool</a>
     </div>
 </div>
 <div class="tabs-container">
@@ -3309,8 +3309,81 @@ function submitDomainReport(domain, checkType) {
     });
 }
 
-// ── Page load ────────────────────────────────────────────────────────────────
+// ── Observed threat banner (replaces DMARC promo when IOCs exist) ───────────
+var iocBannerTimer = null;
+var IOC_BANNER_CATS = {
+    'email-impersonation': 'Email impersonation',
+    'phishing': 'Phishing',
+    'c2': 'C2 / malware',
+    'scanner': 'Scanner / recon',
+    'credential-theft': 'Credential theft',
+    'malware-distribution': 'Malware',
+    'spam': 'Spam',
+    'brand-abuse': 'Brand abuse',
+    'other': 'Observed threat'
+};
+
+function iocBannerDate(s) {
+    if (!s) return '';
+    var d = new Date(String(s).replace(' ', 'T') + 'Z');
+    if (isNaN(d.getTime())) return String(s).split(' ')[0];
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function iocBannerEvidence(t) {
+    var text = String(t.evidence_summary || '').replace(/\s+/g, ' ').trim();
+    if (t.target) {
+        text = text.split(t.target).join('');
+        text = text.replace(/\s+/g, ' ').trim();
+    }
+    if (text.length > 180) text = text.slice(0, 177).replace(/\s+\S*$/, '') + '…';
+    return text;
+}
+
+function iocBannerHref(t) {
+    if (!t || !t.ioc_value) return '/threats.html';
+    if (t.ioc_type === 'ip') return '/?tab=ip&ip=' + encodeURIComponent(t.ioc_value);
+    return '/?tab=dns&q=' + encodeURIComponent(t.ioc_value);
+}
+
+function showIocBannerItem(t) {
+    var title = document.getElementById('ioc-banner-title');
+    var sub = document.getElementById('ioc-banner-sub');
+    var cta = document.getElementById('ioc-banner-cta');
+    if (!title || !sub || !cta || !t) return;
+    var cat = IOC_BANNER_CATS[t.category] || 'Observed threat';
+    var when = iocBannerDate(t.last_seen || t.first_seen);
+    title.textContent = 'Observed · ' + cat + ' · ' + t.ioc_value + (when ? ' · ' + when : '');
+    sub.textContent = iocBannerEvidence(t) || 'First-party observation from Ignix. Client names are not shown.';
+    cta.href = iocBannerHref(t);
+    cta.textContent = 'Look up';
+}
+
+function loadIocBanner() {
+    fetch('https://tools.ignixip.com/iocs')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var iocs = (d && d.iocs) ? d.iocs.filter(function(t) {
+                return t && t.ioc_value && t.status !== 'inactive';
+            }) : [];
+            if (!iocs.length) return;
+            iocs.sort(function(a, b) {
+                return String(b.last_seen || b.first_seen || '').localeCompare(String(a.last_seen || a.first_seen || ''));
+            });
+            showIocBannerItem(iocs[0]);
+            if (iocs.length < 2) return;
+            var i = 0;
+            if (iocBannerTimer) clearInterval(iocBannerTimer);
+            iocBannerTimer = setInterval(function() {
+                i = (i + 1) % iocs.length;
+                showIocBannerItem(iocs[i]);
+            }, 12000);
+        })
+        .catch(function() {});
+}
+
 window.addEventListener('load', function() {
+    loadIocBanner();
     var params = new URLSearchParams(window.location.search);
     var tab = params.get('tab') || 'ip';
 
