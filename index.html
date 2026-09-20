@@ -1214,10 +1214,32 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
 }
 
 // ── Share link ──────────────────────────────────────────────────────────────
-function copyShareLink() {
-    if (!lastLookupData) return;
-    var url = 'https://ignixip.com/?tab=ip&ip=' + encodeURIComponent(lastLookupData.originalDomain || lastLookupData.ip);
+function shareUrl(tab, value) {
+    var origin = window.location.origin;
+    tab = tab || 'ip';
+    if (value === undefined || value === null || value === '') {
+        if (lastLookupData) value = lastLookupData.originalDomain || lastLookupData.ip;
+    }
+    if (!value) return origin + '/?tab=' + encodeURIComponent(tab);
+    if (tab === 'dns' || tab === 'whois') {
+        return origin + '/?tab=' + tab + '&q=' + encodeURIComponent(value);
+    }
+    if (tab === 'asn') {
+        var num = String(value).replace(/^AS/i, '');
+        return origin + '/?tab=asn&asn=AS' + encodeURIComponent(num);
+    }
+    return origin + '/?tab=' + tab + '&ip=' + encodeURIComponent(value);
+}
+
+function copyShareLink(tab, value) {
+    var url = shareUrl(tab, value);
     navigator.clipboard.writeText(url).then(function() { showToast('Link copied to clipboard'); });
+}
+
+function shareBarHtml(tab, value) {
+    return '<div class="action-bar fade-in"><button type="button" class="action-btn" onclick="copyShareLink(' +
+        JSON.stringify(tab) + ',' + JSON.stringify(value) +
+        ')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Share Link</button></div>';
 }
 
 // ── DNS Lookup ───────────────────────────────────────────────────────────────
@@ -1262,7 +1284,7 @@ function lookupDNS() {
 }
 
 function renderDNSResults(domain, results) {
-    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + domain + '</div></div>';
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + domain + '</div></div>' + shareBarHtml('dns', domain);
     var hasAny = false;
     results.forEach(function(r) {
         if (!r.data || !r.data.Answer || r.data.Answer.length === 0) return;
@@ -1386,7 +1408,7 @@ function renderBlacklistResults(ip, results, abuseData) {
     var html = abuseHtml + '<div class="ip-header fade-in">' +
         '<div class="ip-address-display">' + ip + '</div>' +
         '<div class="ip-tags"><span class="tag" style="' + (listed > 0 ? 'background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25)' : 'background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.25)') + '">' + (listed > 0 ? listed + ' LISTED' : 'CLEAN') + '</span></div>' +
-    '</div>';
+    '</div>' + shareBarHtml('bl', ip);
     html += '<div class="bl-summary fade-in">' +
         '<div class="bl-stat"><div class="bl-stat-num" style="color:' + listColor + ';">' + listed + '</div><div class="bl-stat-label">Listed</div></div>' +
         '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--green);">' + clean + '</div><div class="bl-stat-label">Clean</div></div>' +
@@ -1497,6 +1519,7 @@ function renderWHOISDomain(query, f, raw) {
     var rawEsc = raw ? raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
     whoisResults.innerHTML =
         '<div class="ip-header fade-in"><div class="ip-address-display">' + query + '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">domain</span></div></div>' +
+        shareBarHtml('whois', query) +
         '<div class="results-grid fade-in">' +
             '<div class="result-card"><div class="card-title">Registration</div>' +
                 row('Registrar', f.registrar) +
@@ -1577,6 +1600,7 @@ function renderWHOIS(query, d) {
 
     whoisResults.innerHTML =
         '<div class="ip-header fade-in"><div class="ip-address-display">' + query + '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">' + name + '</span></div></div>' +
+        shareBarHtml('whois', query) +
         '<div class="results-grid fade-in">' +
             '<div class="result-card"><div class="card-title">Network</div>' +
                 '<div class="data-row"><span class="data-key">Name</span><span class="data-val">' + name + '</span></div>' +
@@ -1641,7 +1665,7 @@ function runTools() {
 }
 
 function renderTools(ip, ping, scan) {
-    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + ip + '</div></div>';
+    var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + ip + '</div></div>' + shareBarHtml('tools', ip);
     html += '<div class="results-grid fade-in">';
 
     if (ping) {
@@ -1778,7 +1802,7 @@ function renderASN(asn, rdap, prefixText) {
         }
     }
     var html = '<div class="ip-header fade-in"><div class="ip-address-display">' + asn;
-    html += '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">' + name + '</span></div></div>';
+    html += '<span style="font-size:13px;color:var(--text-dim);margin-left:12px;font-family:JetBrains Mono,monospace;">' + name + '</span></div></div>' + shareBarHtml('asn', asn);
     html += '<div class="results-grid fade-in">';
     html += '<div class="result-card"><div class="card-title">ASN Details</div>';
     html += '<div class="data-row"><span class="data-key">ASN</span><span class="data-val blue">' + asn + '</span></div>';
@@ -3306,8 +3330,8 @@ window.addEventListener('load', function() {
         var blip = params.get('ip');
         if (blip) { blInput.value = blip; checkBlacklist(); }
     } else if (tab === 'whois') {
-        var whoisip = params.get('ip');
-        if (whoisip) { whoisInput.value = whoisip; lookupWHOIS(); }
+        var whoisq = params.get('q') || params.get('ip');
+        if (whoisq) { whoisInput.value = whoisq; lookupWHOIS(); }
     } else if (tab === 'asn') {
         var asnq = params.get('asn');
         if (asnq) { asnInput.value = asnq; lookupASN(); }
