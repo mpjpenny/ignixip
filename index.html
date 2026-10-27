@@ -1221,21 +1221,51 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
 }
 
 // ── Share link ──────────────────────────────────────────────────────────────
+function routeFromPath(pathname) {
+    var m = String(pathname || '').match(/^\/(ip|dns|whois|bl|blacklist|asn|tools)\/([^/]+)\/?$/i);
+    if (!m) return null;
+    var tab = m[1].toLowerCase() === 'blacklist' ? 'bl' : m[1].toLowerCase();
+    var value = m[2];
+    try { value = decodeURIComponent(value); } catch (e) {}
+    return { tab: tab, value: value };
+}
+
+function prettyPath(tab, value) {
+    tab = tab || 'ip';
+    if (value === undefined || value === null || value === '') return '/?tab=' + encodeURIComponent(tab);
+    if (tab === 'dns' || tab === 'whois') return '/' + tab + '/' + encodeURIComponent(value);
+    if (tab === 'asn') {
+        var num = String(value).replace(/^AS/i, '');
+        return '/asn/AS' + encodeURIComponent(num);
+    }
+    return '/' + tab + '/' + encodeURIComponent(value);
+}
+
+function runRoutedLookup(tab, value) {
+    switchTab(tab);
+    if (tab === 'ip') {
+        if (value) { ipInput.value = value; lookupIP(); }
+        else { lookupSelf(); }
+    } else if (tab === 'dns') {
+        if (value) { dnsInput.value = value; lookupDNS(); }
+    } else if (tab === 'bl') {
+        if (value) { blInput.value = value; checkBlacklist(); }
+    } else if (tab === 'whois') {
+        if (value) { whoisInput.value = value; lookupWHOIS(); }
+    } else if (tab === 'asn') {
+        if (value) { asnInput.value = value; lookupASN(); }
+    } else if (tab === 'tools') {
+        if (value) { toolsInput.value = value; runTools(); }
+    }
+}
+
 function shareUrl(tab, value) {
     var origin = window.location.origin;
     tab = tab || 'ip';
     if (value === undefined || value === null || value === '') {
         if (lastLookupData) value = lastLookupData.originalDomain || lastLookupData.ip;
     }
-    if (!value) return origin + '/?tab=' + encodeURIComponent(tab);
-    if (tab === 'dns' || tab === 'whois') {
-        return origin + '/?tab=' + tab + '&q=' + encodeURIComponent(value);
-    }
-    if (tab === 'asn') {
-        var num = String(value).replace(/^AS/i, '');
-        return origin + '/?tab=asn&asn=AS' + encodeURIComponent(num);
-    }
-    return origin + '/?tab=' + tab + '&ip=' + encodeURIComponent(value);
+    return origin + prettyPath(tab, value);
 }
 
 function copyShareLink(tab, value) {
@@ -3470,6 +3500,19 @@ function loadNewsBanner() {
 window.addEventListener('load', function() {
     loadNewsBanner();
     var params = new URLSearchParams(window.location.search);
+
+    var carried = routeFromPath(params.get('path') || '');
+    if (carried) {
+        history.replaceState({}, '', prettyPath(carried.tab, carried.value));
+        runRoutedLookup(carried.tab, carried.value);
+        return;
+    }
+    var direct = routeFromPath(location.pathname);
+    if (direct) {
+        runRoutedLookup(direct.tab, direct.value);
+        return;
+    }
+
     var tab = params.get('tab') || 'ip';
 
     // Handle token from verification redirect
@@ -3482,27 +3525,21 @@ window.addEventListener('load', function() {
         tab = 'bulk';
     }
 
-    switchTab(tab);
-    if (tab === 'ip') {
-        var ip = params.get('ip');
-        if (ip) { ipInput.value = ip; lookupIP(); }
-        else { lookupSelf(); }
-    } else if (tab === 'dns') {
-        var q = params.get('q');
-        if (q) { dnsInput.value = q; lookupDNS(); }
-    } else if (tab === 'bl') {
-        var blip = params.get('ip');
-        if (blip) { blInput.value = blip; checkBlacklist(); }
-    } else if (tab === 'whois') {
-        var whoisq = params.get('q') || params.get('ip');
-        if (whoisq) { whoisInput.value = whoisq; lookupWHOIS(); }
-    } else if (tab === 'asn') {
-        var asnq = params.get('asn');
-        if (asnq) { asnInput.value = asnq; lookupASN(); }
-    } else if (tab === 'tools') {
-        var toolsip = params.get('ip');
-        if (toolsip) { toolsInput.value = toolsip; runTools(); }
+    if (tab === 'bulk') {
+        switchTab('bulk');
+        return;
     }
+
+    var value = null;
+    if (tab === 'ip') value = params.get('ip');
+    else if (tab === 'dns') value = params.get('q');
+    else if (tab === 'bl') value = params.get('ip');
+    else if (tab === 'whois') value = params.get('q') || params.get('ip');
+    else if (tab === 'asn') value = params.get('asn');
+    else if (tab === 'tools') value = params.get('ip');
+
+    if (value) history.replaceState({}, '', prettyPath(tab, value));
+    runRoutedLookup(tab, value);
 });
 </script>
 </body>
