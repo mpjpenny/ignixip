@@ -298,9 +298,10 @@ function renderDashboard(d, iocsData) {
         var mapEl = document.getElementById('threat-map');
         if (!mapEl) return;
         var map = L.map('threat-map', { zoomControl: true, scrollWheelZoom: false }).setView([30, 0], 2);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
-            maxZoom: 18
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=cb1_4vue_1_44937e0c66057b97742bc2db', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 20,
+            maxNativeZoom: 18
         }).addTo(map);
 
         if (d.map_points && d.map_points.length > 0) {
