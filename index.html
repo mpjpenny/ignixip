@@ -161,6 +161,8 @@
         .verdict-listed.watch { color: var(--amber); }
         .verdict-listed.bad { color: var(--red); }
         .verdict-means { font-size: 14px; color: var(--text-muted); line-height: 1.55; }
+        .verdict-note { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+        .verdict-note a { color: var(--blue-bright); text-decoration: none; }
         .risk-factors { display: flex; flex-wrap: wrap; gap: 6px; }
         .risk-factor { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
         .risk-factor-red { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
@@ -824,6 +826,7 @@ function lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResu
     }
 
     var means;
+    var recommendVpn = false;
     if (isTor) {
         means = 'This is a Tor exit. The organisation above runs the exit, not the person who used it.';
         if (tone === 'clean') tone = 'watch';
@@ -835,6 +838,7 @@ function lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResu
         means = 'A listing is often a shared address or an old incident. Match it to what you saw before treating the whole network as hostile.';
     } else if (isVpn) {
         means = 'This is a VPN address. The organisation above runs the service, not necessarily the person at the keyboard.';
+        recommendVpn = true;
         if (tone === 'clean') tone = 'watch';
     } else if (isHosting) {
         means = 'A hosting or cloud address with a clean record. Ordinary for a website, a CDN, or an API.';
@@ -847,7 +851,7 @@ function lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResu
     if ((listedCount !== null && listedCount >= 3) || (abuseScore !== null && abuseScore >= 50)) listTone = 'bad';
     else if (abuseScore !== null && abuseScore >= 10 && listTone === 'clean') listTone = 'watch';
 
-    return { owner: owner, meta: meta.join(' · '), listed: listedText, means: means, tone: tone, listTone: listTone };
+    return { owner: owner, meta: meta.join(' · '), listed: listedText, means: means, tone: tone, listTone: listTone, recommendVpn: recommendVpn };
 }
 
 function renderVerdict(v) {
@@ -857,6 +861,7 @@ function renderVerdict(v) {
         '<div class="verdict-meta">' + escHtml(v.meta) + '</div>' +
         '<div class="verdict-listed ' + v.listTone + '">' + escHtml(v.listed) + '</div>' +
         '<div class="verdict-means">' + escHtml(v.means) + '</div>' +
+        (v.recommendVpn ? '<div class="verdict-note">Unpaid recommendation. If you are choosing a VPN, <a href="https://ignix.co.uk/insights/field-notes/why-mullvad.html">Mullvad</a> is the one we would use. We are not paid to say so.</div>' : '') +
     '</div>';
 }
 
