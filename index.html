@@ -150,6 +150,17 @@
         .risk-info { flex: 1; min-width: 200px; }
         .risk-label { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
         .risk-summary { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+        .verdict { background: var(--surface); border: 1px solid var(--border2); border-left: 3px solid var(--green); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+        .verdict-watch { border-left-color: var(--amber); }
+        .verdict-bad { border-left-color: var(--red); }
+        .verdict-kicker { font-size: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+        .verdict-owner { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 2px; }
+        .verdict-meta { font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+        .verdict-listed { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        .verdict-listed.clean { color: var(--green); }
+        .verdict-listed.watch { color: var(--amber); }
+        .verdict-listed.bad { color: var(--red); }
+        .verdict-means { font-size: 14px; color: var(--text-muted); line-height: 1.55; }
         .risk-factors { display: flex; flex-wrap: wrap; gap: 6px; }
         .risk-factor { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
         .risk-factor-red { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
@@ -565,7 +576,7 @@ function switchTab(tab) {
     var btns = document.querySelectorAll('.tab-btn');
     var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5, bulk:6, headers:7, urlcheck:8, emailcheck:9}[tab];
     btns[idx].classList.add('active');
-    history.pushState({}, '', '?tab=' + tab);
+    history.pushState({}, '', '/?tab=' + tab);
     // Show bulk auth area if needed
     if (tab === 'bulk') initBulkTab();
 }
@@ -759,6 +770,96 @@ function doIPLookup(ip, originalDomain) {
 }
 
 // ── Risk Score Calculation ───────────────────────────────────────────────────
+function escHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResults) {
+    var owner = (orgName && orgName !== '—') ? orgName : ((d.org && d.org !== '—') ? d.org : 'Unknown network');
+    var placeBits = [];
+    if (d.city) placeBits.push(d.city);
+    if (d.region && d.region !== d.city) placeBits.push(d.region);
+    if (d.country) placeBits.push(d.country);
+    var asnOk = asn && /^AS\d+$/i.test(asn);
+    var meta = [];
+    if (asnOk) meta.push(String(asn).toUpperCase());
+    if (placeBits.length) meta.push(placeBits.join(', '));
+    meta.push(isHosting ? 'hosting' : 'home or office broadband');
+
+    var listedCount = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).length : null;
+    var listedNames = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).map(function(r) { return r.name; }) : [];
+    var total = dnsblResults ? dnsblResults.length : 0;
+    var abuseScore = abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : null;
+    var abuseReports = abuseData && abuseData.data ? (abuseData.data.totalReports || 0) : null;
+    var isTor = vpnData && vpnData.security && vpnData.security.tor;
+    var isVpn = vpnData && vpnData.security && (vpnData.security.vpn || vpnData.security.proxy);
+
+    var listedText;
+    var tone = 'clean';
+    if (listedCount === null) {
+        listedText = 'Blacklist check did not return.';
+        tone = 'watch';
+    } else if (listedCount === 0) {
+        listedText = 'Not listed on ' + total + ' blacklists.';
+    } else if (listedCount === 1) {
+        listedText = 'Listed on ' + listedNames[0] + '.';
+        tone = 'watch';
+    } else {
+        var shown = listedNames.slice(0, 3).join(', ');
+        var extra = listedCount > 3 ? ', and ' + (listedCount - 3) + ' more' : '';
+        listedText = 'Listed on ' + shown + extra + '.';
+        tone = listedCount >= 3 ? 'bad' : 'watch';
+    }
+    if (abuseScore !== null) {
+        if (abuseScore === 0 && abuseReports > 0) {
+            listedText += ' AbuseIPDB confidence is 0%, across ' + abuseReports + ' older reports.';
+        } else if (!abuseReports) {
+            listedText += ' AbuseIPDB has no reports.';
+        } else {
+            listedText += ' AbuseIPDB confidence ' + abuseScore + '% from ' + abuseReports + ' report' + (abuseReports === 1 ? '' : 's') + '.';
+            if (abuseScore >= 50) tone = 'bad';
+            else if (abuseScore >= 10 && tone === 'clean') tone = 'watch';
+        }
+    }
+
+    var means;
+    if (isTor) {
+        means = 'This is a Tor exit. The organisation above runs the exit, not the person who used it.';
+        if (tone === 'clean') tone = 'watch';
+    } else if (tone === 'bad') {
+        means = 'This address has a current reputation problem. Mail from it is likely to be refused, and a connection from it deserves a look at the log.';
+    } else if (listedCount === null) {
+        means = 'The organisation above owns the address. The blacklist check did not finish, so the record is incomplete.';
+    } else if (listedCount > 0) {
+        means = 'A listing is often a shared address or an old incident. Match it to what you saw before treating the whole network as hostile.';
+    } else if (isVpn) {
+        means = 'This is a VPN address. The organisation above runs the service, not necessarily the person at the keyboard.';
+        if (tone === 'clean') tone = 'watch';
+    } else if (isHosting) {
+        means = 'A hosting or cloud address with a clean record. Ordinary for a website, a CDN, or an API.';
+    } else {
+        means = 'A home or office broadband address with a clean record. Nothing in these checks marks it as hostile.';
+    }
+
+    var listTone = 'clean';
+    if (listedCount === null || (listedCount > 0 && listedCount < 3)) listTone = 'watch';
+    if ((listedCount !== null && listedCount >= 3) || (abuseScore !== null && abuseScore >= 50)) listTone = 'bad';
+    else if (abuseScore !== null && abuseScore >= 10 && listTone === 'clean') listTone = 'watch';
+
+    return { owner: owner, meta: meta.join(' · '), listed: listedText, means: means, tone: tone, listTone: listTone };
+}
+
+function renderVerdict(v) {
+    return '<div class="verdict fade-in verdict-' + v.tone + '">' +
+        '<div class="verdict-kicker">Verdict</div>' +
+        '<div class="verdict-owner">' + escHtml(v.owner) + '</div>' +
+        '<div class="verdict-meta">' + escHtml(v.meta) + '</div>' +
+        '<div class="verdict-listed ' + v.listTone + '">' + escHtml(v.listed) + '</div>' +
+        '<div class="verdict-means">' + escHtml(v.means) + '</div>' +
+    '</div>';
+}
+
 function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults) {
     var score = 0;
     var factors = [];
@@ -860,7 +961,6 @@ function renderRiskPanel(risk, ip) {
     // Info
     html += '<div class="risk-info">';
     html += '<div class="risk-label" style="color:' + risk.color + ';">' + risk.label + ' Risk</div>';
-    html += '<div class="risk-summary">' + risk.summary + '</div>';
     html += '<div class="risk-factors">';
     for (var i = 0; i < risk.factors.length; i++) {
         var f = risk.factors[i];
@@ -907,6 +1007,11 @@ function copyReport() {
     var lines = [
         'ignixip Report — ' + ld.ip,
         '═══════════════════════════════════════',
+        '',
+        ld.verdict ? ld.verdict.owner : '',
+        ld.verdict ? ld.verdict.meta : '',
+        ld.verdict ? ld.verdict.listed : '',
+        ld.verdict ? ld.verdict.means : '',
         '',
         'Risk Score:     ' + ld.risk.score + '/100 (' + ld.risk.label + ')',
         'Risk Factors:   ' + ld.risk.factors.map(function(f) { return f.label; }).join(', '),
@@ -1041,13 +1146,15 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
         blacklistTotal: dnsblResults ? dnsblResults.length : 0,
         blacklistNames: listedNames,
         risk: { score: risk.score, label: risk.label, factors: risk.factors },
+        verdict: lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResults),
         timestamp: new Date().toISOString()
     };
 
     // Build output
     var html = '';
 
-    // Risk panel (top)
+    // Verdict, then the score
+    html += renderVerdict(lastLookupData.verdict);
     html += renderRiskPanel(risk, ip);
 
     // Action bar
@@ -1153,7 +1260,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     html += '</div>'; // close results-grid
 
     ipResults.innerHTML = html;
-    history.pushState({}, '', '?tab=ip&ip=' + encodeURIComponent(d.originalDomain || ip));
+    history.pushState({}, '', prettyPath('ip', d.originalDomain || ip));
 
     // Log lookup to tools server for stats (fire and forget)
     try {
@@ -1307,7 +1414,7 @@ function lookupDNS() {
         renderDNSResults(domain, results);
         dnsBtn.disabled = false;
         dnsBtn.textContent = 'Look Up';
-        history.pushState({}, '', '?tab=dns&q=' + encodeURIComponent(domain));
+        history.pushState({}, '', '/?tab=dns&q=' + encodeURIComponent(domain));
         var prevCerts = document.querySelectorAll('.cert-section');
         prevCerts.forEach(function(el) { el.remove(); });
         fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
@@ -1415,7 +1522,7 @@ function checkBlacklist() {
         renderBlacklistResults(ip, results, abuseData);
         blBtn.disabled = false;
         blBtn.textContent = 'Check';
-        history.pushState({}, '', '?tab=bl&ip=' + encodeURIComponent(ip));
+        history.pushState({}, '', '/?tab=bl&ip=' + encodeURIComponent(ip));
     });
 }
 
@@ -1532,7 +1639,7 @@ function lookupWHOIS() {
             }
             whoisBtn.disabled = false;
             whoisBtn.textContent = 'Look Up';
-            history.pushState({}, '', '?tab=whois&q=' + encodeURIComponent(query));
+            history.pushState({}, '', '/?tab=whois&q=' + encodeURIComponent(query));
         })
         .catch(function(err) {
             whoisResults.innerHTML = '<div class="error-card">WHOIS lookup failed - ' + (err.message || 'please check input and try again') + '</div>';
@@ -1676,7 +1783,7 @@ function runTools() {
     toolsBtn.disabled = true;
     toolsBtn.textContent = 'Running...';
     toolsResults.innerHTML = '<div class="loading"><span class="loading-dots">Running ping, port scan and traceroute</span></div>';
-    history.pushState({}, '', '?tab=tools&ip=' + encodeURIComponent(ip));
+    history.pushState({}, '', '/?tab=tools&ip=' + encodeURIComponent(ip));
 
     var pingPromise = fetch('https://tools.ignixip.com/ping/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
@@ -1811,7 +1918,7 @@ function lookupASN() {
         renderASN('AS' + num, res[0], res[1]);
         asnBtn.disabled = false;
         asnBtn.textContent = 'Look Up';
-        history.pushState({}, '', '?tab=asn&asn=AS' + encodeURIComponent(num));
+        history.pushState({}, '', '/?tab=asn&asn=AS' + encodeURIComponent(num));
     });
 }
 
@@ -3520,7 +3627,7 @@ window.addEventListener('load', function() {
     if (tokenParam) {
         localStorage.setItem('ignixip_token', tokenParam);
         // Clean URL
-        var cleanUrl = '?tab=bulk';
+        var cleanUrl = '/?tab=bulk';
         history.replaceState({}, '', cleanUrl);
         tab = 'bulk';
     }
