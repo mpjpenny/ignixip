@@ -740,6 +740,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="/reputation.js"></script>
 <script src="/ask.js"></script>
 <script>
 // ── DNSBL list (shared by IP Lookup risk score and Blacklist tab) ────────────
@@ -933,7 +934,7 @@ function refineAskSummary(plan) {
     if (!el || plan.tools.length !== 1) return;
     var only = plan.tools[0].tab;
     if ((only === 'ip' || only === 'myip') && lastLookupData && lastLookupData.verdict) {
-        el.textContent = lastLookupData.verdict.owner + '. ' + lastLookupData.verdict.means;
+        el.textContent = lastLookupData.verdict.askLine || (lastLookupData.verdict.owner + '. ' + lastLookupData.verdict.means);
     }
 }
 
@@ -1145,7 +1146,7 @@ function doIPLookup(ip, originalDomain) {
         return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
             .then(function(r) { return r.json(); })
             .then(function(d) {
-                return { name: list.name, listed: !!(d.Answer && d.Answer.length > 0) };
+                return ignixReputation.readDnsblResult(list.name, d);
             })
             .catch(function() { return { name: list.name, listed: false }; });
     }));
@@ -1213,69 +1214,23 @@ function lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResu
     if (placeBits.length) meta.push(placeBits.join(', '));
     meta.push(isHosting ? 'hosting' : 'home or office broadband');
 
-    var listedCount = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).length : null;
-    var listedNames = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).map(function(r) { return r.name; }) : [];
-    var total = dnsblResults ? dnsblResults.length : 0;
     var abuseScore = abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : null;
     var abuseReports = abuseData && abuseData.data ? (abuseData.data.totalReports || 0) : null;
     var isTor = vpnData && vpnData.security && vpnData.security.tor;
     var isVpn = vpnData && vpnData.security && (vpnData.security.vpn || vpnData.security.proxy);
 
-    var listedText;
-    var tone = 'clean';
-    if (listedCount === null) {
-        listedText = 'Blacklist check did not return.';
-        tone = 'watch';
-    } else if (listedCount === 0) {
-        listedText = 'Not listed on ' + total + ' blacklists.';
-    } else if (listedCount === 1) {
-        listedText = 'Listed on ' + listedNames[0] + '.';
-        tone = 'watch';
-    } else {
-        var shown = listedNames.slice(0, 3).join(', ');
-        var extra = listedCount > 3 ? ', and ' + (listedCount - 3) + ' more' : '';
-        listedText = 'Listed on ' + shown + extra + '.';
-        tone = listedCount >= 3 ? 'bad' : 'watch';
-    }
-    if (abuseScore !== null) {
-        if (abuseScore === 0 && abuseReports > 0) {
-            listedText += ' AbuseIPDB confidence is 0%, across ' + abuseReports + ' older reports.';
-        } else if (!abuseReports) {
-            listedText += ' AbuseIPDB has no reports.';
-        } else {
-            listedText += ' AbuseIPDB confidence ' + abuseScore + '% from ' + abuseReports + ' report' + (abuseReports === 1 ? '' : 's') + '.';
-            if (abuseScore >= 50) tone = 'bad';
-            else if (abuseScore >= 10 && tone === 'clean') tone = 'watch';
-        }
-    }
-
-    var means;
-    var recommendVpn = false;
-    if (isTor) {
-        means = 'This is a Tor exit. The organisation above runs the exit, not the person who used it.';
-        if (tone === 'clean') tone = 'watch';
-    } else if (tone === 'bad') {
-        means = 'This address has a current reputation problem. Mail from it is likely to be refused, and a connection from it deserves a look at the log.';
-    } else if (listedCount === null) {
-        means = 'The organisation above owns the address. The blacklist check did not finish, so the record is incomplete.';
-    } else if (listedCount > 0) {
-        means = 'A listing is often a shared address or an old incident. Match it to what you saw before treating the whole network as hostile.';
-    } else if (isVpn) {
-        means = 'This is a VPN address. The organisation above runs the service, not necessarily the person at the keyboard.';
-        recommendVpn = true;
-        if (tone === 'clean') tone = 'watch';
-    } else if (isHosting) {
-        means = 'A hosting or cloud address with a clean record. Ordinary for a website, a CDN, or an API.';
-    } else {
-        means = 'A home or office broadband address with a clean record. Nothing in these checks marks it as hostile.';
-    }
-
-    var listTone = 'clean';
-    if (listedCount === null || (listedCount > 0 && listedCount < 3)) listTone = 'watch';
-    if ((listedCount !== null && listedCount >= 3) || (abuseScore !== null && abuseScore >= 50)) listTone = 'bad';
-    else if (abuseScore !== null && abuseScore >= 10 && listTone === 'clean') listTone = 'watch';
-
-    return { owner: owner, meta: meta.join(' · '), listed: listedText, means: means, tone: tone, listTone: listTone, recommendVpn: recommendVpn };
+    return ignixReputation.assessReputation({
+        owner: owner,
+        meta: meta.join(' · '),
+        org: (d && d.org) || orgName,
+        asn: asn,
+        isHosting: isHosting,
+        isTor: isTor,
+        isVpn: isVpn,
+        dnsblResults: dnsblResults || [],
+        abuseScore: abuseScore,
+        abuseReports: abuseReports
+    });
 }
 
 function renderVerdict(v) {
@@ -1289,7 +1244,7 @@ function renderVerdict(v) {
     '</div>';
 }
 
-function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults) {
+function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults, org, asn) {
     var score = 0;
     var factors = [];
 
@@ -1304,7 +1259,7 @@ function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults) {
         var confidence = abuseData.data.abuseConfidenceScore || 0;
         var reports = abuseData.data.totalReports || 0;
         if (confidence >= 50) {
-            score += 35;
+            score += 45;
             factors.push({ label: 'AbuseIPDB ' + confidence + '%', level: 'red' });
         } else if (confidence >= 10) {
             score += 20;
@@ -1317,22 +1272,40 @@ function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults) {
         }
     }
 
-    // Blacklist hits
+    // Blacklist hits. Major lists move the ring; policy lists and public-DNS error codes do not.
+    var knownInfra = ignixReputation.isKnownInfra(org, asn);
+    var abuseHigh = abuseData && abuseData.data && (abuseData.data.abuseConfidenceScore || 0) >= 50;
+    var majorHits = 0, minorHits = 0, otherHits = 0;
     if (dnsblResults) {
-        var listedCount = dnsblResults.filter(function(r) { return r.listed; }).length;
-        if (listedCount >= 3) {
-            score += 30;
-            factors.push({ label: listedCount + ' blacklists', level: 'red' });
-        } else if (listedCount >= 1) {
-            score += 15;
-            factors.push({ label: listedCount + ' blacklist' + (listedCount > 1 ? 's' : ''), level: 'amber' });
-        } else {
+        dnsblResults.forEach(function(r) {
+            if (!r.listed) return;
+            var weight = r.weight || 'other';
+            if (weight === 'major') majorHits++;
+            else if (weight === 'minor') minorHits++;
+            else otherHits++;
+        });
+        if (majorHits && !(knownInfra && !abuseHigh)) {
+            score += 45;
+            factors.push({ label: 'Spamhaus', level: 'red' });
+        } else if (majorHits && knownInfra) {
+            score += 16;
+            factors.push({ label: 'Spamhaus (verify)', level: 'amber' });
+        }
+        if (!knownInfra && otherHits) {
+            score += Math.min(30, 16 * otherHits);
+            factors.push({ label: otherHits + ' blacklist' + (otherHits > 1 ? 's' : ''), level: 'amber' });
+        }
+        if (!knownInfra && minorHits && !majorHits) {
+            score += 5;
+            factors.push({ label: 'policy list', level: 'amber' });
+        }
+        if (!majorHits && !minorHits && !otherHits) {
             factors.push({ label: '0 blacklists', level: 'green' });
         }
     }
 
-    // VPN / Proxy / Relay
-    if (vpnData && vpnData.security) {
+    // VPN / Proxy / Relay. Public resolvers and CDNs are often flagged; don't treat that as risk.
+    if (vpnData && vpnData.security && !knownInfra) {
         if (vpnData.security.vpn) {
             score += 15;
             factors.push({ label: 'VPN detected', level: 'amber' });
@@ -1353,7 +1326,8 @@ function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults) {
         factors.push({ label: 'Hosting / DC', level: 'blue' });
     }
 
-    // Cap at 100
+    // Cap at 100. Known infrastructure needs both a real Spamhaus hit and a high abuse score before the ring goes high.
+    if (knownInfra && !(majorHits && abuseHigh) && score >= 40) score = 35;
     if (score > 100) score = 100;
 
     // Determine level
@@ -1546,7 +1520,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     var coords = d.loc ? d.loc.split(',').map(function(x) { return parseFloat(x).toFixed(4); }).join(', ') : '—';
 
     // Calculate risk score
-    var risk = calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults);
+    var risk = calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults, org, asn);
 
     // Get abuse email from RDAP
     var abuseEntity = rdapData ? getEntityByRole(rdapData.entities || [], 'abuse') : null;
@@ -1944,8 +1918,7 @@ function checkBlacklist() {
         return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
             .then(function(r) { return r.json(); })
             .then(function(d) {
-                var listed = d.Answer && d.Answer.length > 0;
-                return { name: list.name, listed: listed, status: listed ? 'listed' : 'clean' };
+                return ignixReputation.readDnsblResult(list.name, d);
             })
             .catch(function() {
                 return { name: list.name, listed: false, status: 'error' };
