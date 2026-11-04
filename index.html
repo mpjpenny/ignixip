@@ -1057,6 +1057,65 @@ function getDnsblLists(ip) {
     return DNSBL_LISTS;
 }
 
+function fetchJsonLimited(url, ms) {
+    return new Promise(function(resolve, reject) {
+        var done = false;
+        var timer = setTimeout(function() {
+            if (done) return;
+            done = true;
+            reject(new Error('timeout'));
+        }, ms);
+        fetch(url).then(function(r) {
+            if (done) return null;
+            done = true;
+            clearTimeout(timer);
+            if (!r.ok) { reject(new Error('status')); return null; }
+            return r.json();
+        }).then(function(body) {
+            if (body) resolve(body);
+        }).catch(function(err) {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            reject(err);
+        });
+    });
+}
+
+function publicResolverDnsbl(ip, lists) {
+    var reversed = reverseIP(ip);
+    return Promise.all(lists.map(function(list) {
+        var lookup = reversed + '.' + list.host;
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(payload) { return ignixReputation.readDnsblResult(list.name, payload); })
+            .catch(function() {
+                return { name: list.name, listed: false, error: true, unavailable: true, code: '', weight: 'none', status: 'error' };
+            });
+    }));
+}
+
+function loadDnsblResults(ip, lists) {
+    return fetchJsonLimited('https://tools.ignixip.com/dnsbl/' + encodeURIComponent(ip), 4000).then(function(body) {
+        if (!body || !body.results || !body.results.length) throw new Error('empty');
+        return body.results.map(function(r) {
+            var blocked = !!(r.error || r.unavailable);
+            var listed = !!r.listed && !blocked;
+            return {
+                name: r.name,
+                listed: listed,
+                error: blocked,
+                unavailable: blocked,
+                code: r.code || '',
+                weight: listed ? (r.weight || 'other') : 'none',
+                status: listed ? 'listed' : (blocked ? 'error' : 'clean')
+            };
+        });
+    }).catch(function() {
+        return publicResolverDnsbl(ip, lists);
+    });
+}
+
 function getPtrZone(ip) {
     if (isIPv6(ip)) return reverseIPv6(ip) + '.ip6.arpa';
     return reverseIP(ip) + '.in-addr.arpa';
@@ -1141,15 +1200,7 @@ function doIPLookup(ip, originalDomain) {
     // DNSBL checks — use IPv6-specific lists when needed
     var reversed = reverseIP(ip);
     var activeDnsblLists = getDnsblLists(ip);
-    var dnsblPromise = Promise.all(activeDnsblLists.map(function(list) {
-        var lookup = reversed + '.' + list.host;
-        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                return ignixReputation.readDnsblResult(list.name, d);
-            })
-            .catch(function() { return { name: list.name, listed: false }; });
-    }));
+    var dnsblPromise = loadDnsblResults(ip, activeDnsblLists);
 
     // Reverse DNS (PTR) lookup — uses ip6.arpa for IPv6
     var ptrName = getPtrZone(ip);
@@ -1300,7 +1351,10 @@ function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults, org, as
             factors.push({ label: 'policy list', level: 'amber' });
         }
         if (!majorHits && !minorHits && !otherHits) {
-            factors.push({ label: '0 blacklists', level: 'green' });
+            var spamhausDown = dnsblResults.some(function(r) { return (r.error || r.unavailable) && String(r.name || '').indexOf('Spamhaus') === 0; });
+            factors.push(spamhausDown
+                ? { label: 'Spamhaus unavailable', level: 'amber' }
+                : { label: '0 blacklists', level: 'green' });
         }
     }
 
@@ -1655,8 +1709,11 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
 
     // Blacklist summary card
     if (dnsblResults) {
+        var spamhausDown = dnsblResults.some(function(r) { return (r.error || r.unavailable) && String(r.name || '').indexOf('Spamhaus') === 0; });
+        var blStatus = listedCount > 0 ? (listedCount + ' listed') : (spamhausDown ? 'Spamhaus unavailable' : 'Clean');
+        var blStatusClass = listedCount > 0 ? 'red' : (spamhausDown ? 'amber' : 'green');
         html += '<div class="result-card"><div class="card-title">Blacklists</div>' +
-            '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + (listedCount > 0 ? 'red' : 'green') + '">' + (listedCount > 0 ? listedCount + ' listed' : 'Clean') + '</span></div>' +
+            '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + blStatusClass + '">' + blStatus + '</span></div>' +
             '<div class="data-row"><span class="data-key">Checked</span><span class="data-val muted">' + dnsblResults.length + ' DNSBLs</span></div>';
         if (listedCount > 0) {
             html += '<div class="data-row"><span class="data-key">Listed On</span><span class="data-val red" style="font-size:11px;text-align:right;">' + listedNames.join(', ') + '</span></div>';
@@ -1907,24 +1964,12 @@ function checkBlacklist() {
     blBtn.disabled = true;
     blBtn.textContent = 'Checking...';
     blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking blacklists</span></div>';
-    var reversed = reverseIP(ip);
     var activeLists = getDnsblLists(ip);
 
     var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
-    var promises = activeLists.map(function(list) {
-        var lookup = reversed + '.' + list.host;
-        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                return ignixReputation.readDnsblResult(list.name, d);
-            })
-            .catch(function() {
-                return { name: list.name, listed: false, status: 'error' };
-            });
-    });
-    Promise.all([abusePromise, Promise.all(promises)]).then(function(combined) {
+    Promise.all([abusePromise, loadDnsblResults(ip, activeLists)]).then(function(combined) {
         var abuseData = combined[0];
         var results = combined[1];
         renderBlacklistResults(ip, results, abuseData);
@@ -1956,10 +2001,12 @@ function renderBlacklistResults(ip, results, abuseData) {
     var listed = results.filter(function(r) { return r.listed; }).length;
     var clean = results.filter(function(r) { return !r.listed && r.status !== 'error'; }).length;
     var errors = results.filter(function(r) { return r.status === 'error'; }).length;
-    var listColor = listed > 0 ? 'var(--red)' : 'var(--green)';
+    var spamhausDown = results.some(function(r) { return (r.error || r.unavailable) && String(r.name || '').indexOf('Spamhaus') === 0; });
+    var listColor = listed > 0 ? 'var(--red)' : (spamhausDown ? 'var(--amber)' : 'var(--green)');
+    var headline = listed > 0 ? (listed + ' LISTED') : (spamhausDown ? 'SPAMHAUS N/A' : 'CLEAN');
     var html = abuseHtml + '<div class="ip-header fade-in">' +
         '<div class="ip-address-display">' + ip + '</div>' +
-        '<div class="ip-tags"><span class="tag" style="' + (listed > 0 ? 'background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25)' : 'background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.25)') + '">' + (listed > 0 ? listed + ' LISTED' : 'CLEAN') + '</span></div>' +
+        '<div class="ip-tags"><span class="tag" style="' + (listed > 0 ? 'background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25)' : (spamhausDown ? 'background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.25)' : 'background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.25)')) + '">' + headline + '</span></div>' +
     '</div>' + shareBarHtml('bl', ip);
     html += '<div class="bl-summary fade-in">' +
         '<div class="bl-stat"><div class="bl-stat-num" style="color:' + listColor + ';">' + listed + '</div><div class="bl-stat-label">Listed</div></div>' +
@@ -1971,7 +2018,7 @@ function renderBlacklistResults(ip, results, abuseData) {
         html += '<div class="bl-row">' +
             '<div class="bl-dot bl-dot-' + r.status + '"></div>' +
             '<span class="bl-name">' + r.name + '</span>' +
-            '<span class="' + (r.listed ? 'bl-status-listed' : 'bl-status-clean') + '">' + (r.listed ? 'LISTED' : r.status === 'error' ? 'error' : 'clean') + '</span>' +
+            '<span class="' + (r.listed ? 'bl-status-listed' : 'bl-status-clean') + '">' + (r.listed ? 'LISTED' : (r.status === 'error' || r.unavailable) ? 'not checked' : 'clean') + '</span>' +
         '</div>';
     });
     html += '</div>';
@@ -1986,7 +2033,11 @@ function renderBlacklistResults(ip, results, abuseData) {
     var abuseScore = abuseData && abuseData.data ? (abuseData.data.abuseConfidenceScore || 0) : 0;
     var pblOnly = listed === 1 && hasPBL;
 
-    if (listed === 0 && abuseScore < 10) {
+    if (listed === 0 && spamhausDown) {
+        advice = '<div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
+            '<div style="font-size:13px;color:var(--amber);font-weight:600;margin-bottom:6px;">Spamhaus check unavailable</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">Spamhaus blocked this lookup, so those lists were not checked. This is not a clean result. Other lists that answered' + (listed === 0 ? ' had no listing.' : ' are shown above.') + '</p></div>';
+    } else if (listed === 0 && abuseScore < 10) {
         advice = '<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;" class="fade-in">' +
             '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:6px;">&#10003; Clean</div>' +
             '<p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">This IP is not listed on any checked blacklists and has no significant abuse reports. No action required.</p></div>';

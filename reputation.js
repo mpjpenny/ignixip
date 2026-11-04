@@ -32,6 +32,7 @@
             name: name,
             listed: listed && !error,
             error: error && !listed,
+            unavailable: !!(error && !listed),
             code: codes[0] || '',
             weight: listed && !error ? weight : 'none',
             status: status
@@ -48,7 +49,8 @@
         var major = results.filter(function (r) { return r.listed && r.weight === 'major'; });
         var minor = results.filter(function (r) { return r.listed && r.weight === 'minor'; });
         var other = results.filter(function (r) { return r.listed && r.weight === 'other'; });
-        var errors = results.filter(function (r) { return r.error; });
+        var errors = results.filter(function (r) { return r.error || r.unavailable; });
+        var spamhausDown = errors.some(function (r) { return /^Spamhaus/.test(r.name || ''); });
         var abuseScore = opts.abuseScore == null ? null : opts.abuseScore;
         var abuseReports = opts.abuseReports || 0;
         var known = isKnownInfra(opts.org, opts.asn);
@@ -66,11 +68,10 @@
 
         var listedText;
         if (!results.length) listedText = 'Blacklist check did not return.';
+        else if (spamhausDown && !realListed.length) listedText = 'Spamhaus check unavailable. Other checked lists had no listing.';
+        else if (spamhausDown) listedText = 'Spamhaus check unavailable. Listed on ' + listPhrase + '.';
         else if (!realListed.length) listedText = 'Not listed on ' + total + ' blacklists.';
         else listedText = 'Listed on ' + listPhrase + '.';
-        if (errors.length && !major.length) {
-            listedText += ' Spamhaus answered with a public-DNS error code, which is not a listing.';
-        }
         if (abuseScore != null) {
             if (abuseScore === 0 && abuseReports > 0) listedText += ' AbuseIPDB confidence is 0%, across ' + abuseReports + ' older reports.';
             else if (!abuseReports) listedText += ' AbuseIPDB has no reports.';
@@ -100,7 +101,7 @@
         } else if (!results.length) {
             means = 'The organisation above owns the address. The blacklist check did not finish, so the record is incomplete.';
         } else if (known) {
-            means = 'Clean record. Well-known infrastructure' + (errors.length ? ', and a Spamhaus reply via public DNS was an error code, not a listing.' : ', with nothing on a major blacklist.');
+            means = 'Clean record. Well-known infrastructure, with nothing on a major blacklist.';
         } else if (opts.isHosting) {
             means = 'Clean record. A hosting or cloud address with no major blacklist hit. Ordinary for a website, a CDN, or an API.';
         } else if (opts.isVpn) {
@@ -108,13 +109,19 @@
         } else {
             means = 'Clean record. A home or office connection with nothing that marks it as hostile.';
         }
-        if (grade === 'clean' && errors.length && means.indexOf('error code') === -1) {
-            means += ' A Spamhaus reply via public DNS was an error code, not a listing.';
+        if (spamhausDown && !major.length && (grade === 'clean' || grade === 'note')) {
+            means = realListed.length
+                ? ('Spamhaus check unavailable. Listed on ' + listPhrase + '.')
+                : 'Spamhaus check unavailable. Other lists that answered had no listing.';
+            grade = 'unavailable';
+        } else if (spamhausDown && !major.length) {
+            means += ' Spamhaus check unavailable.';
         }
 
-        var tone = grade === 'serious' ? 'bad' : (grade === 'clean' ? 'clean' : 'watch');
+        var tone = grade === 'serious' ? 'bad' : ((grade === 'clean') ? 'clean' : 'watch');
         var listTone = (major.length || (abuseScore != null && abuseScore >= 50)) && !(known && !(abuseScore != null && abuseScore >= 50)) ? 'bad' : ((realListed.length || (abuseScore != null && abuseScore >= 10)) ? 'watch' : 'clean');
         if (known && listTone === 'bad') listTone = 'watch';
+        if (grade === 'unavailable') listTone = 'watch';
 
         var owner = String(opts.owner || 'This network').replace(/\.+$/, '');
         return {
