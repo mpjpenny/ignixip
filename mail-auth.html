@@ -79,20 +79,21 @@
         footer a { color:var(--text-dim); text-decoration:none; }
         footer a:hover { color:var(--blue-bright); }
     </style>
+    <link rel="stylesheet" href="/site.css">
 </head>
 <body>
 <header>
-    <div class="header-inner">
-        <a href="/" class="logo"><div class="logo-mark">IX</div><span class="logo-text">ignix<span>ip</span></span></a>
-        <nav class="header-nav">
-            <a href="/">Lookup Tool</a>
-            <a href="/my-ip.html">My IP</a>
-            <a href="/dmarc.html">DMARC Reports</a>
-            <a href="/mail-auth.html">Mail Auth</a>
-            <a href="/summary.html">Summary</a>
-            <a href="/threats.html">Threats</a>
-            <a href="https://ignix.co.uk">ignix.co.uk</a>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/#tools">Tools</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
         </nav>
+        <a class="nav-cta" href="/?tab=bulk">Bulk check — free</a>
     </div>
 </header>
 
@@ -163,8 +164,52 @@
 </main>
 
 <footer>
-    <p>ignixip.com · Ignix · Free, no ads, no signup<br>
-    <a href="/">Lookup</a> · <a href="/dmarc.html">DMARC</a> · <a href="/mail-auth.html">Mail Auth</a> · <a href="/threats.html">Threats</a> · <a href="/guide.html">Blacklist Guide</a> · <a href="/api.html">API</a></p>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/?tab=ip">IP Lookup</a></li>
+                    <li><a href="/?tab=dns">DNS</a></li>
+                    <li><a href="/?tab=whois">WHOIS</a></li>
+                    <li><a href="/?tab=asn">ASN</a></li>
+                    <li><a href="/?tab=tools">Net Tools</a></li>
+                    <li><a href="/?tab=bulk">Bulk Check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Email</h4>
+                <ul>
+                    <li><a href="/?tab=bl">Blacklist</a></li>
+                    <li><a href="/?tab=headers">Headers</a></li>
+                    <li><a href="/?tab=urlcheck">URL Check</a></li>
+                    <li><a href="/?tab=emailcheck">Sender Check</a></li>
+                    <li><a href="/dmarc.html">DMARC</a></li>
+                    <li><a href="/mail-auth.html">Mail Auth</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guide.html">Blacklist Guide</a></li>
+                    <li><a href="/threats.html">Threats</a></li>
+                    <li><a href="/summary.html">Summary</a></li>
+                    <li><a href="/search.html">Search</a></li>
+                    <li><a href="/check.html">Is this IP safe?</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                    <li><a href="https://tools.ignixip.com/feed/rss">RSS</a></li>
+                    <li><a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: DNSBLs, AbuseIPDB, public WHOIS/RDAP</span></div>
+    </div>
 </footer>
 
 <script>

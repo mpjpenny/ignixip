@@ -15,33 +15,41 @@
     <meta name="twitter:title" content="ignixip — Free IP Address Lookup & Blacklist Check">
     <meta name="twitter:description" content="Look up any IP address or domain. Geolocation, DNS records, blacklist checking. Free and fast.">
     <link rel="canonical" href="https://ignixip.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script defer src="https://analytics.ignix.co.uk/script.js" data-website-id="ba84af56-749f-4c2e-b09d-26e65a0ddb57"></script>
     <style>
         :root {
-            --bg: #0a0f1a;
-            --surface: #111827;
-            --surface2: #1a2332;
-            --border: #1e293b;
-            --border2: #334155;
-            --text: #e2e8f0;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
-            --text-faint: #475569;
+            --bg: #0a1324;
+            --surface: #13213d;
+            --surface2: #0f1b33;
+            --border: #24365c;
+            --border2: #2d4a80;
+            --text: #eef3fb;
+            --text-muted: #b4c2da;
+            --text-dim: #9aadc8;
+            --text-faint: #8496b5;
             --blue: #3b82f6;
             --blue-bright: #60a5fa;
             --blue-dim: #1d4ed8;
-            --green: #4ade80;
+            --green: #34d399;
             --amber: #fbbf24;
             --red: #f87171;
             --purple: #a78bfa;
+            --tx: #eef3fb;
+            --mut: #b4c2da;
+            --line: #24365c;
+            --card: #13213d;
+            --bg2: #0f1b33;
+            --acc: #3b82f6;
+            --acc2: #60a5fa;
+            --ok: #34d399;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         *, *::before, *::after { box-sizing: border-box; }
         html { overflow-x: hidden; width: 100%; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; width: 100%; margin: 0; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 17px; line-height: 1.65; min-height: 100vh; overflow-x: hidden; width: 100%; margin: 0; }
         body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
         header { z-index: 10; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(10,15,26,0.8); backdrop-filter: blur(12px); position: sticky; top: 0; }
         .header-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 56px; }
@@ -61,7 +69,7 @@
         .hero p { font-size: 14px; color: var(--text-muted); max-width: 480px; margin: 0 auto 28px; line-height: 1.6; }
 
         /* Tabs */
-        .tabs-container { max-width: 780px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+        .tabs-container { max-width: none; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
         .tab-nav { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 4px; }
         .tab-row { display: flex; gap: 4px; width: 100%; }
         .tab-btn { flex: 1; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-dim); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; white-space: nowrap; }
@@ -74,19 +82,19 @@
         .search-box { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 4px 4px 4px 16px; gap: 8px; transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 10px; }
         .search-box:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
         .search-icon { color: var(--text-dim); font-size: 14px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
-        .search-input { flex: 1; background: transparent; border: none; outline: none; font-size: 15px; font-family: 'JetBrains Mono', monospace; color: var(--text); padding: 10px 0; letter-spacing: 0.5px; }
+        .search-input { flex: 1; background: transparent; border: none; outline: none; font-size: 17px; font-family: 'JetBrains Mono', monospace; color: var(--text); padding: 10px 0; letter-spacing: 0.5px; }
         .search-input::placeholder { color: var(--text-faint); }
         .search-btn { padding: 10px 20px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s; white-space: nowrap; }
         .search-btn:hover { opacity: 0.9; }
         .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .search-hint { font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 20px; }
+        .search-hint { font-size: 14px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 20px; }
         .search-hint a { color: var(--text-dim); cursor: pointer; text-decoration: none; }
         .search-hint a:hover { color: var(--blue-bright); }
 
         /* Results */
         .results { margin-top: 4px; }
         .ip-header { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border2); border-radius: 12px; padding: 18px 24px; margin-bottom: 12px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-        .ip-address-display { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; flex: 1; min-width: 200px; }
+        .ip-address-display { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; flex: 1; min-width: 200px; }
         .ip-tags { display: flex; gap: 8px; flex-wrap: wrap; }
         .tag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; }
         .tag-hosting { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
@@ -96,43 +104,22 @@
 
         /* Mobile responsive */
         @media (max-width: 768px) {
-            header { padding: 0 12px; }
-            .header-inner { height: 48px; }
-            .header-nav { gap: 12px; font-size: 11px; }
-            .hero { padding: 28px 16px 24px; }
-            .hero h1 { font-size: 22px; }
-            .hero p { font-size: 13px; margin-bottom: 20px; }
-            .tabs-container { padding: 0 12px; max-width: 100%; }
-            .tab-nav { border-radius: 8px; padding: 3px; gap: 2px; }
-            .tab-row { gap: 2px; min-width: 0; flex-wrap: wrap; }
-            .tab-btn { padding: 7px 6px; font-size: 10px; flex: 1 1 30%; min-width: 0; }
             .search-box { flex-direction: column; gap: 8px; padding: 12px; }
-            .search-input { font-size: 14px; padding: 12px; width: 100%; }
+            .search-input { font-size: 16px; padding: 12px; width: 100%; }
             .search-btn { width: 100%; padding: 12px; }
             .action-bar { gap: 6px; }
-            .action-btn { font-size: 10px; padding: 6px 10px; }
-            .ip-header { padding: 12px; }
-            .ip-address-display { font-size: 18px !important; word-break: break-all; }
-            .result-card { padding: 14px; }
-            .card-title { font-size: 11px; }
-            .data-row { font-size: 12px; }
-            .data-key { min-width: 70px; }
-            .map-container { height: 200px !important; }
-            .risk-card { padding: 16px; }
-            footer { font-size: 11px; padding: 16px 12px; }
-        }
-        @media (max-width: 400px) {
-            .header-nav a:last-child { display: none; }
-            .tab-btn { font-size: 9px; padding: 6px 4px; }
-            .hero h1 { font-size: 20px; }
+            .ip-header { padding: 14px; }
+            .ip-address-display { font-size: 22px !important; word-break: break-all; }
+            .result-card { padding: 16px; }
+            .map-container { height: 220px !important; }
         }
         .result-card { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
-        .card-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .card-title { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
         .data-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); gap: 12px; }
         .data-row:last-child { border-bottom: none; }
-        .data-key { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
-        .data-val { font-size: 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; text-align: right; word-break: break-all; }
+        .data-key { font-size: 15px; color: var(--text-dim); flex-shrink: 0; }
+        .data-val { font-size: 15px; color: var(--text); font-family: 'JetBrains Mono', monospace; text-align: right; word-break: break-all; }
         .data-val.muted { color: var(--text-muted); }
         .data-val.green { color: var(--green); }
         .data-val.red { color: var(--red); }
@@ -149,18 +136,18 @@
         .risk-gauge-score { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; }
         .risk-info { flex: 1; min-width: 200px; }
         .risk-label { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-        .risk-summary { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+        .risk-summary { font-size: 16px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
         .verdict { background: var(--surface); border: 1px solid var(--border2); border-left: 3px solid var(--green); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
         .verdict-watch { border-left-color: var(--amber); }
         .verdict-bad { border-left-color: var(--red); }
         .verdict-kicker { font-size: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
-        .verdict-owner { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 2px; }
-        .verdict-meta { font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+        .verdict-owner { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 2px; }
+        .verdict-meta { font-size: 14px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
         .verdict-listed { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
         .verdict-listed.clean { color: var(--green); }
         .verdict-listed.watch { color: var(--amber); }
         .verdict-listed.bad { color: var(--red); }
-        .verdict-means { font-size: 14px; color: var(--text-muted); line-height: 1.55; }
+        .verdict-means { font-size: 16px; color: var(--text-muted); line-height: 1.55; }
         .verdict-note { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); line-height: 1.5; }
         .verdict-note a { color: var(--blue-bright); text-decoration: none; }
         .risk-factors { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -183,7 +170,7 @@
         .dns-TXT { background: rgba(251,191,36,0.15); color: var(--amber); }
         .dns-NS { background: rgba(74,222,128,0.15); color: var(--green); }
         .dns-CNAME { background: rgba(248,113,113,0.15); color: var(--red); }
-        .dns-record { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+        .dns-record { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 15px; font-family: 'JetBrains Mono', monospace; }
         .dns-record:last-child { border-bottom: none; }
         .dns-record-data { color: var(--text-muted); flex: 1; word-break: break-all; }
         .dns-ttl { color: var(--text-faint); font-size: 11px; flex-shrink: 0; }
@@ -195,7 +182,7 @@
         .bl-stat-num { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; margin-bottom: 4px; }
         .bl-stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; }
         .bl-list { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-        .bl-row { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .bl-row { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 15px; }
         .bl-row:last-child { border-bottom: none; }
         .bl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .bl-dot-listed { background: var(--red); box-shadow: 0 0 6px rgba(248,113,113,0.4); }
@@ -206,7 +193,7 @@
         .bl-status-clean { color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
 
         /* Loading / error */
-        .loading { text-align: center; padding: 40px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .loading { text-align: center; padding: 40px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 16px; }
         .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
         @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
         .error-card { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 18px 22px; color: var(--red); font-size: 14px; text-align: center; }
@@ -214,13 +201,13 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Map */
-        .map-container { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; height: 200px; }
+        .map-container { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; height: 260px; }
         .map-container .leaflet-control-attribution { font-size: 9px; background: rgba(10,15,26,0.8) !important; color: var(--text-faint) !important; }
         .map-container .leaflet-control-attribution a { color: var(--text-dim) !important; }
         .map-container .leaflet-control-zoom a { background: var(--surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
 
         /* Bulk results table */
-        .bulk-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+        .bulk-table { width: 100%; border-collapse: collapse; font-size: 14px; font-family: 'JetBrains Mono', monospace; }
         .bulk-table th { text-align: left; padding: 10px 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; border-bottom: 1px solid var(--border2); cursor: pointer; user-select: none; white-space: nowrap; }
         .bulk-table th:hover { color: var(--text-muted); }
         .bulk-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
@@ -238,7 +225,7 @@
 
         /* Action bar */
         .action-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-        .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.2s; }
+        .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--text-muted); font-size: 14px; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.2s; }
         .action-btn:hover { border-color: var(--blue); color: var(--text); background: var(--surface2); }
         .action-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
 
@@ -250,63 +237,136 @@
         footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 18px 24px; text-align: center; font-size: 12px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-top: 48px; }
         footer a { color: var(--text-dim); text-decoration: none; }
         footer a:hover { color: var(--blue-bright); }
+    
+        /* Homepage redesign */
+        body::before { display: none; }
+        .hero { position: relative; z-index: 1; text-align: center; padding: 96px 0 64px; background: radial-gradient(800px 400px at 50% 0, rgba(59,130,246,.18), transparent); }
+        .hero h1 { font-size: 52px; line-height: 1.1; font-weight: 800; letter-spacing: -0.03em; max-width: 760px; margin: 0 auto 18px; background: none; -webkit-text-fill-color: var(--tx); color: var(--tx); }
+        .hero h1 span { color: var(--acc2); background: none; -webkit-text-fill-color: var(--acc2); }
+        .hero p.lead { color: var(--mut); font-size: 19px; max-width: 620px; margin: 0 auto 36px; line-height: 1.6; }
+        .search { max-width: 760px; margin: 0 auto; display: flex; background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 8px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+        .search:focus-within { border-color: var(--acc); }
+        .search input { flex: 1; background: none; border: 0; outline: 0; color: var(--tx); font: 18px 'JetBrains Mono', ui-monospace, monospace; padding: 12px 14px; min-width: 0; }
+        .search input::placeholder { color: #8496b5; }
+        .detect { font: 14px/1.5 'JetBrains Mono', ui-monospace, monospace; color: var(--mut); margin-top: 12px; }
+        .detect b { color: var(--acc2); font-weight: 600; }
+        .chips { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .chip { font: 14px 'JetBrains Mono', ui-monospace, monospace; color: var(--tx); background: var(--bg2); border: 1px solid var(--line); padding: 6px 12px; border-radius: 99px; cursor: pointer; }
+        .chip:hover { border-color: var(--acc); }
+        .myip { margin-top: 28px; }
+        .ix-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 12px 20px; font-weight: 600; font-size: 15px; border: 0; cursor: pointer; font-family: inherit; text-decoration: none; line-height: 1.2; }
+        .ix-btn.pri { background: var(--acc); color: #fff; }
+        .ix-btn.pri:hover { background: #2563eb; color: #fff; }
+        .ix-btn.ghost { background: transparent; color: var(--tx); border: 1px solid var(--line); }
+        .ix-btn.ghost:hover { border-color: var(--acc); color: var(--tx); }
+        .trust { border-block: 1px solid var(--line); background: var(--bg2); padding: 22px 0; position: relative; z-index: 1; }
+        .trust .wrap { display: flex; justify-content: space-around; gap: 20px; flex-wrap: wrap; font-weight: 600; font-size: 15px; }
+        .trust span:before { content: "✓ "; color: var(--ok); }
+        .band { padding: 72px 0; position: relative; z-index: 1; }
+        .band-alt { background: var(--bg2); }
+        .band h2 { font-size: 30px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+        .sub { color: var(--mut); margin-bottom: 28px; font-size: 17px; }
+        .group { margin-bottom: 36px; }
+        .group h3 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--acc2); margin-bottom: 16px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+        .tool { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; transition: .15s; color: var(--tx); display: block; text-decoration: none; }
+        .tool:hover, .tool.on { border-color: var(--acc); transform: translateY(-2px); color: var(--tx); }
+        .ico { width: 42px; height: 42px; border-radius: 10px; background: rgba(59,130,246,.15); display: grid; place-items: center; margin-bottom: 14px; }
+        .ico svg { width: 22px; height: 22px; stroke: var(--acc2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .tool b { display: block; font-size: 17px; margin-bottom: 4px; }
+        .tool p { color: var(--mut); font-size: 15px; line-height: 1.5; margin: 0; }
+        #workspace { position: relative; z-index: 1; padding: 28px 0 8px; scroll-margin-top: 84px; }
+        #workspace.is-hidden { display: none; }
+        #tools, #faq, #news { scroll-margin-top: 84px; }
+        #workspace .tabs-container { max-width: none; margin: 0; padding: 22px; background: var(--bg2); border: 1px solid var(--line); border-radius: 16px; }
+        .workspace-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+        .workspace-bar h2 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
+        .ex { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+        .res { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+        .res .hd { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--line); font: 600 15px 'JetBrains Mono', ui-monospace, monospace; }
+        .res .tag { font: 600 11px Inter, system-ui, sans-serif; background: #2a3c63; color: var(--mut); padding: 3px 8px; border-radius: 6px; letter-spacing: .08em; }
+        .res dl { display: grid; grid-template-columns: 140px 1fr; padding: 16px 20px; gap: 10px; font-size: 15px; margin: 0; }
+        .res dt { color: var(--mut); }
+        .res dd { font-family: 'JetBrains Mono', ui-monospace, monospace; margin: 0; }
+        .res .clean { color: var(--ok); }
+        .promo { background: linear-gradient(135deg, #132a55, #0f1b33); border: 1px solid #2d4a80; border-radius: 18px; padding: 40px; display: flex; gap: 32px; align-items: center; justify-content: space-between; }
+        .promo h2 { font-size: 26px; margin-bottom: 8px; }
+        .promo p { color: var(--mut); max-width: 580px; margin: 0; font-size: 17px; }
+        .news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .news a { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; color: var(--tx); font-weight: 500; font-size: 15px; text-decoration: none; display: block; }
+        .news a:hover { border-color: var(--acc); }
+        .news small { display: block; color: var(--mut); font-size: 13px; margin-bottom: 6px; font-weight: 500; }
+        .news-empty { color: var(--mut); margin: 0; }
+        .faq-wrap { max-width: 820px; }
+        .faq-wrap h2 { margin-top: 8px; }
+        .faq-wrap h2:first-child { margin-top: 0; }
+        .faq-wrap > p { color: var(--mut); margin-bottom: 22px; }
+        #faq details { border: 1px solid var(--line); background: var(--card); border-radius: 12px; margin-bottom: 10px; }
+        #faq summary { cursor: pointer; padding: 18px 22px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+        #faq summary::-webkit-details-marker { display: none; }
+        #faq summary::after { content: "+"; color: var(--acc2); font-size: 22px; line-height: 1; }
+        #faq details[open] summary::after { content: "−"; }
+        #faq details p { padding: 0 22px 20px; color: var(--mut); margin: 0; }
+        #faq details a { color: var(--acc2); }
+        @media (max-width: 820px) {
+            .hero { padding: 56px 0 40px; }
+            .hero h1 { font-size: 34px; }
+            .hero p.lead { font-size: 17px; }
+            .search { flex-direction: column; }
+            .search .ix-btn { width: 100%; }
+            .ex, .news { grid-template-columns: 1fr; }
+            .promo { flex-direction: column; align-items: flex-start; padding: 28px; }
+            .trust .wrap { justify-content: flex-start; flex-direction: column; gap: 8px; }
+            .band { padding: 52px 0; }
+            #workspace .tabs-container { padding: 16px; }
+        }
     </style>
+    <link rel="stylesheet" href="/site.css">
 </head>
 <body>
 
 <header>
-    <div class="header-inner">
-        <a href="/" class="logo">
-            <div class="logo-mark">IX</div>
-            <span class="logo-text">ignix<span>ip</span></span>
-        </a>
-        <nav class="header-nav">
-            <a href="/my-ip.html">My IP</a>
-            <a href="/dmarc.html">DMARC</a>
-            <a href="/mail-auth.html">Mail Auth</a>
-            <a href="/summary.html">Summary</a>
-            <a href="/threats.html">Threats</a>
-            <a href="/search.html">Search</a>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/" class="on">Lookup</a>
+            <a href="/#tools">Tools</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
             <a href="/api.html">API</a>
-            <a href="https://ignix.co.uk" target="_blank">ignix.co.uk</a>
         </nav>
+        <a class="nav-cta" href="/?tab=bulk">Bulk check — free</a>
     </div>
 </header>
 
-<div class="hero">
-    <div class="hero-badge">&#9889; IP &amp; DNS Intelligence</div>
-    <h1>Look up any <span>IP address</span> or domain</h1>
-    <p>Geolocation, DNS records and blacklist checking. Fast, clean, no clutter. <a href="/my-ip.html" style="color:var(--blue-bright);">What is my IP?</a></p>
-</div>
-
-<div id="ioc-banner" style="max-width:900px;margin:0 auto 28px;padding:18px 22px;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.2);border-radius:12px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
-        <div style="min-width:0;flex:1;">
-            <div id="ioc-banner-title" style="font-size:14px;font-weight:600;margin-bottom:3px;line-height:1.4;">New: DMARC report analyser</div>
-            <div id="ioc-banner-sub" style="font-size:12px;color:#94a3b8;line-height:1.5;">Drop your DMARC aggregate reports and get a plain-English breakdown. Identifies spoofers, mixed-auth senders, and misconfigured keys.</div>
-        </div>
-        <a id="ioc-banner-cta" href="/dmarc.html" style="padding:8px 18px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;">Open tool</a>
+<section class="hero"><div class="wrap">
+    <h1>Investigate any <span>IP, domain or network</span> in seconds</h1>
+    <p class="lead">Geolocation, DNS, WHOIS and blacklist reputation in one search. Free, fast, no clutter.</p>
+    <form class="search" id="hero-form" action="/" onsubmit="return heroSearch()">
+        <input id="hero-input" placeholder="Enter an IP, domain, ASN or CIDR…" aria-label="Search" autocomplete="off" spellcheck="false">
+        <button class="ix-btn pri" type="submit">Look up →</button>
+    </form>
+    <div class="detect" id="hero-detect">Auto-detects: <b>IPv4/IPv6</b> · <b>domain</b> · <b>AS15169</b> · <b>10.0.0.0/24</b></div>
+    <div class="chips">
+        <button type="button" class="chip" onclick="heroSearch('8.8.8.8')">8.8.8.8</button>
+        <button type="button" class="chip" onclick="heroSearch('cloudflare.com')">cloudflare.com</button>
+        <button type="button" class="chip" onclick="heroSearch('AS13335')">AS13335</button>
+        <button type="button" class="chip" onclick="heroSearch('1.1.1.0/24')">1.1.1.0/24</button>
     </div>
-</div>
+    <div class="myip"><a class="ix-btn ghost" href="/my-ip.html">◎ What is my IP?</a></div>
+</div></section>
+
+<div class="trust"><div class="wrap"><span>100% free</span><span>No signup needed</span><span>Checks 12 DNSBLs + AbuseIPDB</span><span>Spamhaus, Barracuda, SpamCop</span></div></div>
+
+<section id="workspace" class="is-hidden"><div class="wrap">
 <div class="tabs-container">
-    <div class="tab-nav">
-        <div class="tab-row">
-            <button class="tab-btn active" onclick="switchTab('ip')">IP Lookup</button>
-            <button class="tab-btn" onclick="switchTab('dns')">DNS Lookup</button>
-            <button class="tab-btn" onclick="switchTab('bl')">Blacklist</button>
-            <button class="tab-btn" onclick="switchTab('whois')">WHOIS</button>
-            <button class="tab-btn" onclick="switchTab('asn')">ASN</button>
-            <button class="tab-btn" onclick="switchTab('tools')">Net Tools</button>
-        </div>
-        <div class="tab-row">
-            <button class="tab-btn" onclick="switchTab('bulk')">Bulk Lookup</button>
-            <button class="tab-btn" onclick="switchTab('headers')">Email Headers</button>
-            <button class="tab-btn" onclick="switchTab('urlcheck')">URL Check</button>
-            <button class="tab-btn" onclick="switchTab('emailcheck')">Sender Check</button>
-        </div>
+    <div class="workspace-bar">
+        <h2 id="workspace-title">Lookup</h2>
+        <button type="button" class="ix-btn ghost" onclick="closeWorkspace()">Close</button>
     </div>
-
     <!-- IP Lookup Tab -->
+
     <div class="tab-pane active" id="tab-ip">
         <div class="search-box">
             <span class="search-icon">&#8594;</span>
@@ -479,7 +539,7 @@
         </div>
         <div class="results" id="email-results"></div>
     </div>
-</div>
+</div></div></section>
 
 <!-- Registration Modal -->
 <div id="reg-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center;">
@@ -501,55 +561,146 @@
     </div>
 </div>
 
-        <!-- SEO Content Section -->
-        <section style="max-width:780px;margin:48px auto 0;padding:0 24px;">
-            <div style="border-top:1px solid #1e293b;padding-top:40px;">
-                <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin-bottom:10px;letter-spacing:-0.3px;">What is ignixip?</h2>
-                <p style="font-size:14px;color:#64748b;line-height:1.8;margin-bottom:24px;">ignixip is a free IP address intelligence tool. Enter any IP address or domain name to instantly see its geolocation, network owner, ISP, and whether it appears on major spam and abuse blacklists including Spamhaus, Barracuda, SpamCop and AbuseIPDB.</p>
+        <!-- SEO content: kept as an FAQ accordion so the same answers stay in the HTML. -->
+<section id="tools" class="band"><div class="wrap">
+    <h2>Tools</h2>
+    <p class="sub">Everything you need to identify a network or check email reputation.</p>
+    <div class="group"><h3>Network</h3><div class="grid">
+<a class="tool" href="/?tab=ip" data-tool="ip" onclick="return openTool(event, 'ip')"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div><b>IP Lookup</b><p>Location, ISP and network owner for any IP.</p></a>
+<a class="tool" href="/?tab=dns" data-tool="dns" onclick="return openTool(event, 'dns')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><b>DNS Lookup</b><p>A, MX, TXT, NS and CNAME records.</p></a>
+<a class="tool" href="/?tab=whois" data-tool="whois" onclick="return openTool(event, 'whois')"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><b>WHOIS</b><p>Registration and ownership details.</p></a>
+<a class="tool" href="/?tab=asn" data-tool="asn" onclick="return openTool(event, 'asn')"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="8.5" y="14" width="7" height="7"/><path d="M6.5 10v2h11v-2M12 12v2"/></svg></div><b>ASN Lookup</b><p>Who operates a network, e.g. AS15169.</p></a>
+<a class="tool" href="/?tab=tools" data-tool="tools" onclick="return openTool(event, 'tools')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/></svg></div><b>Net Tools</b><p>Ping, traceroute and port diagnostics.</p></a>
+<a class="tool" href="/?tab=bulk" data-tool="bulk" onclick="return openTool(event, 'bulk')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18M7 3v18"/></svg></div><b>Bulk Check</b><p>Check up to 25 IPs at once — email only.</p></a>
+    </div></div>
+    <div class="group"><h3>Email &amp; Threats</h3><div class="grid">
+<a class="tool" href="/?tab=bl" data-tool="bl" onclick="return openTool(event, 'bl')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div><b>Blacklist Check</b><p>12 DNSBLs plus AbuseIPDB score.</p></a>
+<a class="tool" href="/?tab=headers" data-tool="headers" onclick="return openTool(event, 'headers')"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><b>Email Headers</b><p>Trace Received: hops and check each IP.</p></a>
+<a class="tool" href="/?tab=urlcheck" data-tool="urlcheck" onclick="return openTool(event, 'urlcheck')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div><b>URL Check</b><p>Domain age, SSL, DNS and risk rating.</p></a>
+<a class="tool" href="/?tab=emailcheck" data-tool="emailcheck" onclick="return openTool(event, 'emailcheck')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></div><b>Sender Check</b><p>MX, SPF/DKIM/DMARC and mail server reputation.</p></a>
+<a class="tool" href="/dmarc.html"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div><b>DMARC Reports</b><p>Plain-English breakdown of aggregate reports.</p></a>
+    </div></div>
+</div></section>
 
-                <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin-bottom:10px;letter-spacing:-0.3px;">Who uses it?</h2>
-                <p style="font-size:14px;color:#64748b;line-height:1.8;margin-bottom:32px;">Network administrators, IT security professionals, and anyone who needs to quickly identify an unfamiliar IP address — whether investigating suspicious network traffic, checking email sender reputation, or verifying where a connection is coming from.</p>
+<section class="band band-alt"><div class="wrap ex">
+    <div>
+        <h2>Clear answers, not raw data</h2>
+        <p class="sub">Every lookup combines location, ownership and reputation into one readable card, so you can decide fast whether traffic is friend or foe.</p>
+        <button type="button" class="ix-btn pri" onclick="heroSearch('8.8.8.8')">Try a lookup</button>
+    </div>
+    <div class="res" aria-hidden="true">
+        <div class="hd">8.8.8.8 <span class="tag">EXAMPLE</span></div>
+        <dl>
+            <dt>Organisation</dt><dd>Google LLC</dd>
+            <dt>ASN</dt><dd>AS15169</dd>
+            <dt>Location</dt><dd>United States</dd>
+            <dt>Reverse DNS</dt><dd>dns.google</dd>
+            <dt>Blacklists</dt><dd class="clean">0 / 12 listed</dd>
+            <dt>AbuseIPDB</dt><dd class="clean">0% confidence</dd>
+        </dl>
+    </div>
+</div></section>
 
-                <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin-bottom:20px;letter-spacing:-0.3px;">Frequently asked questions</h2>
+<section class="band"><div class="wrap"><div class="promo">
+    <div>
+        <h2>See threats on your own firewall</h2>
+        <p>ignixip is built by Ignix — continuous NetFlow and syslog monitoring for licensed firewalls, with daily security reports and EU-hosted infrastructure.</p>
+    </div>
+    <a class="ix-btn pri" href="https://ignix.co.uk" target="_blank" rel="noopener noreferrer">Discover Ignix →</a>
+</div></div></section>
 
-                <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:40px;">
-                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is my IP address?</h3>
-                        <p style="font-size:13px;color:#64748b;line-height:1.7;">Your public IP is the address the internet sees when you visit a site. See it instantly on the <a href="/my-ip.html" style="color:var(--blue-bright);">What is my IP</a> page, including your ISP and whether that address appears on major blacklists. The lookup tool on this page can also detect this connection automatically.</p>
-                    </div>
-                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is an IP address lookup?</h3>
-                        <p style="font-size:13px;color:#64748b;line-height:1.7;">An IP address lookup queries databases to find information about an IP address — including its geographic location, the organisation that owns it, and its internet service provider. This is useful for understanding where network traffic is coming from and who controls a particular IP range.</p>
-                    </div>
-                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">How do I check if an IP address is blacklisted?</h3>
-                        <p style="font-size:13px;color:#64748b;line-height:1.7;">Use the Blacklist Check tab and enter the IP address. ignixip checks it against 12 major DNS-based blacklists (DNSBLs) including Spamhaus ZEN, Barracuda BRBL and SpamCop, plus the AbuseIPDB community abuse database. A listed IP has been flagged for spam, malware, or other malicious activity.</p>
-                    </div>
-                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is an ASN?</h3>
-                        <p style="font-size:13px;color:#64748b;line-height:1.7;">An Autonomous System Number (ASN) identifies a network operated by a single organisation on the internet — such as an ISP, cloud provider, or large company. For example, AS15169 is Google's ASN. Knowing the ASN of an IP address tells you who operates the network it belongs to.</p>
-                    </div>
-                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What does a high AbuseIPDB score mean?</h3>
-                        <p style="font-size:13px;color:#64748b;line-height:1.7;">AbuseIPDB is a community database where network administrators report malicious IP addresses. The confidence score (0–100%) reflects how likely an IP is to be malicious based on recent reports. A score above 50% suggests the IP has been actively involved in attacks, spam, or other abuse. A score of 0% means it has not been reported.</p>
-                    </div>
-                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">What is a DNSBL blacklist?</h3>
-                        <p style="font-size:13px;color:#64748b;line-height:1.7;">A DNS-based blackhole list (DNSBL) is a real-time database of IP addresses associated with spam or malicious activity. Mail servers and firewalls use these lists to block unwanted traffic. Common DNSBLs include Spamhaus, Barracuda and SpamCop. Being listed on one can affect email deliverability.</p>
-                    </div>
-                    <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">Can I look up a domain name as well as an IP?</h3>
-                        <p style="font-size:13px;color:#64748b;line-height:1.7;">Yes — enter a domain name in the IP Lookup tab and ignixip will automatically resolve it to an IP address via DNS and look up the result. The DNS Lookup tab also lets you query DNS records (A, MX, TXT, NS, CNAME) for any domain.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+<section id="news" class="band" style="padding-top:0"><div class="wrap">
+    <h2>Security news</h2>
+    <p class="sub">Latest headlines from the security community.</p>
+    <div class="news" id="news-grid"><p class="news-empty">Loading headlines…</p></div>
+</div></section>
+
+<section id="faq" class="band band-alt"><div class="wrap faq-wrap">
+    <h2>What is ignixip?</h2>
+    <p>ignixip is a free IP address intelligence tool. Enter any IP address or domain name to instantly see its geolocation, network owner, ISP, and whether it appears on major spam and abuse blacklists including Spamhaus, Barracuda, SpamCop and AbuseIPDB.</p>
+    <h2>Who uses it?</h2>
+    <p>Network administrators, IT security professionals, and anyone who needs to quickly identify an unfamiliar IP address — whether investigating suspicious network traffic, checking email sender reputation, or verifying where a connection is coming from.</p>
+    <h2>Frequently asked questions</h2>
+    <p class="sub">ignixip is a free IP address intelligence tool for network admins, security pros and anyone checking an unfamiliar IP.</p>
+    <details open>
+        <summary>What is my IP address?</summary>
+        <p>Your public IP is the address the internet sees when you visit a site. See it instantly on the <a href="/my-ip.html">What is my IP</a> page, including your ISP and whether that address appears on major blacklists. Inside IP Lookup, “this connection” detects the address you are using right now.</p>
+    </details>
+    <details>
+        <summary>What is an IP address lookup?</summary>
+        <p>An IP address lookup queries databases to find information about an IP address — including its geographic location, the organisation that owns it, and its internet service provider. This is useful for understanding where network traffic is coming from and who controls a particular IP range.</p>
+    </details>
+    <details>
+        <summary>How do I check if an IP address is blacklisted?</summary>
+        <p>Use Blacklist Check and enter the IP address. ignixip checks it against 12 major DNS-based blacklists (DNSBLs) including Spamhaus ZEN, Barracuda BRBL and SpamCop, plus the AbuseIPDB community abuse database. A listed IP has been flagged for spam, malware, or other malicious activity.</p>
+    </details>
+    <details>
+        <summary>What is an ASN?</summary>
+        <p>An Autonomous System Number (ASN) identifies a network operated by a single organisation on the internet — such as an ISP, cloud provider, or large company. For example, AS15169 is Google's ASN. Knowing the ASN of an IP address tells you who operates the network it belongs to.</p>
+    </details>
+    <details>
+        <summary>What does a high AbuseIPDB score mean?</summary>
+        <p>AbuseIPDB is a community database where network administrators report malicious IP addresses. The confidence score (0–100%) reflects how likely an IP is to be malicious based on recent reports. A score above 50% suggests the IP has been actively involved in attacks, spam, or other abuse. A score of 0% means it has not been reported.</p>
+    </details>
+    <details>
+        <summary>What is a DNSBL blacklist?</summary>
+        <p>A DNS-based blackhole list (DNSBL) is a real-time database of IP addresses associated with spam or malicious activity. Mail servers and firewalls use these lists to block unwanted traffic. Common DNSBLs include Spamhaus, Barracuda and SpamCop. Being listed on one can affect email deliverability.</p>
+    </details>
+    <details>
+        <summary>Can I look up a domain name as well as an IP?</summary>
+        <p>Yes — enter a domain name in the search box and ignixip resolves it to an IP address via DNS, then looks up the result. DNS Lookup also queries A, MX, TXT, NS and CNAME records for any domain.</p>
+    </details>
+</div></section>
 
 <footer>
-    ignixip.com &middot; IP intelligence by <a href="https://ignix.co.uk">Ignix</a><br>
-    <a href="/my-ip.html">My IP</a> &middot; <a href="/search.html">Search</a> &middot; <a href="/dmarc.html">DMARC</a>
-            <a href="/threats.html">Threats</a> &middot; <a href="/guide.html">Blacklist Guide</a> &middot; <a href="/api.html">API</a> &middot; <a href="https://tools.ignixip.com/feed/rss">RSS</a> &middot; <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/?tab=ip">IP Lookup</a></li>
+                    <li><a href="/?tab=dns">DNS</a></li>
+                    <li><a href="/?tab=whois">WHOIS</a></li>
+                    <li><a href="/?tab=asn">ASN</a></li>
+                    <li><a href="/?tab=tools">Net Tools</a></li>
+                    <li><a href="/?tab=bulk">Bulk Check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Email</h4>
+                <ul>
+                    <li><a href="/?tab=bl">Blacklist</a></li>
+                    <li><a href="/?tab=headers">Headers</a></li>
+                    <li><a href="/?tab=urlcheck">URL Check</a></li>
+                    <li><a href="/?tab=emailcheck">Sender Check</a></li>
+                    <li><a href="/dmarc.html">DMARC</a></li>
+                    <li><a href="/mail-auth.html">Mail Auth</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guide.html">Blacklist Guide</a></li>
+                    <li><a href="/threats.html">Threats</a></li>
+                    <li><a href="/summary.html">Summary</a></li>
+                    <li><a href="/search.html">Search</a></li>
+                    <li><a href="/check.html">Is this IP safe?</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                    <li><a href="https://tools.ignixip.com/feed/rss">RSS</a></li>
+                    <li><a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: DNSBLs, AbuseIPDB, public WHOIS/RDAP</span></div>
+    </div>
 </footer>
+
 
 <div id="toast" class="toast"></div>
 
@@ -571,28 +722,123 @@ var DNSBL_LISTS = [
 ];
 
 // ── Tab switching ────────────────────────────────────────────────────────────
-function switchTab(tab) {
+function switchTab(tab, opts) {
+    opts = opts || {};
+    var pane = document.getElementById('tab-' + tab);
+    if (!pane) return;
     document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    document.getElementById('tab-' + tab).classList.add('active');
-    var btns = document.querySelectorAll('.tab-btn');
-    var idx = {ip:0, dns:1, bl:2, whois:3, asn:4, tools:5, bulk:6, headers:7, urlcheck:8, emailcheck:9}[tab];
-    btns[idx].classList.add('active');
-    history.pushState({}, '', '/?tab=' + tab);
-    // Show bulk auth area if needed
+    pane.classList.add('active');
+    document.querySelectorAll('.tool[data-tool]').forEach(function(el) {
+        el.classList.toggle('on', el.getAttribute('data-tool') === tab);
+    });
+    var titles = {ip:'IP Lookup', dns:'DNS Lookup', bl:'Blacklist Check', whois:'WHOIS', asn:'ASN Lookup', tools:'Net Tools', bulk:'Bulk Check', headers:'Email Headers', urlcheck:'URL Check', emailcheck:'Sender Check'};
+    var title = document.getElementById('workspace-title');
+    if (title) title.textContent = titles[tab] || 'Lookup';
+    var ws = document.getElementById('workspace');
+    if (ws) ws.classList.remove('is-hidden');
+    if (opts.replace) history.replaceState({}, '', '/?tab=' + encodeURIComponent(tab));
+    else if (!opts.silent) history.pushState({}, '', '/?tab=' + encodeURIComponent(tab));
     if (tab === 'bulk') initBulkTab();
 }
 
 function setAndLookup(tab, val) {
-    switchTab(tab);
-    document.getElementById(tab + '-input').value = val;
+    switchTab(tab, { silent: true });
+    var input = document.getElementById(tab + '-input');
+    if (input) input.value = val;
+    var hero = document.getElementById('hero-input');
+    if (hero && val) hero.value = val;
+    if (typeof updateHeroDetect === 'function') updateHeroDetect();
     if (tab === 'ip') lookupIP();
     else if (tab === 'dns') lookupDNS();
     else if (tab === 'tools') runTools();
     else if (tab === 'asn') lookupASN();
     else if (tab === 'whois') lookupWHOIS();
-    else checkBlacklist();
+    else if (tab === 'bl') checkBlacklist();
+    var ws = document.getElementById('workspace');
+    if (ws) ws.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+function isCIDR(str) {
+    var m = String(str || '').match(/^(.+)\/(\d{1,3})$/);
+    if (!m) return false;
+    var bits = parseInt(m[2], 10);
+    if (isIPv4(m[1])) return bits >= 0 && bits <= 32;
+    if (isIPv6(m[1])) return bits >= 0 && bits <= 128;
+    return false;
+}
+
+function classifyQuery(raw) {
+    var q = String(raw || '').trim();
+    if (!q) return null;
+    if (/^https?:\/\//i.test(q)) return { tab: 'urlcheck', label: 'URL' };
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(q)) return { tab: 'emailcheck', label: 'email' };
+    if (/^AS\d+$/i.test(q)) return { tab: 'asn', label: 'ASN' };
+    if (isCIDR(q)) return { tab: 'whois', label: 'CIDR' };
+    if (isIPAddress(q)) return { tab: 'ip', label: isIPv6(q) ? 'IPv6' : 'IPv4' };
+    if (/^\d{1,10}$/.test(q)) return { tab: 'asn', label: 'ASN' };
+    if (/\s/.test(q)) return null;
+    if (/^[a-z0-9.-]+\.[a-z]{2,}\//i.test(q)) return { tab: 'urlcheck', label: 'URL' };
+    if (/^[a-z0-9._-]+\.[a-z]{2,}$/i.test(q)) return { tab: 'ip', label: 'domain' };
+    return null;
+}
+
+function updateHeroDetect() {
+    var el = document.getElementById('hero-detect');
+    var input = document.getElementById('hero-input');
+    if (!el || !input) return;
+    var q = input.value.trim();
+    if (!q) {
+        el.innerHTML = 'Auto-detects: <b>IPv4/IPv6</b> · <b>domain</b> · <b>AS15169</b> · <b>10.0.0.0/24</b>';
+        return;
+    }
+    var kind = classifyQuery(q);
+    el.innerHTML = kind ? ('Detected: <b>' + kind.label + '</b>') : 'Enter an IP, domain, ASN or CIDR.';
+}
+
+function heroSearch(raw) {
+    var input = document.getElementById('hero-input');
+    var q = (typeof raw === 'string' ? raw : (input ? input.value : '')).trim();
+    if (!q) return false;
+    if (input) input.value = q;
+    var kind = classifyQuery(q);
+    updateHeroDetect();
+    if (!kind) return false;
+    if (kind.tab === 'urlcheck' || kind.tab === 'emailcheck') {
+        switchTab(kind.tab, { silent: true });
+        var field = document.getElementById(kind.tab === 'urlcheck' ? 'url-input' : 'email-input');
+        if (field) field.value = q;
+        if (kind.tab === 'urlcheck') checkURL();
+        else checkEmail();
+        var ws = document.getElementById('workspace');
+        if (ws) ws.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        setAndLookup(kind.tab, q);
+    }
+    return false;
+}
+
+function openTool(e, tab) {
+    if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)) return true;
+    if (e && e.preventDefault) e.preventDefault();
+    switchTab(tab);
+    var ws = document.getElementById('workspace');
+    if (ws) ws.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var ids = {ip:'ip-input', dns:'dns-input', bl:'bl-input', whois:'whois-input', asn:'asn-input', tools:'tools-input', bulk:'bulk-ips', headers:'headers-input', urlcheck:'url-input', emailcheck:'email-input'};
+    var el = document.getElementById(ids[tab] || '');
+    if (el) setTimeout(function() { el.focus(); }, 280);
+    return false;
+}
+
+function closeWorkspace() {
+    var ws = document.getElementById('workspace');
+    if (ws) ws.classList.add('is-hidden');
+    document.querySelectorAll('.tool[data-tool]').forEach(function(el) { el.classList.remove('on'); });
+    if (location.pathname !== '/' || location.search) history.pushState({}, '', '/');
+}
+
+var heroInputEl = document.getElementById('hero-input');
+if (heroInputEl) heroInputEl.addEventListener('input', updateHeroDetect);
+
 
 // ── IP Lookup ────────────────────────────────────────────────────────────────
 var ipInput = document.getElementById('ip-input');
@@ -704,12 +950,22 @@ function doIPLookup(ip, originalDomain) {
     var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
-    // More accurate geolocation from ipapi.co
+    // ipapi.co is the location text my-ip.html prefers. ipinfo (via /ipinfo) fills the
+    // same fields when ipapi has no city, so the two pages don't name different towns.
     var geoPromise = fetch('https://ipapi.co/' + encodeURIComponent(ip) + '/json/')
         .then(function(r) { return r.json(); })
         .then(function(d) {
-            if (d.error) return null;
-            return { lat: d.latitude, lng: d.longitude, city: d.city, region: d.region, country: d.country_name };
+            if (!d || d.error || !d.city) return null;
+            return {
+                lat: parseFloat(d.latitude),
+                lng: parseFloat(d.longitude),
+                city: d.city,
+                region: d.region,
+                country: d.country_name,
+                countryCode: d.country_code || d.country,
+                postal: d.postal,
+                timezone: d.timezone
+            };
         })
         .catch(function() { return null; });
 
@@ -1103,6 +1359,17 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     var orgName = org.split(' ').slice(1).join(' ') || '—';
     var isTor = vpnData && vpnData.security && vpnData.security.tor;
     var isHosting = isTor || (org ? /hosting|cloud|datacenter|data center|server|hetzner|aws|amazon|azure|microsoft|digital.ocean|vultr|linode|ovh|contabo|scaleway|packethub|clouvider|google|cloudflare|akamai|fastly|cdn/i.test(org) : false);
+    // Keep city, region, postcode, timezone and map pin on one provider.
+    var countryLabel = d.country || '—';
+    if (geoData && geoData.city) {
+        d.city = geoData.city;
+        if (geoData.region) d.region = geoData.region;
+        if (geoData.postal) d.postal = geoData.postal;
+        if (geoData.timezone) d.timezone = geoData.timezone;
+        if (isFinite(geoData.lat) && isFinite(geoData.lng)) d.loc = geoData.lat + ',' + geoData.lng;
+        if (geoData.country) countryLabel = geoData.country;
+        if (geoData.countryCode && String(geoData.countryCode).length === 2) d.country = String(geoData.countryCode).toUpperCase();
+    }
     var flag = '';
     if (d.country && d.country.length === 2) {
         var c = d.country.toUpperCase();
@@ -1189,18 +1456,12 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
         html += '<div class="map-container fade-in" id="ip-map"></div>';
     }
 
-    // Ignix CTA
-    html += '<div class="fade-in" style="margin:10px 0;background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(59,130,246,0.02));border:1px solid rgba(59,130,246,0.15);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">';
-    html += '<div style="flex-shrink:0;width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--blue),var(--blue-dim));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;font-family:JetBrains Mono,monospace;">IX</div>';
-    html += '<div style="flex:1;font-size:12px;color:var(--text-muted);">Investigating IPs manually? <a href="https://ignix.co.uk" target="_blank" style="color:var(--blue-bright);text-decoration:none;font-weight:600;">Ignix</a> monitors your network 24/7 and alerts you automatically.</div>';
-    html += '</div>';
-
     // Results grid
     html += '<div class="results-grid fade-in">';
 
     // Location card
     html += '<div class="result-card"><div class="card-title">Location</div>' +
-        '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + (d.country || '—') + '</span></div>' +
+        '<div class="data-row"><span class="data-key">Country</span><span class="data-val">' + flag + countryLabel + '</span></div>' +
         '<div class="data-row"><span class="data-key">Region</span><span class="data-val muted">' + (d.region || '—') + '</span></div>' +
         '<div class="data-row"><span class="data-key">City</span><span class="data-val muted">' + (d.city || '—') + '</span></div>' +
         '<div class="data-row"><span class="data-key">Postcode</span><span class="data-val muted">' + (d.postal || '—') + '</span></div>' +
@@ -1316,7 +1577,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     }
     if (hasCoords) {
         var mapCity = (geoData && geoData.city) || d.city;
-        var mapCountry = d.country;
+        var mapCountry = countryLabel || d.country;
         setTimeout(function() {
             var mapEl = document.getElementById('ip-map');
             if (mapEl && mapEl._leaflet_id) return;
@@ -1354,10 +1615,11 @@ function prettyPath(tab, value) {
 }
 
 function runRoutedLookup(tab, value) {
-    switchTab(tab);
+    switchTab(tab, { silent: true });
+    var hero = document.getElementById('hero-input');
+    if (hero && value) { hero.value = value; if (typeof updateHeroDetect === 'function') updateHeroDetect(); }
     if (tab === 'ip') {
         if (value) { ipInput.value = value; lookupIP(); }
-        else { lookupSelf(); }
     } else if (tab === 'dns') {
         if (value) { dnsInput.value = value; lookupDNS(); }
     } else if (tab === 'bl') {
@@ -3499,30 +3761,30 @@ function newsStamp(s) {
     return isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
-function showNewsBannerItem(item) {
-    var title = document.getElementById('ioc-banner-title');
-    var sub = document.getElementById('ioc-banner-sub');
-    var cta = document.getElementById('ioc-banner-cta');
-    if (!title || !sub || !cta || !item) return;
-    var when = newsDate(item.pubDate);
-    title.textContent = item.source + ' · ' + newsClip(item.title, 110);
-    sub.textContent = (when ? when + ' · ' : '') + (item.summary || 'Open the article for the full story.');
-    cta.href = item.link;
-    cta.textContent = 'Read';
-    cta.target = '_blank';
-    cta.rel = 'noopener noreferrer';
-}
-
-function startNewsRotation(items) {
-    if (!items.length) return;
-    showNewsBannerItem(items[0]);
-    if (items.length < 2) return;
-    var i = 0;
-    if (newsBannerTimer) clearInterval(newsBannerTimer);
-    newsBannerTimer = setInterval(function() {
-        i = (i + 1) % items.length;
-        showNewsBannerItem(items[i]);
-    }, 12000);
+function renderNewsGrid(items) {
+    var grid = document.getElementById('news-grid');
+    if (!grid) return;
+    if (!items || !items.length) {
+        grid.innerHTML = '<p class="news-empty">No headlines available right now.</p>';
+        return;
+    }
+    var picked = [];
+    var seenSrc = {};
+    var i;
+    for (i = 0; i < items.length && picked.length < 3; i++) {
+        if (!seenSrc[items[i].source]) {
+            seenSrc[items[i].source] = true;
+            picked.push(items[i]);
+        }
+    }
+    for (i = 0; i < items.length && picked.length < 3; i++) {
+        if (picked.indexOf(items[i]) === -1) picked.push(items[i]);
+    }
+    grid.innerHTML = picked.map(function(item) {
+        var when = newsDate(item.pubDate);
+        var meta = item.source + (when ? ' · ' + when : '');
+        return '<a href="' + escHtml(item.link) + '" target="_blank" rel="noopener noreferrer"><small>' + escHtml(meta) + '</small>' + escHtml(newsClip(item.title, 110)) + '</a>';
+    }).join('');
 }
 
 function parseNewsFeed(feed, data) {
@@ -3582,7 +3844,7 @@ function writeNewsCache(items) {
 function loadNewsBanner() {
     var cached = readNewsCache();
     if (cached) {
-        startNewsRotation(cached);
+        renderNewsGrid(cached);
         return;
     }
     new Promise(function(resolve, reject) {
@@ -3598,13 +3860,13 @@ function loadNewsBanner() {
             }) : [];
             if (!items.length) throw new Error('empty');
             writeNewsCache(items.slice(0, 12));
-            startNewsRotation(items.slice(0, 12));
+            renderNewsGrid(items.slice(0, 12));
         })
         .catch(function() {
             return loadNewsFromRss().then(function(items) {
-                if (!items.length) return;
+                if (!items.length) { renderNewsGrid([]); return; }
                 writeNewsCache(items);
-                startNewsRotation(items);
+                renderNewsGrid(items);
             });
         });
 }
@@ -3625,20 +3887,20 @@ window.addEventListener('load', function() {
         return;
     }
 
-    var tab = params.get('tab') || 'ip';
-
-    // Handle token from verification redirect
+    // The bare homepage stays an empty search. Deep links and ?tab= still open a tool.
     var tokenParam = params.get('token');
     if (tokenParam) {
         localStorage.setItem('ignixip_token', tokenParam);
-        // Clean URL
-        var cleanUrl = '/?tab=bulk';
-        history.replaceState({}, '', cleanUrl);
-        tab = 'bulk';
+        history.replaceState({}, '', '/?tab=bulk');
+        switchTab('bulk', { silent: true });
+        return;
     }
 
-    if (tab === 'bulk') {
-        switchTab('bulk');
+    var tab = params.get('tab');
+    if (!tab) return;
+
+    if (tab === 'bulk' || tab === 'headers' || tab === 'urlcheck' || tab === 'emailcheck') {
+        switchTab(tab, { silent: true });
         return;
     }
 
@@ -3650,6 +3912,7 @@ window.addEventListener('load', function() {
     else if (tab === 'asn') value = params.get('asn');
     else if (tab === 'tools') value = params.get('ip');
 
+    if (!document.getElementById('tab-' + tab)) return;
     if (value) history.replaceState({}, '', prettyPath(tab, value));
     runRoutedLookup(tab, value);
 });
