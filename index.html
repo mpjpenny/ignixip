@@ -254,6 +254,22 @@
         .chip { font: 14px 'JetBrains Mono', ui-monospace, monospace; color: var(--tx); background: var(--bg2); border: 1px solid var(--line); padding: 6px 12px; border-radius: 99px; cursor: pointer; }
         .chip:hover { border-color: var(--acc); }
         .myip { margin-top: 28px; }
+        .ask { position: relative; z-index: 1; padding: 36px 0 8px; scroll-margin-top: 84px; }
+        .ask-inner { max-width: 760px; }
+        .ask h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+        .ask-hint { color: var(--mut); font-size: 16px; margin: 0 0 16px; }
+        .ask .search input { font-family: Inter, system-ui, sans-serif; font-size: 17px; }
+        .ask .chips { justify-content: flex-start; margin-top: 14px; }
+        .ask-feedback { margin-top: 16px; text-align: left; }
+        .ask-summary { margin: 0; padding: 14px 16px; border-left: 3px solid var(--acc); background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--acc); border-radius: 12px; font-size: 17px; line-height: 1.5; }
+        .ask-suggest p { color: var(--mut); margin: 0 0 8px; }
+        .ask-suggest a { color: var(--acc2); }
+        body.ask-mode #workspace .tabs-container { display: flex; flex-direction: column; }
+        body.ask-mode #workspace .tab-pane { display: none; }
+        body.ask-mode #workspace .tab-pane.ask-on { display: block; margin-top: 18px; }
+        body.ask-mode #workspace .tab-pane.ask-on::before { content: attr(data-ask-label); display: block; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--acc2); font-weight: 700; margin-bottom: 10px; }
+        body.ask-mode #workspace .search-box,
+        body.ask-mode #workspace .search-hint { display: none; }
         .ix-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 12px 20px; font-weight: 600; font-size: 15px; border: 0; cursor: pointer; font-family: inherit; text-decoration: none; line-height: 1.2; }
         .ix-btn.pri { background: var(--acc); color: #fff; }
         .ix-btn.pri:hover { background: #2563eb; color: #fff; }
@@ -319,6 +335,8 @@
             .trust .wrap { justify-content: flex-start; flex-direction: column; gap: 8px; }
             .band { padding: 52px 0; }
             #workspace .tabs-container { padding: 16px; }
+            .ask h2 { font-size: 24px; }
+            .ask { padding: 28px 0 4px; }
         }
     </style>
     <link rel="stylesheet" href="/site.css">
@@ -359,6 +377,24 @@
 
 <div class="trust"><div class="wrap"><span>100% free</span><span>No signup needed</span><span>Checks 12 DNSBLs + AbuseIPDB</span><span>Spamhaus, Barracuda, SpamCop</span></div></div>
 
+<section class="ask" id="ask" aria-labelledby="ask-heading">
+    <div class="wrap ask-inner">
+        <h2 id="ask-heading">Ask ignixip</h2>
+        <p class="ask-hint" id="ask-hint">Ask in plain English. The answer comes from the tools on this page — nothing is sent to an AI.</p>
+        <form class="search ask-search" id="ask-form" action="/" onsubmit="return askIgnixip()">
+            <input id="ask-input" type="text" placeholder="Tell me what you want to find…" aria-label="Ask ignixip" aria-describedby="ask-hint" autocomplete="off">
+            <button class="ix-btn pri" type="submit">Ask</button>
+        </form>
+        <div class="chips">
+            <button type="button" class="chip" data-ask="Is mail from example.com safe?">Is mail from example.com safe?</button>
+            <button type="button" class="chip" data-ask="Where is 8.8.8.8?">Where is 8.8.8.8?</button>
+            <button type="button" class="chip" data-ask="Who owns cloudflare.com?">Who owns cloudflare.com?</button>
+            <button type="button" class="chip" data-ask="What is my IP?">What is my IP?</button>
+        </div>
+        <div id="ask-feedback" class="ask-feedback" role="status" aria-live="polite"></div>
+    </div>
+</section>
+
 <section id="workspace" class="is-hidden"><div class="wrap">
 <div class="tabs-container">
     <div class="workspace-bar">
@@ -367,7 +403,7 @@
     </div>
     <!-- IP Lookup Tab -->
 
-    <div class="tab-pane active" id="tab-ip">
+    <div class="tab-pane active" id="tab-ip" data-ask-label="IP lookup">
         <div class="search-box">
             <span class="search-icon">&#8594;</span>
             <input type="text" id="ip-input" class="search-input" placeholder="Enter IP address or domain..." autocomplete="off" spellcheck="false">
@@ -383,7 +419,7 @@
     </div>
 
     <!-- DNS Lookup Tab -->
-    <div class="tab-pane" id="tab-dns">
+    <div class="tab-pane" id="tab-dns" data-ask-label="DNS lookup">
         <div class="search-box">
             <span class="search-icon">&#8635;</span>
             <input type="text" id="dns-input" class="search-input" placeholder="Enter domain name..." autocomplete="off" spellcheck="false">
@@ -398,7 +434,7 @@
     </div>
 
     <!-- Network Tools Tab -->
-    <div class="tab-pane" id="tab-tools">
+    <div class="tab-pane" id="tab-tools" data-ask-label="Net tools">
         <div class="search-box">
             <span class="search-icon">&#9874;</span>
             <input type="text" id="tools-input" class="search-input" placeholder="Enter IP address..." autocomplete="off" spellcheck="false">
@@ -413,7 +449,7 @@
     </div>
 
     <!-- ASN Tab -->
-    <div class="tab-pane" id="tab-asn">
+    <div class="tab-pane" id="tab-asn" data-ask-label="ASN lookup">
         <div class="search-box">
             <span class="search-icon">&#9671;</span>
             <input type="text" id="asn-input" class="search-input" placeholder="Enter ASN e.g. AS15169 or 15169..." autocomplete="off" spellcheck="false">
@@ -428,7 +464,7 @@
     </div>
 
     <!-- WHOIS Tab -->
-    <div class="tab-pane" id="tab-whois">
+    <div class="tab-pane" id="tab-whois" data-ask-label="WHOIS">
         <div class="search-box">
             <span class="search-icon">&#9432;</span>
             <input type="text" id="whois-input" class="search-input" placeholder="Enter IP address, CIDR, or domain..." autocomplete="off" spellcheck="false">
@@ -444,7 +480,7 @@
     </div>
 
     <!-- Blacklist Check Tab -->
-    <div class="tab-pane" id="tab-bl">
+    <div class="tab-pane" id="tab-bl" data-ask-label="Blacklist check">
         <div class="search-box">
             <span class="search-icon">&#9632;</span>
             <input type="text" id="bl-input" class="search-input" placeholder="Enter IP address..." autocomplete="off" spellcheck="false">
@@ -517,7 +553,7 @@
     </div>
 
     <!-- URL Check Tab -->
-    <div class="tab-pane" id="tab-urlcheck">
+    <div class="tab-pane" id="tab-urlcheck" data-ask-label="URL check">
         <div class="search-box" style="margin-bottom:16px;">
             <input type="text" id="url-input" class="search-input" placeholder="Paste a suspicious URL... e.g. https://example.com/login" style="flex:1;">
             <button class="search-btn" id="url-btn" onclick="checkURL()">Check URL</button>
@@ -529,7 +565,7 @@
     </div>
 
     <!-- Email Sender Check Tab -->
-    <div class="tab-pane" id="tab-emailcheck">
+    <div class="tab-pane" id="tab-emailcheck" data-ask-label="Sender check">
         <div class="search-box" style="margin-bottom:16px;">
             <input type="text" id="email-input" class="search-input" placeholder="Enter an email address or domain... e.g. suspicious@example.com" style="flex:1;">
             <button class="search-btn" id="email-btn" onclick="checkEmail()">Check Sender</button>
@@ -704,6 +740,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="/ask.js"></script>
 <script>
 // ── DNSBL list (shared by IP Lookup risk score and Blacklist tab) ────────────
 var DNSBL_LISTS = [
@@ -722,8 +759,22 @@ var DNSBL_LISTS = [
 ];
 
 // ── Tab switching ────────────────────────────────────────────────────────────
+function clearAskMode() {
+    document.body.classList.remove('ask-mode');
+    document.querySelectorAll('.tab-pane').forEach(function(p) {
+        p.classList.remove('ask-on');
+        p.style.order = '';
+    });
+}
+
+function navTo(url) {
+    if (window.askSuppressHistory) return;
+    history.pushState({}, '', url);
+}
+
 function switchTab(tab, opts) {
     opts = opts || {};
+    clearAskMode();
     var pane = document.getElementById('tab-' + tab);
     if (!pane) return;
     document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
@@ -817,6 +868,122 @@ function heroSearch(raw) {
     return false;
 }
 
+var ASK_RESULT_IDS = { ip: 'ip-results', myip: 'ip-results', dns: 'dns-results', bl: 'bl-results', whois: 'whois-results', asn: 'asn-results', tools: 'tools-results', urlcheck: 'url-results', emailcheck: 'email-results' };
+
+function suggestionHtml(list) {
+    var chips = list.map(function(q) {
+        return '<button type="button" class="chip" data-ask="' + escHtml(q) + '">' + escHtml(q) + '</button>';
+    }).join('');
+    return '<div class="ask-suggest"><p>I could not match that to a lookup. Name an IP, domain, ASN or link, or try one of these. The tool cards further down run the same checks.</p><div class="chips">' + chips + '</div></div>';
+}
+
+function startAskTool(tool) {
+    var box = document.getElementById(ASK_RESULT_IDS[tool.tab]);
+    if (box) box.innerHTML = '<div class="loading"><span class="loading-dots">Working</span></div>';
+    if (tool.tab === 'myip') { lookupSelf(); return; }
+    if (tool.tab === 'ip') { ipInput.value = tool.value; lookupIP(); return; }
+    if (tool.tab === 'dns') { dnsInput.value = tool.value; lookupDNS(); return; }
+    if (tool.tab === 'whois') { whoisInput.value = tool.value; lookupWHOIS(); return; }
+    if (tool.tab === 'asn') { asnInput.value = tool.value; lookupASN(); return; }
+    if (tool.tab === 'urlcheck') { document.getElementById('url-input').value = tool.value; checkURL(); return; }
+    if (tool.tab === 'emailcheck') { document.getElementById('email-input').value = tool.value; checkEmail(); return; }
+    if (tool.tab !== 'bl' && tool.tab !== 'tools') return;
+    if (isIPAddress(tool.value)) {
+        if (tool.tab === 'bl') { blInput.value = tool.value; checkBlacklist(); }
+        else { toolsInput.value = tool.value; runTools(); }
+        return;
+    }
+    fetch('https://dns.google/resolve?name=' + encodeURIComponent(tool.value) + '&type=A')
+        .then(function(r) { return r.json(); })
+        .then(function(dns) {
+            var ip = '';
+            if (dns.Answer) {
+                for (var i = 0; i < dns.Answer.length; i++) {
+                    if (isIPv4(dns.Answer[i].data)) ip = dns.Answer[i].data;
+                }
+            }
+            if (!ip) {
+                if (box) box.innerHTML = '<div class="error-card">No IPv4 address for ' + escHtml(tool.value) + ', so this check needs an IP.</div>';
+                return;
+            }
+            if (tool.tab === 'bl') { blInput.value = ip; checkBlacklist(); }
+            else { toolsInput.value = ip; runTools(); }
+        })
+        .catch(function() {
+            if (box) box.innerHTML = '<div class="error-card">Could not resolve ' + escHtml(tool.value) + '.</div>';
+        });
+}
+
+function whenAskSettled(plan, done) {
+    var start = Date.now();
+    var timer = setInterval(function() {
+        var loading = plan.tools.some(function(tool) {
+            var el = document.getElementById(ASK_RESULT_IDS[tool.tab]);
+            return !el || el.innerHTML.indexOf('loading-dots') !== -1;
+        });
+        if (!loading || Date.now() - start > 25000) {
+            clearInterval(timer);
+            done();
+        }
+    }, 250);
+}
+
+function refineAskSummary(plan) {
+    var el = document.getElementById('ask-summary');
+    if (!el || plan.tools.length !== 1) return;
+    var only = plan.tools[0].tab;
+    if ((only === 'ip' || only === 'myip') && lastLookupData && lastLookupData.verdict) {
+        el.textContent = lastLookupData.verdict.owner + '. ' + lastLookupData.verdict.means;
+    }
+}
+
+function askIgnixip(raw) {
+    var input = document.getElementById('ask-input');
+    var q = (typeof raw === 'string' ? raw : (input ? input.value : '')).trim();
+    if (!q) return false;
+    if (input) input.value = q;
+    var feedback = document.getElementById('ask-feedback');
+    if (!window.ignixAsk || !feedback) return false;
+    var plan = window.ignixAsk.planAsk(q);
+    if (!plan.matched) {
+        clearAskMode();
+        var hidden = document.getElementById('workspace');
+        if (hidden) hidden.classList.add('is-hidden');
+        feedback.innerHTML = suggestionHtml(plan.suggestions);
+        var toolsEl = document.getElementById('tools');
+        if (toolsEl) toolsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return false;
+    }
+    document.body.classList.add('ask-mode');
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('ask-on'); p.classList.remove('active'); });
+    plan.tools.forEach(function(tool, i) {
+        var pane = document.getElementById(tool.tab === 'myip' ? 'tab-ip' : 'tab-' + tool.tab);
+        if (!pane) return;
+        pane.classList.add('ask-on');
+        pane.style.order = String(i + 1);
+    });
+    var title = document.getElementById('workspace-title');
+    if (title) title.textContent = 'Answer';
+    var ws = document.getElementById('workspace');
+    if (ws) ws.classList.remove('is-hidden');
+    feedback.innerHTML = '<p class="ask-summary" id="ask-summary">' + escHtml(plan.summary) + '</p>';
+    window.askSuppressHistory = true;
+    plan.tools.forEach(startAskTool);
+    whenAskSettled(plan, function() {
+        window.askSuppressHistory = false;
+        refineAskSummary(plan);
+    });
+    var sum = document.getElementById('ask-summary');
+    if (sum) sum.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+}
+
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('[data-ask]') : null;
+    if (!btn) return;
+    askIgnixip(btn.getAttribute('data-ask'));
+});
+
 function openTool(e, tab) {
     if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)) return true;
     if (e && e.preventDefault) e.preventDefault();
@@ -830,6 +997,7 @@ function openTool(e, tab) {
 }
 
 function closeWorkspace() {
+    clearAskMode();
     var ws = document.getElementById('workspace');
     if (ws) ws.classList.add('is-hidden');
     document.querySelectorAll('.tool[data-tool]').forEach(function(el) { el.classList.remove('on'); });
@@ -896,7 +1064,7 @@ function getPtrZone(ip) {
 function lookupSelf() {
     ipInput.value = 'detecting...';
     ipBtn.disabled = true;
-    switchTab('ip');
+    if (!window.askSuppressHistory) switchTab('ip');
     fetch('https://api.ipify.org?format=json')
         .then(function(r) { return r.json(); })
         .then(function(d) { ipInput.value = d.ip; lookupIP(); })
@@ -1526,7 +1694,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     html += '</div>'; // close results-grid
 
     ipResults.innerHTML = html;
-    history.pushState({}, '', prettyPath('ip', d.originalDomain || ip));
+    navTo(prettyPath('ip', d.originalDomain || ip));
 
     // Log lookup to tools server for stats (fire and forget)
     try {
@@ -1681,7 +1849,7 @@ function lookupDNS() {
         renderDNSResults(domain, results);
         dnsBtn.disabled = false;
         dnsBtn.textContent = 'Look Up';
-        history.pushState({}, '', '/?tab=dns&q=' + encodeURIComponent(domain));
+        navTo('/?tab=dns&q=' + encodeURIComponent(domain));
         var prevCerts = document.querySelectorAll('.cert-section');
         prevCerts.forEach(function(el) { el.remove(); });
         fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
@@ -1789,7 +1957,7 @@ function checkBlacklist() {
         renderBlacklistResults(ip, results, abuseData);
         blBtn.disabled = false;
         blBtn.textContent = 'Check';
-        history.pushState({}, '', '/?tab=bl&ip=' + encodeURIComponent(ip));
+        navTo('/?tab=bl&ip=' + encodeURIComponent(ip));
     });
 }
 
@@ -1906,7 +2074,7 @@ function lookupWHOIS() {
             }
             whoisBtn.disabled = false;
             whoisBtn.textContent = 'Look Up';
-            history.pushState({}, '', '/?tab=whois&q=' + encodeURIComponent(query));
+            navTo('/?tab=whois&q=' + encodeURIComponent(query));
         })
         .catch(function(err) {
             whoisResults.innerHTML = '<div class="error-card">WHOIS lookup failed - ' + (err.message || 'please check input and try again') + '</div>';
@@ -2050,7 +2218,7 @@ function runTools() {
     toolsBtn.disabled = true;
     toolsBtn.textContent = 'Running...';
     toolsResults.innerHTML = '<div class="loading"><span class="loading-dots">Running ping, port scan and traceroute</span></div>';
-    history.pushState({}, '', '/?tab=tools&ip=' + encodeURIComponent(ip));
+    navTo('/?tab=tools&ip=' + encodeURIComponent(ip));
 
     var pingPromise = fetch('https://tools.ignixip.com/ping/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
@@ -2185,7 +2353,7 @@ function lookupASN() {
         renderASN('AS' + num, res[0], res[1]);
         asnBtn.disabled = false;
         asnBtn.textContent = 'Look Up';
-        history.pushState({}, '', '/?tab=asn&asn=AS' + encodeURIComponent(num));
+        navTo('/?tab=asn&asn=AS' + encodeURIComponent(num));
     });
 }
 
@@ -3874,6 +4042,10 @@ function loadNewsBanner() {
 window.addEventListener('load', function() {
     loadNewsBanner();
     var params = new URLSearchParams(window.location.search);
+    if (params.get('ask')) {
+        askIgnixip(params.get('ask'));
+        return;
+    }
 
     var carried = routeFromPath(params.get('path') || '');
     if (carried) {
