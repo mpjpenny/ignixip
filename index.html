@@ -375,7 +375,7 @@
     <div class="myip"><a class="ix-btn ghost" href="/my-ip.html">◎ What is my IP?</a></div>
 </div></section>
 
-<div class="trust"><div class="wrap"><span>100% free</span><span>No signup needed</span><span>Checks 12 DNSBLs + AbuseIPDB</span><span>Spamhaus, Barracuda, SpamCop</span></div></div>
+<div class="trust"><div class="wrap"><span>100% free</span><span>No signup needed</span><span>Checks DNSBLs + AbuseIPDB</span><span>Barracuda, SpamCop, UCEPROTECT</span></div></div>
 
 <section class="ask" id="ask" aria-labelledby="ask-heading">
     <div class="wrap ask-inner">
@@ -1057,6 +1057,34 @@ function getDnsblLists(ip) {
     return DNSBL_LISTS;
 }
 
+var SPAMHAUS_SKIP_TIP = 'Spamhaus requires a licensed feed; not checked here';
+
+function isSpamhausList(name) {
+    return String(name || '').indexOf('Spamhaus') === 0;
+}
+
+function spamhausSkipped(list) {
+    return { name: list.name, listed: false, error: false, skipped: true, unavailable: true, code: '', weight: 'none', status: 'skipped' };
+}
+
+function loadDnsblResults(ip, lists) {
+    var reversed = reverseIP(ip);
+    return Promise.all(lists.map(function(list) {
+        if (isSpamhausList(list.name)) return Promise.resolve(spamhausSkipped(list));
+        var lookup = reversed + '.' + list.host;
+        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
+            .then(function(r) { return r.json(); })
+            .then(function(payload) { return ignixReputation.readDnsblResult(list.name, payload); })
+            .catch(function() {
+                return { name: list.name, listed: false, error: true, unavailable: true, code: '', weight: 'none', status: 'error' };
+            });
+    }));
+}
+
+function scoredDnsblResults(results) {
+    return (results || []).filter(function(r) { return r && !r.skipped && !isSpamhausList(r.name); });
+}
+
 function getPtrZone(ip) {
     if (isIPv6(ip)) return reverseIPv6(ip) + '.ip6.arpa';
     return reverseIP(ip) + '.in-addr.arpa';
@@ -1141,15 +1169,7 @@ function doIPLookup(ip, originalDomain) {
     // DNSBL checks — use IPv6-specific lists when needed
     var reversed = reverseIP(ip);
     var activeDnsblLists = getDnsblLists(ip);
-    var dnsblPromise = Promise.all(activeDnsblLists.map(function(list) {
-        var lookup = reversed + '.' + list.host;
-        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                return ignixReputation.readDnsblResult(list.name, d);
-            })
-            .catch(function() { return { name: list.name, listed: false }; });
-    }));
+    var dnsblPromise = loadDnsblResults(ip, activeDnsblLists);
 
     // Reverse DNS (PTR) lookup — uses ip6.arpa for IPv6
     var ptrName = getPtrZone(ip);
@@ -1227,7 +1247,7 @@ function lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResu
         isHosting: isHosting,
         isTor: isTor,
         isVpn: isVpn,
-        dnsblResults: dnsblResults || [],
+        dnsblResults: scoredDnsblResults(dnsblResults),
         abuseScore: abuseScore,
         abuseReports: abuseReports
     });
@@ -1278,7 +1298,7 @@ function calculateRiskScore(isHosting, vpnData, abuseData, dnsblResults, org, as
     var majorHits = 0, minorHits = 0, otherHits = 0;
     if (dnsblResults) {
         dnsblResults.forEach(function(r) {
-            if (!r.listed) return;
+            if (!r.listed || r.skipped || isSpamhausList(r.name)) return;
             var weight = r.weight || 'other';
             if (weight === 'major') majorHits++;
             else if (weight === 'minor') minorHits++;
@@ -1527,8 +1547,9 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     var abuseEmail = abuseEntity ? getVcard(abuseEntity, 'email') : '—';
 
     // Blacklist stats
-    var listedCount = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).length : 0;
-    var listedNames = dnsblResults ? dnsblResults.filter(function(r) { return r.listed; }).map(function(r) { return r.name; }) : [];
+    var scoredLists = scoredDnsblResults(dnsblResults);
+    var listedCount = scoredLists.filter(function(r) { return r.listed; }).length;
+    var listedNames = scoredLists.filter(function(r) { return r.listed; }).map(function(r) { return r.name; });
 
     // Store for export
     lastLookupData = {
@@ -1557,7 +1578,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
         reverseDns: ptrData && ptrData.ptr ? ptrData.ptr : null,
         reverseDnsConfirmed: ptrData ? ptrData.confirmed : false,
         blacklistListed: listedCount,
-        blacklistTotal: dnsblResults ? dnsblResults.length : 0,
+        blacklistTotal: scoredLists.length,
         blacklistNames: listedNames,
         risk: { score: risk.score, label: risk.label, factors: risk.factors },
         verdict: lookupVerdict(d, orgName, asn, isHosting, vpnData, abuseData, dnsblResults),
@@ -1657,7 +1678,8 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     if (dnsblResults) {
         html += '<div class="result-card"><div class="card-title">Blacklists</div>' +
             '<div class="data-row"><span class="data-key">Status</span><span class="data-val ' + (listedCount > 0 ? 'red' : 'green') + '">' + (listedCount > 0 ? listedCount + ' listed' : 'Clean') + '</span></div>' +
-            '<div class="data-row"><span class="data-key">Checked</span><span class="data-val muted">' + dnsblResults.length + ' DNSBLs</span></div>';
+            '<div class="data-row"><span class="data-key">Checked</span><span class="data-val muted">' + scoredLists.length + ' DNSBLs</span></div>' +
+            '<div class="data-row"><span class="data-key">Spamhaus</span><span class="data-val amber" title="' + SPAMHAUS_SKIP_TIP + '">Not checked</span></div>';
         if (listedCount > 0) {
             html += '<div class="data-row"><span class="data-key">Listed On</span><span class="data-val red" style="font-size:11px;text-align:right;">' + listedNames.join(', ') + '</span></div>';
         }
@@ -1907,24 +1929,12 @@ function checkBlacklist() {
     blBtn.disabled = true;
     blBtn.textContent = 'Checking...';
     blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking blacklists</span></div>';
-    var reversed = reverseIP(ip);
     var activeLists = getDnsblLists(ip);
 
     var abusePromise = fetch('https://portal.ignix.co.uk/api/abuseipdb/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
 
-    var promises = activeLists.map(function(list) {
-        var lookup = reversed + '.' + list.host;
-        return fetch('https://dns.google/resolve?name=' + encodeURIComponent(lookup) + '&type=A')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                return ignixReputation.readDnsblResult(list.name, d);
-            })
-            .catch(function() {
-                return { name: list.name, listed: false, status: 'error' };
-            });
-    });
-    Promise.all([abusePromise, Promise.all(promises)]).then(function(combined) {
+    Promise.all([abusePromise, loadDnsblResults(ip, activeLists)]).then(function(combined) {
         var abuseData = combined[0];
         var results = combined[1];
         renderBlacklistResults(ip, results, abuseData);
@@ -1954,7 +1964,7 @@ function renderBlacklistResults(ip, results, abuseData) {
     }
 
     var listed = results.filter(function(r) { return r.listed; }).length;
-    var clean = results.filter(function(r) { return !r.listed && r.status !== 'error'; }).length;
+    var clean = results.filter(function(r) { return !r.listed && !r.skipped && r.status !== 'error'; }).length;
     var errors = results.filter(function(r) { return r.status === 'error'; }).length;
     var listColor = listed > 0 ? 'var(--red)' : 'var(--green)';
     var html = abuseHtml + '<div class="ip-header fade-in">' +
@@ -1964,14 +1974,14 @@ function renderBlacklistResults(ip, results, abuseData) {
     html += '<div class="bl-summary fade-in">' +
         '<div class="bl-stat"><div class="bl-stat-num" style="color:' + listColor + ';">' + listed + '</div><div class="bl-stat-label">Listed</div></div>' +
         '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--green);">' + clean + '</div><div class="bl-stat-label">Clean</div></div>' +
-        '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--text-dim);">' + results.length + '</div><div class="bl-stat-label">Checked</div></div>' +
+        '<div class="bl-stat"><div class="bl-stat-num" style="color:var(--text-dim);">' + results.filter(function(r) { return !r.skipped; }).length + '</div><div class="bl-stat-label">Checked</div></div>' +
     '</div>';
     html += '<div class="bl-list fade-in">';
     results.forEach(function(r) {
-        html += '<div class="bl-row">' +
-            '<div class="bl-dot bl-dot-' + r.status + '"></div>' +
+        html += '<div class="bl-row"' + (r.skipped ? ' title="' + SPAMHAUS_SKIP_TIP + '"' : '') + '>' +
+            '<div class="bl-dot bl-dot-' + (r.skipped ? 'error' : r.status) + '"></div>' +
             '<span class="bl-name">' + r.name + '</span>' +
-            '<span class="' + (r.listed ? 'bl-status-listed' : 'bl-status-clean') + '">' + (r.listed ? 'LISTED' : r.status === 'error' ? 'error' : 'clean') + '</span>' +
+            '<span class="' + (r.listed ? 'bl-status-listed' : 'bl-status-clean') + '"' + (r.skipped ? ' title="' + SPAMHAUS_SKIP_TIP + '"' : '') + '>' + (r.listed ? 'LISTED' : (r.skipped || r.status === 'error' || r.unavailable) ? 'Not checked' : 'clean') + '</span>' +
         '</div>';
     });
     html += '</div>';
