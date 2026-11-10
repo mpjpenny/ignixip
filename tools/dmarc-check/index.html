@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DMARC and mail DNS check | ignixip</title>
+    <meta name="description" content="Look up the DNS records a domain publishes for mail, including TXT records used by SPF and DMARC. Free.">
+    <link rel="canonical" href="https://ignixip.com/tools/dmarc-check/">
+    <meta property="og:title" content="DMARC and mail DNS check | ignixip">
+    <meta property="og:description" content="Look up the DNS records a domain publishes for mail, including TXT records used by SPF and DMARC. Free.">
+    <meta property="og:url" content="https://ignixip.com/tools/dmarc-check/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "ignixip DMARC check", "url": "https://ignixip.com/tools/dmarc-check/", "applicationCategory": "SecurityApplication", "operatingSystem": "Web", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Look up the DNS records a domain publishes for mail, including TXT records used by SPF and DMARC. Free."}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What should I look for?", "acceptedAnswer": {"@type": "Answer", "text": "A TXT record starting with v=spf1, and a TXT record at _dmarc.example.com starting with v=DMARC1. This quick form shows TXT records on the domain itself."}}, {"@type": "Question", "name": "Does this parse a DMARC report?", "acceptedAnswer": {"@type": "Answer", "text": "No. Paste an aggregate report into the DMARC report tool. This page is the DNS half of the check."}}, {"@type": "Question", "name": "Why check MX as well?", "acceptedAnswer": {"@type": "Answer", "text": "MX records name the servers that receive mail. A domain with no MX and no SPF is not set up to send or receive mail in the usual way."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+
+<h1>DMARC check</h1>
+<p class="lead">Enter a domain to read the TXT and MX records that mail authentication depends on.</p>
+<p>DMARC and SPF are published as DNS TXT records. This page loads the domain&#x27;s TXT and MX records so you can see whether a policy is present. For a plain-English reading of an aggregate report file, use the DMARC report tool.</p>
+<h2>Use the tool</h2>
+
+<div class="widget" data-embed="dmarc" data-auto="0">
+    <form class="search" action="/">
+        <input data-query value="" placeholder="example.com" aria-label="example.com" autocomplete="off">
+        <button class="ix-btn pri" type="submit">Check DNS</button>
+    </form>
+    <div data-results></div>
+</div>
+
+<h2>Questions</h2>
+<details><summary>What should I look for?</summary><p>A TXT record starting with v=spf1, and a TXT record at _dmarc.example.com starting with v=DMARC1. This quick form shows TXT records on the domain itself.</p></details>
+<details><summary>Does this parse a DMARC report?</summary><p>No. Paste an aggregate report into the DMARC report tool. This page is the DNS half of the check.</p></details>
+<details><summary>Why check MX as well?</summary><p>MX records name the servers that receive mail. A domain with no MX and no SPF is not set up to send or receive mail in the usual way.</p></details>
+
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+<script src="/embed.js"></script>
+</body>
+</html>

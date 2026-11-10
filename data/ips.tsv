@@ -1,0 +1,69 @@
+ip	name	about
+8.8.8.8	Google Public DNS	Google's primary public DNS resolver. It is anycast and widely used as a recursive resolver.
+8.8.4.4	Google Public DNS	Google's secondary public DNS address, paired with 8.8.8.8.
+1.1.1.1	Cloudflare DNS	Cloudflare and APNIC's public DNS resolver, also used for Cloudflare's 1.1.1.1 app.
+1.0.0.1	Cloudflare DNS	The alternate address for Cloudflare's 1.1.1.1 public resolver.
+1.1.1.2	Cloudflare DNS for Families	Cloudflare resolver that blocks malware.
+1.1.1.3	Cloudflare DNS for Families	Cloudflare resolver that blocks malware and adult content.
+9.9.9.9	Quad9	Quad9's secure public DNS resolver, operated with global anycast.
+9.9.9.10	Quad9 unsecured	Quad9 resolver without the malware blocklist.
+149.112.112.112	Quad9	Quad9's alternate secure resolver address.
+208.67.222.222	OpenDNS	Cisco OpenDNS public resolver.
+208.67.220.220	OpenDNS	Cisco OpenDNS secondary public resolver.
+208.67.222.123	OpenDNS FamilyShield	OpenDNS resolver with adult-content filtering.
+208.67.220.123	OpenDNS FamilyShield	Secondary OpenDNS FamilyShield address.
+4.2.2.1	Level 3 DNS	A long-standing Level 3 (Lumen) public resolver address.
+4.2.2.2	Level 3 DNS	Second address in the Level 3 resolver set.
+4.2.2.3	Level 3 DNS	Third address in the Level 3 resolver set.
+4.2.2.4	Level 3 DNS	Fourth address in the Level 3 resolver set.
+4.2.2.5	Level 3 DNS	Fifth address in the Level 3 resolver set.
+4.2.2.6	Level 3 DNS	Sixth address in the Level 3 resolver set.
+64.6.64.6	Verisign Public DNS	Verisign's public recursive resolver.
+64.6.65.6	Verisign Public DNS	Verisign's secondary public resolver.
+8.26.56.26	Comodo Secure DNS	Comodo (now Norton) secure public DNS.
+8.20.247.20	Comodo Secure DNS	Alternate Comodo Secure DNS address.
+94.140.14.14	AdGuard DNS	AdGuard's default public DNS, which blocks ads and trackers.
+94.140.15.15	AdGuard DNS	AdGuard's secondary default DNS address.
+94.140.14.15	AdGuard DNS Family	AdGuard resolver with family protection.
+76.76.2.0	Control D	Control D's free public DNS address.
+76.76.10.0	Control D	Control D's alternate public DNS address.
+185.228.168.9	CleanBrowsing	CleanBrowsing security filter resolver.
+185.228.168.10	CleanBrowsing	CleanBrowsing secondary security filter.
+185.228.168.168	CleanBrowsing Family	CleanBrowsing family filter resolver.
+77.88.8.8	Yandex DNS	Yandex public DNS basic resolver.
+77.88.8.1	Yandex DNS	Yandex public DNS secondary basic resolver.
+77.88.8.88	Yandex DNS Safe	Yandex resolver with malware filtering.
+180.76.76.76	Baidu Public DNS	Baidu's public recursive DNS in China.
+223.5.5.5	AliDNS	Alibaba's public DNS resolver.
+223.6.6.6	AliDNS	Alibaba public DNS secondary address.
+119.29.29.29	DNSPod	Tencent DNSPod public resolver.
+182.254.116.116	DNSPod	DNSPod secondary public resolver.
+168.95.1.1	HiNet DNS	Chunghwa Telecom HiNet public resolver in Taiwan.
+168.95.192.1	HiNet DNS	HiNet secondary resolver.
+156.154.70.1	Neustar UltraDNS	Neustar public recursive DNS.
+156.154.71.1	Neustar UltraDNS	Neustar secondary public resolver.
+199.85.126.10	Norton ConnectSafe	Norton ConnectSafe public DNS (legacy).
+199.85.127.10	Norton ConnectSafe	Norton ConnectSafe secondary address.
+84.200.69.80	DNS.WATCH	DNS.WATCH public resolver, run without filtering.
+84.200.70.40	DNS.WATCH	DNS.WATCH secondary resolver.
+80.80.80.80	Freenom World	Freenom World public DNS.
+80.80.81.81	Freenom World	Freenom World secondary DNS.
+45.90.28.0	NextDNS	NextDNS anycast resolver address.
+45.90.30.0	NextDNS	NextDNS alternate anycast address.
+195.46.39.39	SafeDNS	SafeDNS public filtering resolver.
+195.46.39.40	SafeDNS	SafeDNS secondary resolver.
+151.101.1.1	Fastly	A Fastly anycast address used by many CDN customers.
+151.101.65.1	Fastly	Fastly anycast address on another network mapping.
+151.101.129.1	Fastly	Fastly anycast address.
+151.101.193.1	Fastly	Fastly anycast address.
+104.16.0.1	Cloudflare	An address at the start of a Cloudflare anycast range.
+172.217.16.14	Google	A Google web frontend address often seen for Google services.
+142.250.190.14	Google	Another Google frontend address used for search and APIs.
+31.13.72.36	Meta	A Meta (Facebook) edge address.
+17.253.144.10	Apple	An Apple public service address.
+13.107.6.158	Microsoft	A Microsoft 365 endpoint address.
+20.190.128.1	Microsoft Azure	An address in Microsoft Azure's public space.
+52.94.12.1	Amazon Web Services	An address in AWS public address space.
+3.5.0.1	Amazon CloudFront	An address in the CloudFront edge space.
+2.16.0.1	Akamai	An Akamai CDN edge address.
+23.32.0.1	Akamai	Another address in Akamai's CDN space.

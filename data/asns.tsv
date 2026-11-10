@@ -1,0 +1,214 @@
+asn	name	country	about
+15169	Google	United States	Google's network, including Google Public DNS.
+13335	Cloudflare	United States	Cloudflare's anycast network and the 1.1.1.1 resolver.
+16509	Amazon.com	United States	Amazon Web Services primary network.
+14618	Amazon.com	United States	Amazon infrastructure network.
+7224	Amazon.com	United States	Amazon.com services network.
+8987	Amazon	Ireland	Amazon's European network.
+8075	Microsoft	United States	Microsoft, including Azure and Microsoft 365.
+32934	Meta	United States	Meta's network for Facebook, Instagram, and WhatsApp.
+714	Apple	United States	Apple's network for Apple services.
+2906	Netflix	United States	Netflix streaming network.
+40027	Netflix	United States	Netflix Open Connect caches.
+20940	Akamai	United States	Akamai content delivery network.
+16625	Akamai	United States	Akamai CDN delivery network.
+54113	Fastly	United States	Fastly edge cloud.
+3356	Lumen	United States	Lumen global backbone, formerly Level 3.
+1299	Arelion	Sweden	Arelion global transit, formerly Telia Carrier.
+174	Cogent	United States	Cogent Communications transit network.
+6939	Hurricane Electric	United States	Hurricane Electric global backbone.
+3257	GTT	United States	GTT Communications backbone.
+2914	NTT	United States	NTT global IP network.
+6453	Tata Communications	India	Tata Communications international network.
+6762	Telecom Italia Sparkle	Italy	Sparkle international backbone.
+5511	Orange	France	Orange international carrier.
+3320	Deutsche Telekom	Germany	Deutsche Telekom national network.
+3215	Orange	France	Orange France access network.
+12322	Free	France	Free / Iliad broadband in France.
+2856	BT	United Kingdom	BT consumer and business network.
+5089	Virgin Media	United Kingdom	Virgin Media cable network.
+5607	Sky	United Kingdom	Sky Broadband in the UK.
+20712	Andrews & Arnold	United Kingdom	Andrews & Arnold technical ISP.
+1273	Vodafone	United Kingdom	Vodafone UK and international network.
+8220	COLT	United Kingdom	COLT business network.
+5400	BT	United Kingdom	BT international and Ireland network.
+6871	Plusnet	United Kingdom	Plusnet, part of BT.
+12576	EE	United Kingdom	EE mobile network.
+13285	TalkTalk	United Kingdom	TalkTalk broadband.
+13037	Zen Internet	United Kingdom	Zen Internet UK ISP.
+1257	Tele2	Sweden	Tele2 European access network.
+3303	Swisscom	Switzerland	Swisscom national network.
+6830	Liberty Global	Netherlands	Liberty Global European cable.
+3209	Vodafone	Germany	Vodafone Germany fixed network.
+8881	1&1 Versatel	Germany	Versatel business network in Germany.
+6805	Telefonica	Germany	Telefonica Germany / O2.
+5432	Proximus	Belgium	Proximus national network.
+8422	NetCologne	Germany	NetCologne regional network.
+8767	M-net	Germany	M-net fibre in Bavaria.
+31334	Vodafone	Germany	Vodafone Kabel Deutschland.
+1221	Telstra	Australia	Telstra Australian network.
+4637	Telstra	Australia	Telstra international network.
+7545	TPG	Australia	TPG Telecom Australia.
+4764	Aussie Broadband	Australia	Aussie Broadband.
+4826	Vocus	Australia	Vocus communications.
+4739	Internode	Australia	Internode, part of TPG.
+7575	AARNet	Australia	Australian academic and research network.
+7473	Singtel	Singapore	Singtel network.
+9506	Singtel	Singapore	Singtel mobile network.
+3758	SingNet	Singapore	SingNet consumer network.
+4657	StarHub	Singapore	StarHub.
+4773	M1	Singapore	M1 Singapore.
+4766	KT	South Korea	KT national network.
+3786	LG Uplus	South Korea	LG Uplus.
+9318	SK Broadband	South Korea	SK Broadband.
+2516	KDDI	Japan	KDDI network.
+4713	NTT	Japan	NTT communications network in Japan.
+17676	SoftBank	Japan	SoftBank network.
+4134	China Telecom	China	China Telecom backbone.
+4809	China Telecom	China	China Telecom CN2 backbone.
+4837	China Unicom	China	China Unicom backbone.
+4808	China Unicom	China	China Unicom 169 backbone.
+9808	China Mobile	China	China Mobile IP network.
+58453	China Mobile	China	China Mobile International.
+45090	Tencent	China	Tencent cloud and content network.
+37963	Alibaba	China	Alibaba Cloud.
+45102	Alibaba	China	Alibaba international network.
+13238	Yandex	Russia	Yandex network and public DNS.
+9498	Bharti Airtel	India	Airtel network in India.
+55836	Reliance Jio	India	Reliance Jio.
+4755	Tata Communications	India	Tata Communications India.
+9299	PLDT	Philippines	PLDT network.
+4775	Globe Telecom	Philippines	Globe Telecom.
+17639	Converge ICT	Philippines	Converge fibre network.
+4788	TM	Malaysia	Telekom Malaysia TM Net.
+9930	Turk Telekom	Turkey	Turk Telekom TTNET.
+7470	True Internet	Thailand	True Internet.
+7552	Viettel	Vietnam	Viettel.
+45899	VNPT	Vietnam	VNPT.
+18403	FPT Telecom	Vietnam	FPT Telecom.
+7713	Telkom Indonesia	Indonesia	Telkom Indonesia.
+4761	Indosat	Indonesia	Indosat.
+24203	XL Axiata	Indonesia	XL Axiata.
+4760	HKT	Hong Kong	HKT local network.
+9269	HKBN	Hong Kong	Hong Kong Broadband Network.
+9304	HGC	Hong Kong	HGC Global Communications.
+3491	PCCW Global	Hong Kong	PCCW Global transit.
+701	Verizon	United States	Verizon Business, formerly UUNET.
+7018	AT&T	United States	AT&T US backbone.
+7922	Comcast	United States	Comcast residential network.
+20001	Charter	United States	Charter Spectrum.
+20115	Charter	United States	Charter Communications.
+22773	Cox	United States	Cox Communications.
+6128	Altice	United States	Optimum, formerly Cablevision.
+11426	Charter	United States	Spectrum, formerly Time Warner Cable.
+7029	Windstream	United States	Windstream.
+5650	Frontier	United States	Frontier Communications.
+30036	Mediacom	United States	Mediacom.
+19108	Altice	United States	Suddenlink, part of Altice.
+6079	Astound	United States	RCN, part of Astound.
+21928	T-Mobile	United States	T-Mobile USA.
+6167	Verizon	United States	Verizon Wireless.
+6327	Shaw	Canada	Shaw Communications.
+577	Bell	Canada	Bell Canada.
+812	Rogers	Canada	Rogers Communications.
+852	TELUS	Canada	TELUS.
+5769	Videotron	Canada	Videotron.
+7992	Cogeco	Canada	Cogeco Connexion.
+5645	TekSavvy	Canada	TekSavvy.
+855	Bell	Canada	Bell Aliant.
+8607	Telecom Italia	Italy	Telecom Italia domestic network.
+3269	Telecom Italia	Italy	Telecom Italia international network.
+12874	Fastweb	Italy	Fastweb fibre network.
+1267	WINDTRE	Italy	WINDTRE network.
+30722	Vodafone	Italy	Vodafone Italy.
+2119	Telenor	Norway	Telenor Norway.
+9105	Tiscali	United Kingdom	Tiscali UK, now part of TalkTalk.
+29695	Altibox	Norway	Altibox fibre.
+3308	Telia	Sweden	Telia Company network.
+3301	Telia	Sweden	Telia Company.
+29518	Bredband2	Sweden	Bredband2.
+8473	Bahnhof	Sweden	Bahnhof.
+16086	DNA	Finland	DNA Finland.
+3292	TDC	Denmark	TDC national network.
+719	Elisa	Finland	Elisa.
+1759	Telia	Finland	Telia Finland.
+16302	Suomi Communications	Finland	Suomi Communications network in Finland.
+5466	Eir	Ireland	Eir.
+13280	Hutchison	Ireland	Three Ireland.
+1136	KPN	Netherlands	KPN.
+33915	Ziggo	Netherlands	Vodafone Ziggo.
+9143	Ziggo	Netherlands	Ziggo cable network.
+49544	i3D.net	Netherlands	i3D.net hosting and game network.
+60068	Datacamp	United Kingdom	Datacamp, operator of CDN77.
+212238	Datacamp	United Kingdom	Datacamp CDN network.
+16276	OVH	France	OVHcloud.
+24940	Hetzner	Germany	Hetzner Online.
+14061	DigitalOcean	United States	DigitalOcean cloud.
+20473	The Constant Company	United States	Vultr cloud, The Constant Company.
+63949	Akamai	United States	Linode, an Akamai cloud.
+12876	Scaleway	France	Scaleway cloud, formerly Online.net.
+51167	Contabo	Germany	Contabo hosting.
+197540	netcup	Germany	netcup hosting.
+9009	M247	United Kingdom	M247 hosting network.
+16265	Leaseweb	Netherlands	Leaseweb.
+8560	IONOS	Germany	IONOS hosting, formerly 1&1.
+36351	IBM	United States	IBM Cloud, formerly SoftLayer.
+26496	GoDaddy	United States	GoDaddy hosting and DNS.
+46606	Unified Layer	United States	Bluehost, Unified Layer.
+22611	InMotion	United States	InMotion Hosting.
+50673	Serverius	Netherlands	Serverius hosting.
+43350	NForce	Netherlands	NForce Entertainment hosting.
+14593	SpaceX	United States	Starlink, operated by SpaceX.
+54825	Equinix	United States	Equinix Metal, formerly Packet.
+13414	X	United States	X, formerly Twitter.
+32787	Akamai	United States	Prolexic DDoS protection, part of Akamai.
+22822	Edgio	United States	Edgio, formerly Limelight.
+15133	Edgio	United States	Edgio, formerly EdgeCast.
+30081	CacheFly	United States	CacheFly CDN.
+36692	Cisco OpenDNS	United States	Cisco OpenDNS resolvers.
+19281	Quad9	United States	Quad9 anycast DNS.
+14907	Wikimedia	United States	Wikimedia Foundation.
+2635	Automattic	United States	Automattic, the company behind WordPress.com.
+3	MIT	United States	Massachusetts Institute of Technology.
+32	Stanford	United States	Stanford University.
+25	University of California	United States	University of California.
+52	UCLA	United States	University of California, Los Angeles.
+55	University of Pennsylvania	United States	University of Pennsylvania.
+27	University of Maryland	United States	University of Maryland.
+59	University of Wisconsin	United States	University of Wisconsin.
+160	University of Chicago	United States	University of Chicago.
+2152	University of Michigan	United States	University of Michigan.
+8	Rice University	United States	Rice University.
+9	Carnegie Mellon	United States	Carnegie Mellon University.
+12	New York University	United States	New York University.
+4	USC	United States	University of Southern California.
+88	Princeton	United States	Princeton University.
+1742	Harvard	United States	Harvard University.
+237	Merit	United States	Merit Network research backbone.
+73	University of Washington	United States	University of Washington.
+42	WoodyNet	United States	WoodyNet, home of Packet Clearing House.
+3856	Packet Clearing House	United States	Packet Clearing House.
+396982	Google	United States	Google Cloud Platform.
+19527	Google	United States	Google access and fibre network.
+36492	Google	United States	Google corporate network.
+209242	Cloudflare	United Kingdom	Cloudflare Spectrum network.
+11427	Charter	United States	Spectrum regional network, formerly Time Warner Cable.
+11351	Charter	United States	Charter regional broadband.
+10796	Charter	United States	Charter legacy Time Warner network.
+33363	Bright House	United States	Bright House Networks, now part of Charter.
+209	Lumen	United States	Lumen regional network, formerly CenturyLink.
+22394	Verizon	United States	Verizon Wireless, Cellco Partnership.
+20057	AT&T	United States	AT&T Mobility.
+15290	Zayo	Canada	Zayo Canada, formerly Allstream.
+7794	Execulink	Canada	Execulink Telecom.
+11260	Eastlink	Canada	Eastlink cable network.
+5761	Microsoft	United States	Microsoft network, registered as MSN AS Saturn.
+7122	Bell MTS	Canada	Bell MTS.
+6509	CANARIE	Canada	CANARIE research and education network.
+139190	Google	Singapore	Google Asia Pacific network.
+13768	Cogeco Peer1	Canada	Cogeco Peer1, also known as Aptum.
+109	Cisco	United States	Cisco Systems.
+2686	AT&T	United States	AT&T Global Network Services.
+2828	Verizon	United States	XO Communications, now part of Verizon.
+6461	Zayo	United States	Zayo Group bandwidth.
+46887	Zayo	United States	Zayo fibre network, formerly Crown Castle fibre.

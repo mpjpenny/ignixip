@@ -349,12 +349,12 @@
         <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
         <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
             <a href="/" class="on">Lookup</a>
-            <a href="/#tools">Tools</a>
+            <a href="/tools/ip-lookup/">Tools</a>
             <a href="/my-ip.html">What is my IP</a>
             <a href="/#faq">FAQ</a>
             <a href="/api.html">API</a>
         </nav>
-        <a class="nav-cta" href="/?tab=bulk">Bulk check — free</a>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
     </div>
 </header>
 
@@ -602,16 +602,16 @@
     <h2>Tools</h2>
     <p class="sub">Everything you need to identify a network or check email reputation.</p>
     <div class="group"><h3>Network</h3><div class="grid">
-<a class="tool" href="/?tab=ip" data-tool="ip" onclick="return openTool(event, 'ip')"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div><b>IP Lookup</b><p>Location, ISP and network owner for any IP.</p></a>
-<a class="tool" href="/?tab=dns" data-tool="dns" onclick="return openTool(event, 'dns')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><b>DNS Lookup</b><p>A, MX, TXT, NS and CNAME records.</p></a>
+<a class="tool" href="/tools/ip-lookup/" data-tool="ip"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div><b>IP Lookup</b><p>Location, ISP and network owner for any IP.</p></a>
+<a class="tool" href="/tools/dns-lookup/" data-tool="dns"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><b>DNS Lookup</b><p>A, MX, TXT, NS and CNAME records.</p></a>
 <a class="tool" href="/?tab=whois" data-tool="whois" onclick="return openTool(event, 'whois')"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><b>WHOIS</b><p>Registration and ownership details.</p></a>
-<a class="tool" href="/?tab=asn" data-tool="asn" onclick="return openTool(event, 'asn')"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="8.5" y="14" width="7" height="7"/><path d="M6.5 10v2h11v-2M12 12v2"/></svg></div><b>ASN Lookup</b><p>Who operates a network, e.g. AS15169.</p></a>
+<a class="tool" href="/tools/asn-lookup/" data-tool="asn"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="8.5" y="14" width="7" height="7"/><path d="M6.5 10v2h11v-2M12 12v2"/></svg></div><b>ASN Lookup</b><p>Who operates a network, e.g. AS15169.</p></a>
 <a class="tool" href="/?tab=tools" data-tool="tools" onclick="return openTool(event, 'tools')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/></svg></div><b>Net Tools</b><p>Ping, traceroute and port diagnostics.</p></a>
-<a class="tool" href="/?tab=bulk" data-tool="bulk" onclick="return openTool(event, 'bulk')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18M7 3v18"/></svg></div><b>Bulk Check</b><p>Check up to 25 IPs at once — email only.</p></a>
+<a class="tool" href="/tools/bulk-check/" data-tool="bulk"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18M7 3v18"/></svg></div><b>Bulk Check</b><p>Check up to 25 IPs at once — email only.</p></a>
     </div></div>
     <div class="group"><h3>Email &amp; Threats</h3><div class="grid">
-<a class="tool" href="/?tab=bl" data-tool="bl" onclick="return openTool(event, 'bl')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div><b>Blacklist Check</b><p>12 DNSBLs plus AbuseIPDB score.</p></a>
-<a class="tool" href="/?tab=headers" data-tool="headers" onclick="return openTool(event, 'headers')"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><b>Email Headers</b><p>Trace Received: hops and check each IP.</p></a>
+<a class="tool" href="/tools/blacklist-check/" data-tool="bl"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div><b>Blacklist Check</b><p>12 DNSBLs plus AbuseIPDB score.</p></a>
+<a class="tool" href="/tools/header-analyzer/" data-tool="headers"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><b>Email Headers</b><p>Trace Received: hops and check each IP.</p></a>
 <a class="tool" href="/?tab=urlcheck" data-tool="urlcheck" onclick="return openTool(event, 'urlcheck')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div><b>URL Check</b><p>Domain age, SSL, DNS and risk rating.</p></a>
 <a class="tool" href="/?tab=emailcheck" data-tool="emailcheck" onclick="return openTool(event, 'emailcheck')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></div><b>Sender Check</b><p>MX, SPF/DKIM/DMARC and mail server reputation.</p></a>
 <a class="tool" href="/dmarc.html"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div><b>DMARC Reports</b><p>Plain-English breakdown of aggregate reports.</p></a>
@@ -698,22 +698,22 @@
             <div>
                 <h4>Network</h4>
                 <ul>
-                    <li><a href="/?tab=ip">IP Lookup</a></li>
-                    <li><a href="/?tab=dns">DNS</a></li>
+                    <li><a href="/tools/ip-lookup/">IP Lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS</a></li>
                     <li><a href="/?tab=whois">WHOIS</a></li>
-                    <li><a href="/?tab=asn">ASN</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN</a></li>
                     <li><a href="/?tab=tools">Net Tools</a></li>
-                    <li><a href="/?tab=bulk">Bulk Check</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk Check</a></li>
                 </ul>
             </div>
             <div>
                 <h4>Email</h4>
                 <ul>
-                    <li><a href="/?tab=bl">Blacklist</a></li>
-                    <li><a href="/?tab=headers">Headers</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist</a></li>
+                    <li><a href="/tools/header-analyzer/">Headers</a></li>
                     <li><a href="/?tab=urlcheck">URL Check</a></li>
                     <li><a href="/?tab=emailcheck">Sender Check</a></li>
-                    <li><a href="/dmarc.html">DMARC</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC</a></li>
                     <li><a href="/mail-auth.html">Mail Auth</a></li>
                 </ul>
             </div>
@@ -742,6 +742,7 @@
 
 <script src="/reputation.js"></script>
 <script src="/ask.js"></script>
+<script src="/indexed.js"></script>
 <script>
 // ── DNSBL list (shared by IP Lookup risk score and Blacklist tab) ────────────
 var DNSBL_LISTS = [
@@ -847,6 +848,24 @@ function updateHeroDetect() {
     el.innerHTML = kind ? ('Detected: <b>' + kind.label + '</b>') : 'Enter an IP, domain, ASN or CIDR.';
 }
 
+function indexablePath(raw) {
+    var q = String(raw || '').trim();
+    var index = window.IGNIX_INDEX || {};
+    if (index.ips && index.ips[q]) return '/ip/' + q + '/';
+    var match = q.match(/^AS(\d+)$/i);
+    var num = match ? match[1] : (/^\d{1,10}$/.test(q) ? q : '');
+    if (num && index.asns && index.asns['AS' + num]) return '/asn/AS' + num + '/';
+    return '';
+}
+
+function goIndexable(raw) {
+    if (new URLSearchParams(location.search).get('full') === '1') return false;
+    var path = indexablePath(raw);
+    if (!path) return false;
+    location.assign(path);
+    return true;
+}
+
 function heroSearch(raw) {
     var input = document.getElementById('hero-input');
     var q = (typeof raw === 'string' ? raw : (input ? input.value : '')).trim();
@@ -854,7 +873,11 @@ function heroSearch(raw) {
     if (input) input.value = q;
     var kind = classifyQuery(q);
     updateHeroDetect();
-    if (!kind) return false;
+    if (!kind) {
+        history.replaceState({}, '', '/?q=' + encodeURIComponent(q));
+        return false;
+    }
+    if ((kind.tab === 'ip' || kind.tab === 'asn') && goIndexable(q)) return false;
     if (kind.tab === 'urlcheck' || kind.tab === 'emailcheck') {
         switchTab(kind.tab, { silent: true });
         var field = document.getElementById(kind.tab === 'urlcheck' ? 'url-input' : 'email-input');
@@ -863,8 +886,10 @@ function heroSearch(raw) {
         else checkEmail();
         var ws = document.getElementById('workspace');
         if (ws) ws.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState({}, '', '/?q=' + encodeURIComponent(q));
     } else {
         setAndLookup(kind.tab, q);
+        history.replaceState({}, '', '/?q=' + encodeURIComponent(q));
     }
     return false;
 }
@@ -946,6 +971,7 @@ function askIgnixip(raw) {
     var feedback = document.getElementById('ask-feedback');
     if (!window.ignixAsk || !feedback) return false;
     var plan = window.ignixAsk.planAsk(q);
+    if (plan.tools.length === 1 && (plan.tools[0].tab === 'ip' || plan.tools[0].tab === 'asn') && goIndexable(plan.tools[0].value)) return false;
     if (!plan.matched) {
         clearAskMode();
         var hidden = document.getElementById('workspace');
@@ -1690,7 +1716,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     html += '</div>'; // close results-grid
 
     ipResults.innerHTML = html;
-    navTo(prettyPath('ip', d.originalDomain || ip));
+    if (new URLSearchParams(location.search).get('full') !== '1') navTo('/?q=' + encodeURIComponent(d.originalDomain || ip));
 
     // Log lookup to tools server for stats (fire and forget)
     try {
@@ -1770,12 +1796,13 @@ function routeFromPath(pathname) {
 function prettyPath(tab, value) {
     tab = tab || 'ip';
     if (value === undefined || value === null || value === '') return '/?tab=' + encodeURIComponent(tab);
-    if (tab === 'dns' || tab === 'whois') return '/' + tab + '/' + encodeURIComponent(value);
-    if (tab === 'asn') {
-        var num = String(value).replace(/^AS/i, '');
-        return '/asn/AS' + encodeURIComponent(num);
+    if (tab === 'ip' || tab === 'asn') {
+        var indexed = indexablePath(value);
+        if (indexed) return indexed;
+        return '/?q=' + encodeURIComponent(value);
     }
-    return '/' + tab + '/' + encodeURIComponent(value);
+    if (tab === 'dns' || tab === 'whois') return '/' + tab + '/' + encodeURIComponent(value);
+    return '/?tab=' + encodeURIComponent(tab) + '&q=' + encodeURIComponent(value);
 }
 
 function runRoutedLookup(tab, value) {
@@ -2336,7 +2363,7 @@ function lookupASN() {
         renderASN('AS' + num, res[0], res[1]);
         asnBtn.disabled = false;
         asnBtn.textContent = 'Look Up';
-        navTo('/?tab=asn&asn=AS' + encodeURIComponent(num));
+        if (new URLSearchParams(location.search).get('full') !== '1') navTo('/?q=' + encodeURIComponent('AS' + num));
     });
 }
 
@@ -4029,6 +4056,10 @@ window.addEventListener('load', function() {
         askIgnixip(params.get('ask'));
         return;
     }
+    if (params.get('q') && !params.get('tab') && params.get('full') !== '1') {
+        heroSearch(params.get('q'));
+        return;
+    }
 
     var carried = routeFromPath(params.get('path') || '');
     if (carried) {
@@ -4068,7 +4099,8 @@ window.addEventListener('load', function() {
     else if (tab === 'tools') value = params.get('ip');
 
     if (!document.getElementById('tab-' + tab)) return;
-    if (value) history.replaceState({}, '', prettyPath(tab, value));
+    if (value && params.get('full') !== '1' && (tab === 'ip' || tab === 'asn') && goIndexable(value)) return;
+    if (value && params.get('full') !== '1') history.replaceState({}, '', '/?q=' + encodeURIComponent(value));
     runRoutedLookup(tab, value);
 });
 </script>
