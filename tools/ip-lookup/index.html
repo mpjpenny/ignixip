@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IP address lookup | ignixip</title>
+    <meta name="description" content="Look up any IPv4 or IPv6 address. See the network owner, location, and AbuseIPDB score. Free, no signup.">
+    <link rel="canonical" href="https://ignixip.com/tools/ip-lookup/">
+    <meta property="og:title" content="IP address lookup | ignixip">
+    <meta property="og:description" content="Look up any IPv4 or IPv6 address. See the network owner, location, and AbuseIPDB score. Free, no signup.">
+    <meta property="og:url" content="https://ignixip.com/tools/ip-lookup/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "ignixip IP address lookup", "url": "https://ignixip.com/tools/ip-lookup/", "applicationCategory": "SecurityApplication", "operatingSystem": "Web", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Look up any IPv4 or IPv6 address. See the network owner, location, and AbuseIPDB score. Free, no signup."}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What does an IP lookup show?", "acceptedAnswer": {"@type": "Answer", "text": "The network organisation, a city-level location, the hostname when one is published, and an AbuseIPDB confidence score when that service responds."}}, {"@type": "Question", "name": "Is the location exact?", "acceptedAnswer": {"@type": "Answer", "text": "No. Geolocation is approximate, usually city or region, and it is often the location of the network operator rather than a person."}}, {"@type": "Question", "name": "Can I look up my own address?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The What is my IP page shows the address this site sees, and you can open it here for the full report."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+
+<h1>IP address lookup</h1>
+<p class="lead">Type an IP address to see who announces it, where it is geolocated, and whether AbuseIPDB has recent reports.</p>
+<p>An IP lookup answers a practical question: which network is this address on, and does it have a reputation problem? ignixip queries public routing and geolocation data in your browser and shows the organisation, location, and AbuseIPDB confidence.</p>
+<h2>Use the tool</h2>
+
+<div class="widget" data-embed="ip" data-auto="0">
+    <form class="search" action="/">
+        <input data-query value="" placeholder="8.8.8.8" aria-label="8.8.8.8" autocomplete="off">
+        <button class="ix-btn pri" type="submit">Look up</button>
+    </form>
+    <div data-results></div>
+</div>
+
+<h2>Questions</h2>
+<details><summary>What does an IP lookup show?</summary><p>The network organisation, a city-level location, the hostname when one is published, and an AbuseIPDB confidence score when that service responds.</p></details>
+<details><summary>Is the location exact?</summary><p>No. Geolocation is approximate, usually city or region, and it is often the location of the network operator rather than a person.</p></details>
+<details><summary>Can I look up my own address?</summary><p>Yes. The What is my IP page shows the address this site sees, and you can open it here for the full report.</p></details>
+
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+<script src="/embed.js"></script>
+</body>
+</html>

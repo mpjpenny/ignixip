@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IP blacklist check | ignixip</title>
+    <meta name="description" content="Check an IPv4 address against SpamCop, Barracuda, and UCEPROTECT, plus AbuseIPDB. Spamhaus is not queried.">
+    <link rel="canonical" href="https://ignixip.com/tools/blacklist-check/">
+    <meta property="og:title" content="IP blacklist check | ignixip">
+    <meta property="og:description" content="Check an IPv4 address against SpamCop, Barracuda, and UCEPROTECT, plus AbuseIPDB. Spamhaus is not queried.">
+    <meta property="og:url" content="https://ignixip.com/tools/blacklist-check/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "ignixip IP blacklist check", "url": "https://ignixip.com/tools/blacklist-check/", "applicationCategory": "SecurityApplication", "operatingSystem": "Web", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Check an IPv4 address against SpamCop, Barracuda, and UCEPROTECT, plus AbuseIPDB. Spamhaus is not queried."}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does this include Spamhaus?", "acceptedAnswer": {"@type": "Answer", "text": "No. Spamhaus does not answer public resolver queries reliably, and ignixip does not use a licensed feed. Those rows are marked not checked on the full lookup."}}, {"@type": "Question", "name": "What does a listing mean?", "acceptedAnswer": {"@type": "Answer", "text": "A listing means that list currently publishes the address. It can be a policy listing, a shared address, or a report of spam. Read the list name before treating it as abuse."}}, {"@type": "Question", "name": "How current is the result?", "acceptedAnswer": {"@type": "Answer", "text": "The check runs in your browser when you open or submit the form, so it is not a cached snapshot."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+
+<h1>IP blacklist check</h1>
+<p class="lead">See whether an address is listed on the DNS blacklists this page can query, and what AbuseIPDB currently reports.</p>
+<p>A blacklist check asks DNS-based lists whether they publish the address. This page queries SpamCop, Barracuda, and UCEPROTECT, plus AbuseIPDB. Spamhaus requires a licensed feed and is not checked here, so a clear result is not a Spamhaus clearance.</p>
+<h2>Use the tool</h2>
+
+<div class="widget" data-embed="blacklist" data-auto="0">
+    <form class="search" action="/">
+        <input data-query value="" placeholder="8.8.8.8" aria-label="8.8.8.8" autocomplete="off">
+        <button class="ix-btn pri" type="submit">Check</button>
+    </form>
+    <div data-results></div>
+</div>
+
+<h2>Questions</h2>
+<details><summary>Does this include Spamhaus?</summary><p>No. Spamhaus does not answer public resolver queries reliably, and ignixip does not use a licensed feed. Those rows are marked not checked on the full lookup.</p></details>
+<details><summary>What does a listing mean?</summary><p>A listing means that list currently publishes the address. It can be a policy listing, a shared address, or a report of spam. Read the list name before treating it as abuse.</p></details>
+<details><summary>How current is the result?</summary><p>The check runs in your browser when you open or submit the form, so it is not a cached snapshot.</p></details>
+
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+<script src="/embed.js"></script>
+</body>
+</html>

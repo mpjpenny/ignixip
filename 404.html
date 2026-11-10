@@ -8,7 +8,7 @@
     <script>
         (function () {
             var path = location.pathname;
-            if (/^\/(ip|dns|whois|bl|blacklist|asn|tools)\/([^/]+)\/?$/i.test(path)) {
+            if (/^\/(dns|whois|bl|blacklist)\/([^/]+)\/?$/i.test(path)) {
                 location.replace('/?path=' + encodeURIComponent(path));
             }
         })();
