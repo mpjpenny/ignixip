@@ -89,6 +89,7 @@
         <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
             <a href="/">Lookup</a>
             <a href="/#tools">Tools</a>
+            <a href="/watch/">Watch</a>
             <a href="/my-ip.html">What is my IP</a>
             <a href="/#faq">FAQ</a>
             <a href="/api.html">API</a>
@@ -161,6 +162,7 @@
             <div id="dkim-body"></div>
         </div>
     </div>
+    <div class="watch-slot" id="watch-slot" hidden></div>
 </main>
 
 <footer>
@@ -195,6 +197,8 @@
             <div>
                 <h4>More</h4>
                 <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
                     <li><a href="https://ignix.co.uk">Ignix</a></li>
                     <li><a href="/api.html">API</a></li>
                     <li><a href="/guide.html">Blacklist Guide</a></li>
@@ -212,6 +216,7 @@
     </div>
 </footer>
 
+<script src="/watch-cta.js"></script>
 <script>
 const API_BASE = 'https://tools.ignixip.com';
 
@@ -229,6 +234,8 @@ form.addEventListener('submit', async (e) => {
     if (!domain) return;
 
     submitBtn.disabled = true;
+    var watchSlot = document.getElementById('watch-slot');
+    if (watchSlot) { watchSlot.hidden = true; watchSlot.innerHTML = ''; }
     loading.classList.add('show');
     errorBox.classList.remove('show');
     results.classList.remove('show');
@@ -274,6 +281,11 @@ function renderResults(data) {
     renderDmarc(data.dmarc);
     renderSpf(data.spf);
     renderDkim(data.dkim_selectors_found, data.dkim_selectors_probed);
+    var watchSlot = document.getElementById('watch-slot');
+    if (watchSlot && window.ignixWatch) {
+        watchSlot.innerHTML = window.ignixWatch.cta(data.domain);
+        watchSlot.hidden = !watchSlot.innerHTML;
+    }
 }
 
 function renderDmarc(dmarc) {

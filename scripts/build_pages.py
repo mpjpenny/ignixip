@@ -18,6 +18,7 @@ import sys
 import urllib.request
 from datetime import date
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = "https://ignixip.com"
@@ -157,6 +158,32 @@ def esc(value):
     return html.escape(value or "", quote=True)
 
 
+def watch_cta(target, kinds):
+    """Static 'Watch this address' card. kinds is blacklist and/or dns."""
+    safe_target = esc(target)
+    if "dns" in kinds:
+        detail = (
+            "Free email when the SPF, DMARC, DKIM or MX records for %s change, "
+            "or when it is listed or delisted on a public blacklist. "
+            "We only write when something changes, after you confirm."
+        ) % safe_target
+    else:
+        detail = (
+            "Free email when %s is listed or delisted on a public blacklist. "
+            "We only write when something changes, after you confirm."
+        ) % safe_target
+    href = "/watch/?target=%s&kinds=%s" % (quote(target, safe=""), quote(",".join(kinds), safe=","))
+    return """<aside class="watch-cta">
+    <div>
+        <p class="watch-kicker">Free email alert</p>
+        <h2>Watch this address</h2>
+        <p>%s</p>
+    </div>
+    <a class="ix-btn pri" href="%s">Watch %s</a>
+</aside>
+""" % (detail, esc(href), safe_target)
+
+
 def footer():
     return """
 <footer>
@@ -191,6 +218,8 @@ def footer():
             <div>
                 <h4>More</h4>
                 <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
                     <li><a href="https://ignix.co.uk">Ignix</a></li>
                     <li><a href="/api.html">API</a></li>
                     <li><a href="/guide.html">Blacklist guide</a></li>
@@ -214,6 +243,7 @@ def header():
         <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
             <a href="/">Lookup</a>
             <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/watch/">Watch</a>
             <a href="/my-ip.html">What is my IP</a>
             <a href="/#faq">FAQ</a>
             <a href="/api.html">API</a>
@@ -237,7 +267,7 @@ def faq_block(faqs):
     return items, "\n".join(html_bits)
 
 
-def page(title, description, canonical, body, graph):
+def page(title, description, canonical, body, graph, extra_scripts=""):
     return """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -260,10 +290,10 @@ def page(title, description, canonical, body, graph):
 %s
 </div></main>
 %s
-<script src="/embed.js"></script>
+%s<script src="/embed.js"></script>
 </body>
 </html>
-""" % (esc(title), esc(description), esc(canonical), esc(title), esc(description), esc(canonical), json_ld(graph), header(), body, footer())
+""" % (esc(title), esc(description), esc(canonical), esc(title), esc(description), esc(canonical), json_ld(graph), header(), body, footer(), extra_scripts)
 
 
 def widget(kind, value, placeholder, button, textarea=False, auto=False):
@@ -312,11 +342,12 @@ def ip_page(row, asn_link):
 <h1>%s</h1>
 <p class="lead">%s</p>
 <dl class="seo-dl">%s</dl>
+%s
 <h2>Live lookup</h2>
 %s
 <h2>Questions</h2>
 %s
-""" % (esc("%s — %s" % (ip, name)), esc(about), "".join(bits), widget("ip", ip, "IP address", "Look up", auto=True), faq_html)
+""" % (esc("%s — %s" % (ip, name)), esc(about), "".join(bits), watch_cta(ip, ["blacklist"]), widget("ip", ip, "IP address", "Look up", auto=True), faq_html)
     graph = [
         {"@type": "WebPage", "@id": canonical, "url": canonical, "name": title, "description": description},
         {"@type": "FAQPage", "mainEntity": faq_json},
@@ -381,7 +412,8 @@ def tool_page(tool):
         },
         {"@type": "FAQPage", "mainEntity": faq_json},
     ]
-    return page(title, tool["description"], canonical, body, {"@context": "https://schema.org", "@graph": graph})
+    extra = '<script src="/watch-cta.js"></script>\n' if tool.get("embed") in ("dns", "dmarc") else ""
+    return page(title, tool["description"], canonical, body, {"@context": "https://schema.org", "@graph": graph}, extra)
 
 
 IP_ASN = {
@@ -448,6 +480,8 @@ def main():
     write(ROOT / "indexed.js", "window.IGNIX_INDEX = %s;\n" % json.dumps(index, separators=(",", ":")))
     static = [
         ORIGIN + "/",
+        ORIGIN + "/watch/",
+        ORIGIN + "/privacy/",
         ORIGIN + "/my-ip.html",
         ORIGIN + "/check.html",
         ORIGIN + "/dmarc.html",
