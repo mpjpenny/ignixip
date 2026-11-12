@@ -6,6 +6,7 @@
     <title>Watch an IP or domain — free email alerts | ignixip</title>
     <meta name="description" content="Free email when a watched IP is listed or delisted on a public blacklist, or when a domain's SPF, DMARC, DKIM or MX records change. Confirm once. Unsubscribe any time.">
     <link rel="canonical" href="https://ignixip.com/watch/">
+    <meta name="referrer" content="origin">
     <meta property="og:title" content="Watch an IP or domain — free email alerts | ignixip">
     <meta property="og:description" content="Free email when a watched IP is listed or delisted, or when a domain's mail DNS changes. We only write about changes, after you confirm.">
     <meta property="og:url" content="https://ignixip.com/watch/">
@@ -42,6 +43,19 @@
     <p></p>
     <button type="button" class="ix-btn ghost" data-watch-reset hidden>Watch another address</button>
 </div>
+
+<section id="watch-manage" class="watch-manage" hidden aria-busy="false">
+    <h2>Your watches</h2>
+    <p class="watch-manage-email" data-manage-email></p>
+    <p class="watch-hint" data-manage-loading hidden>Loading your watches…</p>
+    <ul class="watch-manage-list" data-manage-list></ul>
+    <p class="watch-hint" data-manage-empty hidden>You're not watching any addresses.</p>
+    <p class="watch-hint" data-manage-note role="status" hidden></p>
+    <div class="watch-manage-actions">
+        <button type="button" class="ix-btn ghost" data-manage-remove-all hidden>Remove all</button>
+        <button type="button" class="ix-btn ghost" data-manage-add hidden>Watch another address</button>
+    </div>
+</section>
 
 <form id="watch-form" class="watch-form" action="#" method="post" novalidate>
     <label for="watch-email">Email</label>
@@ -83,7 +97,7 @@
 </details>
 <details>
     <summary>How do I stop?</summary>
-    <p>Every alert has an unsubscribe link. Using it stops that watch. You can also come back here and subscribe a different address.</p>
+    <p>The link in a confirmation or alert opens a page listing what that address is watching. Remove one, or remove them all, from there. You can watch up to 10 addresses.</p>
 </details>
 
 </div></main>

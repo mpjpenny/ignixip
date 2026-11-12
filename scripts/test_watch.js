@@ -50,7 +50,27 @@ assert.strictEqual(watch.bannerFromSearch(new URLSearchParams('confirmed=1')).ti
 assert.strictEqual(watch.bannerFromSearch(new URLSearchParams('unsubscribed=1')).title, watch.MESSAGES.unsubscribedTitle);
 assert.strictEqual(watch.bannerFromSearch(new URLSearchParams('error=invalid')).title, watch.MESSAGES.linkTitle);
 assert.strictEqual(watch.bannerFromSearch(new URLSearchParams('confirmed=1&error=invalid')).title, watch.MESSAGES.linkTitle);
+assert.strictEqual(watch.bannerFromSearch(new URLSearchParams('error=limit')).text, watch.MESSAGES.limitBody);
+assert.ok(watch.MESSAGES.limitBody.indexOf('10 addresses') !== -1);
 assert.strictEqual(watch.bannerFromSearch(new URLSearchParams('')), null);
+
+assert.strictEqual(watch.manageUrl('plain-token'), 'https://tools.ignixip.com/watch/manage/plain-token');
+assert.strictEqual(watch.manageUrl('a/b c'), 'https://tools.ignixip.com/watch/manage/a%2Fb%20c');
+assert.strictEqual(watch.manageUrl('plain-token', 'remove'), 'https://tools.ignixip.com/watch/manage/plain-token/remove');
+assert.strictEqual(watch.manageUrl('plain-token', 'remove-all'), 'https://tools.ignixip.com/watch/manage/plain-token/remove-all');
+assert.strictEqual(watch.describeKinds(['blacklist']), 'Blacklist listings and delistings');
+assert.strictEqual(watch.describeKinds(['dns', 'blacklist']), 'Blacklist listings and DNS changes');
+assert.strictEqual(watch.describeStatus('pending'), 'Waiting for confirmation');
+assert.strictEqual(watch.describeStatus('confirmed'), 'Confirmed');
+
+var sample = {
+    email_masked: 'j***@example.com',
+    watches: [{ target: '8.8.8.8', kinds: ['blacklist'], status: 'confirmed', target_type: 'ip' }]
+};
+assert.deepStrictEqual(watch.manageOutcome(200, sample).doc.email_masked, 'j***@example.com');
+assert.strictEqual(watch.manageOutcome(404, { ok: false, error: 'invalid' }).state, 'invalid');
+assert.strictEqual(watch.manageOutcome(500, { error: 'boom' }).state, 'unavailable');
+assert.strictEqual(watch.manageOutcome(200, { ok: true }).state, 'unavailable');
 
 function mockFetch(status, body, fail) {
     return function (url, options) {
@@ -82,6 +102,42 @@ watch.submit({ email: 'a@b.co', target: '8.8.8.8', kinds: ['blacklist'] }, mockF
     })
     .then(function (outcome) {
         assert.deepStrictEqual(outcome, { state: 'unavailable' });
+        var token = 'secret-token';
+        return watch.fetchManage(token, function (url, options) {
+            assert.strictEqual(url, 'https://tools.ignixip.com/watch/manage/' + token);
+            assert.strictEqual(options.method, 'GET');
+            return Promise.resolve({
+                status: 200,
+                json: function () {
+                    return Promise.resolve({ email_masked: 'j***@example.com', watches: [] });
+                }
+            });
+        }).then(function (result) {
+            assert.strictEqual(result.state, 'ok');
+            assert.strictEqual(JSON.stringify(result).indexOf(token), -1);
+            return watch.postManage(token, 'remove', { target: '8.8.8.8' }, function (url, options) {
+                assert.ok(url.indexOf('/remove') !== -1);
+                assert.strictEqual(options.method, 'POST');
+                assert.deepStrictEqual(JSON.parse(options.body), { target: '8.8.8.8' });
+                assert.strictEqual(options.body.indexOf(token), -1);
+                return Promise.resolve({
+                    status: 200,
+                    json: function () {
+                        return Promise.resolve({ email_masked: 'j***@example.com', watches: [], ok: true, removed: true });
+                    }
+                });
+            });
+        }).then(function (result) {
+            assert.strictEqual(result.removed, true);
+            return watch.fetchManage(token, function () {
+                return Promise.resolve({
+                    status: 404,
+                    json: function () { return Promise.resolve({ ok: false, error: 'invalid' }); }
+                });
+            });
+        }).then(function (result) {
+            assert.strictEqual(result.state, 'invalid');
+        });
     })
     .then(function () {
         assert.strictEqual(cta.isWatchable('AS15169'), false);
@@ -101,6 +157,9 @@ watch.submit({ email: 'a@b.co', target: '8.8.8.8', kinds: ['blacklist'] }, mockF
         assert.ok(page.indexOf('rel="canonical" href="https://ignixip.com/watch/"') !== -1);
         assert.ok(page.indexOf('name="contact_me_by_fax_only"') !== -1);
         assert.ok(page.indexOf('id="privacy"') !== -1);
+        assert.ok(page.indexOf('id="watch-manage"') !== -1);
+        assert.ok(page.indexOf('name="referrer" content="origin"') !== -1);
+        assert.strictEqual(page.indexOf('analytics.ignix.co.uk'), -1);
         assert.ok(page.indexOf('/privacy/#watch') !== -1);
         assert.strictEqual(page.toLowerCase().indexOf('spamhaus'), -1);
         var privacy = fs.readFileSync(path.join(root, 'privacy', 'index.html'), 'utf8');
