@@ -350,6 +350,7 @@
         <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
             <a href="/" class="on">Lookup</a>
             <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/watch/">Watch</a>
             <a href="/my-ip.html">What is my IP</a>
             <a href="/#faq">FAQ</a>
             <a href="/api.html">API</a>
@@ -416,6 +417,7 @@
             <a onclick="setAndLookup('ip', '1.1.1.1')">1.1.1.1</a>
         </div>
         <div class="results" id="ip-results"></div>
+        <div class="watch-slot" id="ip-watch" hidden></div>
     </div>
 
     <!-- DNS Lookup Tab -->
@@ -431,6 +433,7 @@
             <a onclick="setAndLookup('dns', 'cloudflare.com')">cloudflare.com</a>
         </div>
         <div class="results" id="dns-results"></div>
+        <div class="watch-slot" id="dns-watch" hidden></div>
     </div>
 
     <!-- Network Tools Tab -->
@@ -446,6 +449,7 @@
             <a onclick="setAndLookup('tools', '185.220.101.34')">185.220.101.34</a>
         </div>
         <div class="results" id="tools-results"></div>
+        <div class="watch-slot" id="tools-watch" hidden></div>
     </div>
 
     <!-- ASN Tab -->
@@ -477,6 +481,7 @@
             <a onclick="setAndLookup('whois', 'bbc.co.uk')">bbc.co.uk</a>
         </div>
         <div class="results" id="whois-results"></div>
+        <div class="watch-slot" id="whois-watch" hidden></div>
     </div>
 
     <!-- Blacklist Check Tab -->
@@ -491,6 +496,7 @@
             <a onclick="setAndLookup('bl', '8.8.8.8')">8.8.8.8</a>
         </div>
         <div class="results" id="bl-results"></div>
+        <div class="watch-slot" id="bl-watch" hidden></div>
     </div>
 
     <!-- Bulk Lookup Tab -->
@@ -562,6 +568,7 @@
             Checks domain age, DNS resolution, SSL certificate, blacklist status, and risk assessment.
         </div>
         <div class="results" id="url-results"></div>
+        <div class="watch-slot" id="url-watch" hidden></div>
     </div>
 
     <!-- Email Sender Check Tab -->
@@ -574,6 +581,7 @@
             Checks domain MX records, SPF/DKIM/DMARC, domain age, and mail server reputation.
         </div>
         <div class="results" id="email-results"></div>
+        <div class="watch-slot" id="email-watch" hidden></div>
     </div>
 </div></div></section>
 
@@ -720,6 +728,8 @@
             <div>
                 <h4>More</h4>
                 <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
                     <li><a href="https://ignix.co.uk">Ignix</a></li>
                     <li><a href="/api.html">API</a></li>
                     <li><a href="/guide.html">Blacklist Guide</a></li>
@@ -740,6 +750,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="/watch-cta.js"></script>
 <script src="/reputation.js"></script>
 <script src="/ask.js"></script>
 <script src="/indexed.js"></script>
@@ -1126,8 +1137,18 @@ function lookupSelf() {
         .catch(function() { ipInput.value = ''; ipBtn.disabled = false; });
 }
 
+function setWatchSlot(id, target) {
+    var slot = document.getElementById(id);
+    if (!slot || !window.ignixWatch) return;
+    var html = target ? window.ignixWatch.cta(target) : '';
+    slot.innerHTML = html;
+    if (html) slot.removeAttribute('hidden');
+    else slot.setAttribute('hidden', '');
+}
+
 function lookupIP() {
     var query = ipInput.value.trim();
+    setWatchSlot('ip-watch', '');
     if (!query || query === 'detecting...') return;
     ipBtn.disabled = true;
     ipBtn.textContent = 'Looking up...';
@@ -1716,6 +1737,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     html += '</div>'; // close results-grid
 
     ipResults.innerHTML = html;
+    setWatchSlot('ip-watch', (d.originalDomain && window.ignixWatch && window.ignixWatch.isWatchable(d.originalDomain)) ? d.originalDomain : ip);
     if (new URLSearchParams(location.search).get('full') !== '1') navTo('/?q=' + encodeURIComponent(d.originalDomain || ip));
 
     // Log lookup to tools server for stats (fire and forget)
@@ -1853,6 +1875,7 @@ dnsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') lookup
 
 function lookupDNS() {
     var domain = dnsInput.value.trim();
+    setWatchSlot('dns-watch', '');
     if (!domain) return;
     if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(domain)) {
         dnsResults.innerHTML = '<div class="error-card">DNS lookup is for domain names. For IP addresses use the IP Lookup tab.</div>';
@@ -1903,6 +1926,7 @@ function renderDNSResults(domain, results) {
         html += '<div class="error-card">No DNS records found for "' + domain + '"</div>';
     }
     dnsResults.innerHTML = html;
+    setWatchSlot('dns-watch', domain);
 }
 
 // ── SSL Certificates ─────────────────────────────────────────────────────────
@@ -1949,6 +1973,7 @@ blInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') checkBl
 
 function checkBlacklist() {
     var ip = blInput.value.trim();
+    setWatchSlot('bl-watch', '');
     if (!ip || !isIPAddress(ip)) {
         blResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
         return;
@@ -2051,6 +2076,7 @@ function renderBlacklistResults(ip, results, abuseData) {
     html += advice;
 
     blResults.innerHTML = html;
+    setWatchSlot('bl-watch', ip);
 }
 
 // ── WHOIS Lookup ────────────────────────────────────────────────────────────
@@ -2063,6 +2089,7 @@ whoisInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') look
 function lookupWHOIS() {
     // lookupWHOIS_v2 - handles both IPs and domains via tools.ignixip.com
     var query = whoisInput.value.trim();
+    setWatchSlot('whois-watch', '');
     if (!query) return;
     whoisBtn.disabled = true;
     whoisBtn.textContent = 'Looking up...';
@@ -2077,8 +2104,10 @@ function lookupWHOIS() {
         .then(function(d) {
             if (d.type === 'domain') {
                 renderWHOISDomain(d.query, d.fields, d.raw);
+                setWatchSlot('whois-watch', d.query || query);
             } else if (d.type === 'ip' && d.rdap) {
                 renderWHOISIP(d.query, d.rdap);
+                setWatchSlot('whois-watch', d.query || query);
             } else {
                 throw new Error('Unexpected response shape');
             }
@@ -2221,6 +2250,7 @@ toolsInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') runT
 
 function runTools() {
     var ip = toolsInput.value.trim();
+    setWatchSlot('tools-watch', '');
     if (!ip || !isIPAddress(ip)) {
         toolsResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
         return;
@@ -2306,6 +2336,7 @@ function renderTools(ip, ping, scan) {
     html += '</div>';
 
     toolsResults.innerHTML = html;
+    setWatchSlot('tools-watch', ip);
 }
 
 function appendTraceroute(ip, trace) {
@@ -3370,6 +3401,7 @@ function extractDomain(url) {
 
 function checkURL() {
     var url = document.getElementById('url-input').value.trim();
+    setWatchSlot('url-watch', '');
     if (!url) return;
     var btn = document.getElementById('url-btn');
     var results = document.getElementById('url-results');
@@ -3541,6 +3573,7 @@ function checkURL() {
         html += '<div id="domain-reports"></div>';
 
         results.innerHTML = html;
+        setWatchSlot('url-watch', domain);
 
         // Log check to tools server
         try {
@@ -3563,6 +3596,7 @@ document.getElementById('email-input').addEventListener('keydown', function(e) {
 
 function checkEmail() {
     var input = document.getElementById('email-input').value.trim();
+    setWatchSlot('email-watch', '');
     if (!input) return;
     var btn = document.getElementById('email-btn');
     var results = document.getElementById('email-results');
@@ -3759,6 +3793,7 @@ function checkEmail() {
         html += '<div id="domain-reports"></div>';
 
         results.innerHTML = html;
+        setWatchSlot('email-watch', domain);
 
         // Log check to tools server
         try {

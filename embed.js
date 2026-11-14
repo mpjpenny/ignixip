@@ -88,8 +88,10 @@
                 }).join('');
                 html += card(rowSet.type, inner);
             });
+            var watch = (window.ignixWatch && host) ? window.ignixWatch.cta(host) : '';
             box.innerHTML = (html || '<div class="error-card">No records returned.</div>') +
-                '<p class="seo-note"><a href="/?tab=dns&q=' + encodeURIComponent(host) + '&full=1">Open the full DNS lookup</a></p>';
+                '<p class="seo-note"><a href="/?tab=dns&q=' + encodeURIComponent(host) + '&full=1">Open the full DNS lookup</a></p>' +
+                watch;
         });
     }
 

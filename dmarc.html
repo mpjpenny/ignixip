@@ -117,6 +117,7 @@
         <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
             <a href="/">Lookup</a>
             <a href="/#tools">Tools</a>
+            <a href="/watch/">Watch</a>
             <a href="/my-ip.html">What is my IP</a>
             <a href="/#faq">FAQ</a>
             <a href="/api.html">API</a>
@@ -170,6 +171,8 @@
             <div>
                 <h4>More</h4>
                 <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
                     <li><a href="https://ignix.co.uk">Ignix</a></li>
                     <li><a href="/api.html">API</a></li>
                     <li><a href="/guide.html">Blacklist Guide</a></li>
@@ -187,6 +190,7 @@
     </div>
 </footer>
 
+<script src="/watch-cta.js"></script>
 <script>
 // ── Known mail providers dictionary ─────────────────────────────────────────
 // Maps WHOIS org / netname fragments (lowercased) to friendly labels.
@@ -524,6 +528,7 @@ function render(reports, bySender) {
     // Summary in prose
     html += '<div class="section"><div class="section-title">Summary</div>';
     html += '<div class="summary-text">' + writeSummary(reports, senders, totalMessages, totalPass, passRate, policyP) + '</div></div>';
+    if (window.ignixWatch && policyDomain) html += window.ignixWatch.cta(policyDomain);
 
     // Findings
     var findings = generateFindings(senders, totalMessages, policyP, reports);
