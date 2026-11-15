@@ -57,13 +57,14 @@ TOOLS = [
         "embed": "blacklist",
         "title": "IP blacklist check",
         "h1": "IP blacklist check",
-        "description": "Check an IPv4 address against SpamCop, Barracuda, and UCEPROTECT, plus AbuseIPDB. Spamhaus is not queried.",
+        "description": "Check an IPv4 address against 8 DNSBLs (Barracuda BRBL, SpamCop, SORBS SPAM, SORBS HTTP, UCEPROTECT L1, UCEPROTECT L2, Abuse.ch SSLBL and NordSpam) plus AbuseIPDB. Spamhaus is not queried.",
         "lead": "See whether an address is listed on the DNS blacklists this page can query, and what AbuseIPDB currently reports.",
         "placeholder": "8.8.8.8",
         "button": "Check",
-        "body": "A blacklist check asks DNS-based lists whether they publish the address. This page queries SpamCop, Barracuda, and UCEPROTECT, plus AbuseIPDB. Spamhaus requires a licensed feed and is not checked here, so a clear result is not a Spamhaus clearance.",
+        "body_html": True,
+        "body": "A blacklist check asks DNS-based lists whether they publish the address. This page queries 8 DNSBLs: Barracuda BRBL, SpamCop, SORBS SPAM, SORBS HTTP, UCEPROTECT L1, UCEPROTECT L2, Abuse.ch SSLBL and NordSpam, plus AbuseIPDB. Spamhaus requires a licensed feed and is not checked here, so a clear result is not a Spamhaus clearance. Use <a href=\"https://check.spamhaus.org/\">Spamhaus's free lookup</a>.",
         "faqs": [
-            ("Does this include Spamhaus?", "No. Spamhaus does not answer public resolver queries reliably, and ignixip does not use a licensed feed. Those rows are marked not checked on the full lookup."),
+            ("Does this include Spamhaus?", "No. Spamhaus does not answer public resolver queries reliably, and ignixip does not use a licensed feed. Those rows are marked not checked on the full lookup. Use the free lookup at https://check.spamhaus.org/."),
             ("What does a listing mean?", "A listing means that list currently publishes the address. It can be a policy listing, a shared address, or a report of spam. Read the list name before treating it as abuse."),
             ("How current is the result?", "The check runs in your browser when you open or submit the form, so it is not a cached snapshot."),
         ],
@@ -421,6 +422,7 @@ def tool_page(tool, guides):
     canonical = "%s/tools/%s/" % (ORIGIN, tool["slug"])
     title = "%s | ignixip" % tool["title"]
     faq_json, faq_html = faq_block(tool["faqs"])
+    body_html = tool["body"] if tool.get("body_html") else esc(tool["body"])
     body = """
 <h1>%s</h1>
 <p class="lead">%s</p>
@@ -429,7 +431,7 @@ def tool_page(tool, guides):
 %s
 <h2>Questions</h2>
 %s
-""" % (esc(tool["h1"]), esc(tool["lead"]), esc(tool["body"]), tool_guide_links(tool["slug"], guides), widget(tool["embed"], "", tool["placeholder"], tool["button"], textarea=tool.get("textarea", False), auto=False), faq_html)
+""" % (esc(tool["h1"]), esc(tool["lead"]), body_html, tool_guide_links(tool["slug"], guides), widget(tool["embed"], "", tool["placeholder"], tool["button"], textarea=tool.get("textarea", False), auto=False), faq_html)
     graph = [
         {
             "@type": "WebApplication",
