@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ignixip — Free IP Address Lookup, DNS Records & Blacklist Check</title>
-    <meta name="description" content="Look up any IP address or domain. Get geolocation, ASN, DNS records, and check against 12 blacklists including Spamhaus and AbuseIPDB. Free, fast, no ads.">
+    <meta name="description" content="Look up any IP address or domain. Get geolocation, ASN, DNS records, and a check of 8 DNSBLs plus AbuseIPDB. Spamhaus is not checked here. Free, fast, no ads.">
     <meta name="keywords" content="IP address lookup, IP geolocation, DNS lookup, blacklist check, IP blacklist, spam check, AbuseIPDB, Spamhaus, DNSBL, IP reputation, network tools">
     <meta name="author" content="Ignix">
     <meta property="og:title" content="ignixip — Free IP Address Lookup & Blacklist Check">
@@ -619,7 +619,7 @@
 <a class="tool" href="/tools/bulk-check/" data-tool="bulk"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18M7 3v18"/></svg></div><b>Bulk Check</b><p>Check up to 25 IPs at once — email only.</p></a>
     </div></div>
     <div class="group"><h3>Email &amp; Threats</h3><div class="grid">
-<a class="tool" href="/tools/blacklist-check/" data-tool="bl"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div><b>Blacklist Check</b><p>12 DNSBLs plus AbuseIPDB score.</p></a>
+<a class="tool" href="/tools/blacklist-check/" data-tool="bl"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div><b>Blacklist Check</b><p>8 DNSBLs plus AbuseIPDB score.</p></a>
 <a class="tool" href="/tools/header-analyzer/" data-tool="headers"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><b>Email Headers</b><p>Trace Received: hops and check each IP.</p></a>
 <a class="tool" href="/?tab=urlcheck" data-tool="urlcheck" onclick="return openTool(event, 'urlcheck')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div><b>URL Check</b><p>Domain age, SSL, DNS and risk rating.</p></a>
 <a class="tool" href="/?tab=emailcheck" data-tool="emailcheck" onclick="return openTool(event, 'emailcheck')"><div class="ico"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></div><b>Sender Check</b><p>MX, SPF/DKIM/DMARC and mail server reputation.</p></a>
@@ -640,7 +640,7 @@
             <dt>ASN</dt><dd>AS15169</dd>
             <dt>Location</dt><dd>United States</dd>
             <dt>Reverse DNS</dt><dd>dns.google</dd>
-            <dt>Blacklists</dt><dd class="clean">0 / 12 listed</dd>
+            <dt>Blacklists</dt><dd class="clean">0 / 8 listed</dd>
             <dt>AbuseIPDB</dt><dd class="clean">0% confidence</dd>
         </dl>
     </div>
@@ -662,7 +662,7 @@
 
 <section id="faq" class="band band-alt"><div class="wrap faq-wrap">
     <h2>What is ignixip?</h2>
-    <p>ignixip is a free IP address intelligence tool. Enter any IP address or domain name to instantly see its geolocation, network owner, ISP, and whether it appears on major spam and abuse blacklists including Spamhaus, Barracuda, SpamCop and AbuseIPDB.</p>
+    <p>ignixip is a free IP address intelligence tool. Enter any IP address or domain name to instantly see its geolocation, network owner, ISP, and whether it appears on 8 DNSBLs (Barracuda BRBL, SpamCop, SORBS SPAM, SORBS HTTP, UCEPROTECT L1, UCEPROTECT L2, Abuse.ch SSLBL and NordSpam) plus AbuseIPDB. Spamhaus is not checked here, because it needs a licensed feed. Use <a href="https://check.spamhaus.org/" target="_blank" rel="noopener noreferrer">Spamhaus's free lookup</a>.</p>
     <h2>Who uses it?</h2>
     <p>Network administrators, IT security professionals, and anyone who needs to quickly identify an unfamiliar IP address — whether investigating suspicious network traffic, checking email sender reputation, or verifying where a connection is coming from.</p>
     <h2>Frequently asked questions</h2>
@@ -677,7 +677,7 @@
     </details>
     <details>
         <summary>How do I check if an IP address is blacklisted?</summary>
-        <p>Use Blacklist Check and enter the IP address. ignixip checks it against 12 major DNS-based blacklists (DNSBLs) including Spamhaus ZEN, Barracuda BRBL and SpamCop, plus the AbuseIPDB community abuse database. A listed IP has been flagged for spam, malware, or other malicious activity.</p>
+        <p>Use Blacklist Check and enter the IP address. ignixip checks it against 8 DNSBLs: Barracuda BRBL, SpamCop, SORBS SPAM, SORBS HTTP, UCEPROTECT L1, UCEPROTECT L2, Abuse.ch SSLBL and NordSpam, plus the AbuseIPDB community abuse database. Spamhaus is not checked here, because it needs a licensed feed. Use <a href="https://check.spamhaus.org/" target="_blank" rel="noopener noreferrer">Spamhaus's free lookup</a>. A listed IP has been flagged for spam, malware, or other malicious activity.</p>
     </details>
     <details>
         <summary>What is an ASN?</summary>
