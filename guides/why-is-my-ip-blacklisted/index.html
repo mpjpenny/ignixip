@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Why is my IP blacklisted? | ignixip</title>
+    <meta name="description" content="What a DNS blacklist listing means, how to check Barracuda, SpamCop and UCEPROTECT, and how to ask each list for removal.">
+    <link rel="canonical" href="https://ignixip.com/guides/why-is-my-ip-blacklisted/">
+    <meta property="og:title" content="Why is my IP blacklisted? | ignixip">
+    <meta property="og:description" content="What a DNS blacklist listing means, how to check Barracuda, SpamCop and UCEPROTECT, and how to ask each list for removal.">
+    <meta property="og:url" content="https://ignixip.com/guides/why-is-my-ip-blacklisted/">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta property="article:published_time" content="2026-11-15">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Article", "headline": "Why is my IP blacklisted?", "description": "What a DNS blacklist listing means, how to check Barracuda, SpamCop and UCEPROTECT, and how to ask each list for removal.", "datePublished": "2026-11-15", "dateModified": "2026-11-15", "inLanguage": "en-GB", "author": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "publisher": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://ignixip.com/guides/why-is-my-ip-blacklisted/"}, "url": "https://ignixip.com/guides/why-is-my-ip-blacklisted/"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does a clear result on ignixip mean Spamhaus is clear?", "acceptedAnswer": {"@type": "Answer", "text": "No. ignixip does not query Spamhaus. Use the lookup at check.spamhaus.org before you treat an address as unlisted."}}, {"@type": "Question", "name": "Do I have to pay to be removed?", "acceptedAnswer": {"@type": "Answer", "text": "SpamCop and UCEPROTECT Level 1 expire without a fee once the mail stops. Barracuda's removal form is free. UCEPROTECT also sells an optional faster removal."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/guides/" class="on">Guides</a>
+            <a href="/watch/">Watch</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+<article class="guide">
+<p class="guide-crumb"><a href="/guides/">Guides</a></p>
+<h1>Why is my IP blacklisted?</h1>
+<p class="lead">What a DNS blacklist listing means, how to check Barracuda, SpamCop and UCEPROTECT, and how to ask each list for removal.</p>
+<h2>What a DNS blacklist is</h2>
+<p>A DNS-based blacklist, also called a DNSBL, is a list of IP addresses published through DNS. A mail server builds a query from the sending address. If the list answers, the address is listed and the server can refuse, defer, or file the message. <a href="https://www.rfc-editor.org/info/rfc5782/">RFC 5782</a> describes that query. There is no single global list. Each operator publishes its own, with its own rules, and a hit on one says nothing about the others.</p>
+<p>A listing describes that list at the moment you query it. Some lists record recent spam. Some list ranges the network owner asked them to list, so home addresses are not used as mail servers. Read the list name before you treat the result as abuse.</p>
+
+<h2>Common reasons an address is listed</h2>
+<p>Start from the mail logs. The bounce names the list and the IP the receiver saw. That IP is the one to investigate.</p>
+<ul>
+<li><strong>A compromised mailbox or website.</strong> A stolen password, a vulnerable form, or a script starts sending mail you did not write. The queue grows, and the server's address is what the lists see.</li>
+<li><strong>Malware on a PC, or an open guest network.</strong> The machine sends directly, or it relays through your server. The listing follows the public address, which may be the firewall rather than the PC.</li>
+<li><strong>An open relay or a late bounce.</strong> The server accepts mail for domains it does not host, or it accepts a message and later bounces it to a forged sender. Those bounces are spam to a trap.</li>
+<li><strong>A shared or reused address.</strong> On shared hosting, another customer on the same IP can cause the listing. A dynamic or cloud address can also inherit the previous tenant's listing. It still blocks you until it expires or the list removes it.</li>
+<li><strong>A policy range.</strong> Some lists include ranges that are not supposed to send mail directly. A normal home connection is often in that set. Send through the provider's mail server.</li>
+</ul>
+<p>If mail is also failing authentication, fix that with the <a href="/guides/spf-record-explained/">SPF guide</a>. A removal form will ask what you changed.</p>
+
+<h2>How to check</h2>
+<ol>
+<li>Copy the IP from the bounce. If several addresses appear, use the one the rejecting server says is listed.</li>
+<li>Open the <a href="/tools/blacklist-check/">blacklist check</a> and submit that address. The page queries SpamCop, Barracuda, and UCEPROTECT, and it shows an AbuseIPDB score when that service answers. The check runs when you submit it.</li>
+<li>Open the <a href="/tools/ip-lookup/">IP lookup</a> when you need the network owner. On a shared or dynamic range, that name is who you contact if you do not control the address.</li>
+<li>Check Spamhaus yourself. ignixip does not query Spamhaus. Spamhaus does not answer public resolvers reliably, and this site does not use a licensed feed. A clear result here is not a Spamhaus clearance. Use <a href="https://check.spamhaus.org/">Spamhaus's own lookup</a> and read the zone it names.</li>
+</ol>
+<h2>Ask for removal</h2>
+<p>Stop the mail that caused the listing first. A list that still sees the same traffic will list you again, and a second request is often ignored. Use that list's own page. Do not pay a third party that promises to clear every list.</p>
+
+<h3>Barracuda</h3>
+<p>Look the address up at <a href="https://www.barracudacentral.org/lookups">Barracuda Central</a>. If it is listed, send one request through their <a href="https://www.barracudacentral.org/rbl/removal-request">removal form</a>: the IP, an email address, a phone number, and a reason. Barracuda says requests without a valid explanation are ignored, and so are repeat requests. Their page says a valid request is typically investigated within 12 hours. Say what sent the mail and what you changed.</p>
+
+<h3>SpamCop</h3>
+<p>The <a href="https://www.spamcop.net/fom-serve/cache/297.html">SpamCop Blocking List</a> is built from spam reports. SpamCop's <a href="https://www.spamcop.net/fom-serve/cache/76.html">removal FAQ</a> says an address comes off automatically after 24 hours with no new reports, and that they do not take early-removal requests. Once the countdown reaches zero, their notes say the update can take up to four hours to reach mirrors. Fresh reports restart the clock. If you believe the listing is a technical error, write from abuse@ or postmaster@ with the evidence, not a demand to skip the wait.</p>
+
+<h3>UCEPROTECT</h3>
+<p>Look the address up on <a href="https://www.uceprotect.net/en/rblcheck.php">UCEPROTECT's check page</a> and note the level. Their <a href="https://www.uceprotect.net/en/index.php?m=7&amp;s=6">Level 1 removal note</a> says an address expires on its own, at no charge, seven days after the last message from it hits their spam traps. They also sell an immediate removal. That payment is optional. It does not fix the sender, and new mail to their traps starts the seven days again.</p>
+<p>Level 1 is the single address. Level 2 lists a netblock and Level 3 lists an autonomous system, so an address can be covered because other hosts in the same network were listed. Cleaning one host does not clear a wider level.</p>
+
+<h3>Spamhaus</h3>
+<p>Use <a href="https://check.spamhaus.org/">the Spamhaus checker</a> and follow the removal steps it shows for the listed zone. Spamhaus's <a href="https://www.spamhaus.org/faqs/general-questions/">removal FAQ</a> says requests are not taken by email. The request has to come from the operator of the address, not from a VPN or a free mailbox, and it should say what caused the mail, what you changed, and when. A form is not a guarantee.</p>
+<p>A Policy Blocklist entry is not a spam listing. Spamhaus's <a href="https://www.spamhaus.org/faqs/policy-blocklist-pbl/">PBL FAQ</a> says those ranges are not expected to send mail directly. Remove a single address only when it is a static mail server, with forward and reverse DNS, and with port 25 closed for every other device. A home connection should send through the ISP. Do not request a PBL removal for it.</p>
+
+<h2>Stop the next listing</h2>
+<ol>
+<li>Find the account, site, or PC and stop it. Rotate passwords that were exposed. Patch the form or plugin. Disconnect an infected machine.</li>
+<li>Allow outbound port 25 only from the mail server. Everything else should use that server, or the provider's smarthost.</li>
+<li>Give the mail server matching forward and reverse DNS, one SPF record, and DKIM. Publish DMARC so you hear about mail you did not send. The <a href="/guides/fix-dmarc-failures/">DMARC guide</a> is the order to do that in.</li>
+<li>Leave a watch on the address. Another list can add it after the first one has gone. The <a href="/guides/monitor-ip-blacklist/">monitoring guide</a> shows the free alert.</li>
+</ol>
+<p>If the address belongs to an ISP, a cloud host, or a shared platform, send them the bounce and the list name. They control the IP. A removal request from you will be refused.</p>
+<aside class="guide-cta">
+    <div>
+        <p class="guide-kicker">Check the address</p>
+        <h2>See which lists name an IP</h2>
+        <p>The blacklist check queries SpamCop, Barracuda and UCEPROTECT, plus AbuseIPDB. It does not query Spamhaus.</p>
+    </div>
+    <a class="ix-btn pri" href="/tools/blacklist-check/">Check a blacklist</a>
+</aside>
+<h2>Questions</h2>
+<details><summary>Does a clear result on ignixip mean Spamhaus is clear?</summary><p>No. ignixip does not query Spamhaus. Use the lookup at check.spamhaus.org before you treat an address as unlisted.</p></details>
+<details><summary>Do I have to pay to be removed?</summary><p>SpamCop and UCEPROTECT Level 1 expire without a fee once the mail stops. Barracuda&#x27;s removal form is free. UCEPROTECT also sells an optional faster removal.</p></details>
+<h2>Related guides</h2>
+<ul class="guide-related">
+<li><a href="/guides/monitor-ip-blacklist/">How to monitor an IP blacklist</a><span>A daily check of listings and of SPF, DMARC, DKIM and MX, with email only when the result changes.</span></li>
+<li><a href="/guides/fix-dmarc-failures/">How to fix DMARC failures</a><span>Read a DMARC failure, tell alignment from a bad sender, and move from p=none to reject safely.</span></li>
+</ul>
+</article>
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guides/">Guides</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+</body>
+</html>

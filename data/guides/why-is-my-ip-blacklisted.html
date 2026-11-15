@@ -1,0 +1,47 @@
+<h2>What a DNS blacklist is</h2>
+<p>A DNS-based blacklist, also called a DNSBL, is a list of IP addresses published through DNS. A mail server builds a query from the sending address. If the list answers, the address is listed and the server can refuse, defer, or file the message. <a href="https://www.rfc-editor.org/info/rfc5782/">RFC 5782</a> describes that query. There is no single global list. Each operator publishes its own, with its own rules, and a hit on one says nothing about the others.</p>
+<p>A listing describes that list at the moment you query it. Some lists record recent spam. Some list ranges the network owner asked them to list, so home addresses are not used as mail servers. Read the list name before you treat the result as abuse.</p>
+
+<h2>Common reasons an address is listed</h2>
+<p>Start from the mail logs. The bounce names the list and the IP the receiver saw. That IP is the one to investigate.</p>
+<ul>
+<li><strong>A compromised mailbox or website.</strong> A stolen password, a vulnerable form, or a script starts sending mail you did not write. The queue grows, and the server's address is what the lists see.</li>
+<li><strong>Malware on a PC, or an open guest network.</strong> The machine sends directly, or it relays through your server. The listing follows the public address, which may be the firewall rather than the PC.</li>
+<li><strong>An open relay or a late bounce.</strong> The server accepts mail for domains it does not host, or it accepts a message and later bounces it to a forged sender. Those bounces are spam to a trap.</li>
+<li><strong>A shared or reused address.</strong> On shared hosting, another customer on the same IP can cause the listing. A dynamic or cloud address can also inherit the previous tenant's listing. It still blocks you until it expires or the list removes it.</li>
+<li><strong>A policy range.</strong> Some lists include ranges that are not supposed to send mail directly. A normal home connection is often in that set. Send through the provider's mail server.</li>
+</ul>
+<p>If mail is also failing authentication, fix that with the <a href="/guides/spf-record-explained/">SPF guide</a>. A removal form will ask what you changed.</p>
+
+<h2>How to check</h2>
+<ol>
+<li>Copy the IP from the bounce. If several addresses appear, use the one the rejecting server says is listed.</li>
+<li>Open the <a href="/tools/blacklist-check/">blacklist check</a> and submit that address. The page queries SpamCop, Barracuda, and UCEPROTECT, and it shows an AbuseIPDB score when that service answers. The check runs when you submit it.</li>
+<li>Open the <a href="/tools/ip-lookup/">IP lookup</a> when you need the network owner. On a shared or dynamic range, that name is who you contact if you do not control the address.</li>
+<li>Check Spamhaus yourself. ignixip does not query Spamhaus. Spamhaus does not answer public resolvers reliably, and this site does not use a licensed feed. A clear result here is not a Spamhaus clearance. Use <a href="https://check.spamhaus.org/">Spamhaus's own lookup</a> and read the zone it names.</li>
+</ol>
+<h2>Ask for removal</h2>
+<p>Stop the mail that caused the listing first. A list that still sees the same traffic will list you again, and a second request is often ignored. Use that list's own page. Do not pay a third party that promises to clear every list.</p>
+
+<h3>Barracuda</h3>
+<p>Look the address up at <a href="https://www.barracudacentral.org/lookups">Barracuda Central</a>. If it is listed, send one request through their <a href="https://www.barracudacentral.org/rbl/removal-request">removal form</a>: the IP, an email address, a phone number, and a reason. Barracuda says requests without a valid explanation are ignored, and so are repeat requests. Their page says a valid request is typically investigated within 12 hours. Say what sent the mail and what you changed.</p>
+
+<h3>SpamCop</h3>
+<p>The <a href="https://www.spamcop.net/fom-serve/cache/297.html">SpamCop Blocking List</a> is built from spam reports. SpamCop's <a href="https://www.spamcop.net/fom-serve/cache/76.html">removal FAQ</a> says an address comes off automatically after 24 hours with no new reports, and that they do not take early-removal requests. Once the countdown reaches zero, their notes say the update can take up to four hours to reach mirrors. Fresh reports restart the clock. If you believe the listing is a technical error, write from abuse@ or postmaster@ with the evidence, not a demand to skip the wait.</p>
+
+<h3>UCEPROTECT</h3>
+<p>Look the address up on <a href="https://www.uceprotect.net/en/rblcheck.php">UCEPROTECT's check page</a> and note the level. Their <a href="https://www.uceprotect.net/en/index.php?m=7&amp;s=6">Level 1 removal note</a> says an address expires on its own, at no charge, seven days after the last message from it hits their spam traps. They also sell an immediate removal. That payment is optional. It does not fix the sender, and new mail to their traps starts the seven days again.</p>
+<p>Level 1 is the single address. Level 2 lists a netblock and Level 3 lists an autonomous system, so an address can be covered because other hosts in the same network were listed. Cleaning one host does not clear a wider level.</p>
+
+<h3>Spamhaus</h3>
+<p>Use <a href="https://check.spamhaus.org/">the Spamhaus checker</a> and follow the removal steps it shows for the listed zone. Spamhaus's <a href="https://www.spamhaus.org/faqs/general-questions/">removal FAQ</a> says requests are not taken by email. The request has to come from the operator of the address, not from a VPN or a free mailbox, and it should say what caused the mail, what you changed, and when. A form is not a guarantee.</p>
+<p>A Policy Blocklist entry is not a spam listing. Spamhaus's <a href="https://www.spamhaus.org/faqs/policy-blocklist-pbl/">PBL FAQ</a> says those ranges are not expected to send mail directly. Remove a single address only when it is a static mail server, with forward and reverse DNS, and with port 25 closed for every other device. A home connection should send through the ISP. Do not request a PBL removal for it.</p>
+
+<h2>Stop the next listing</h2>
+<ol>
+<li>Find the account, site, or PC and stop it. Rotate passwords that were exposed. Patch the form or plugin. Disconnect an infected machine.</li>
+<li>Allow outbound port 25 only from the mail server. Everything else should use that server, or the provider's smarthost.</li>
+<li>Give the mail server matching forward and reverse DNS, one SPF record, and DKIM. Publish DMARC so you hear about mail you did not send. The <a href="/guides/fix-dmarc-failures/">DMARC guide</a> is the order to do that in.</li>
+<li>Leave a watch on the address. Another list can add it after the first one has gone. The <a href="/guides/monitor-ip-blacklist/">monitoring guide</a> shows the free alert.</li>
+</ol>
+<p>If the address belongs to an ISP, a cloud host, or a shared platform, send them the bounce and the list name. They control the IP. A removal request from you will be refused.</p>

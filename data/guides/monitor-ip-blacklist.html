@@ -1,0 +1,37 @@
+<h2>Why watch at all</h2>
+<p>A blacklist listing and a DNS change both sit there until something else breaks. Mail starts bouncing, or a domain begins to fail DMARC, and the first you hear of it is a colleague forwarding an error. Checking the address once, on the day you set the server up, does not tell you what it looks like next Tuesday.</p>
+<p>You need a note when the result differs from the last check. A daily "still fine" message trains people to ignore the one that matters. Watch the server and the domain you send from. A tool on someone else's platform is their address to watch.</p>
+
+<h2>What is worth alerting on</h2>
+<h3>Listings and delistings</h3>
+<p>A new listing is the event. Which list, and the address it names, decide the work. SpamCop clearing itself after a day is a different job from a listing that is still there after you have cleaned a machine. A delisting matters too. It tells you the removal worked, or that an expiry happened, so you can stop chasing that list. The <a href="/guides/why-is-my-ip-blacklisted/">blacklist guide</a> is the sequence: confirm the list, stop the cause, then use that list's own removal page. Spamhaus is not in the ignixip check. Keep using <a href="https://check.spamhaus.org/">Spamhaus's lookup</a> when you need that answer. A watch on this site does not add it.</p>
+<h3>SPF, DMARC, DKIM, and MX</h3>
+<p>These four are the DNS records that decide whether mail is accepted, and where it is delivered.</p>
+<ul>
+<li><strong>SPF</strong> changes when someone edits the TXT record. A good edit adds a sender. A bad edit publishes a second record, drops the only mail server, or sets <code>+all</code>. Any of those can be a mistake in a control panel. Any of them can also be an account on the DNS host that you did not mean to share.</li>
+<li><strong>DMARC</strong> changes when the policy tag changes. Moving from <code>p=none</code> to <code>p=reject</code> before senders align will refuse real mail. A record that disappears is a change as well.</li>
+<li><strong>DKIM</strong> is the TXT record at a selector under <code>_domainkey</code>. If the key changes and the sender still signs with the old private key, verification fails. If the record disappears, signatures fail closed.</li>
+<li><strong>MX</strong> changes where inbound mail goes. A new host you did not add is a delivery problem and, if you did not request it, a reason to treat the DNS account as exposed.</li>
+</ul>
+<p>Watching the website's A record is a separate problem. The mail watch is these four, plus blacklist state. Match the alert to the record. An MX change is not fixed by editing SPF.</p>
+
+<h2>Set up a free watch</h2>
+<p>The form is at <a href="/watch/">ignixip.com/watch</a>. It is free, and it is separate from any account you might use for bulk lookups.</p>
+<ol>
+<li>Enter the email address that should receive the alert. Use a mailbox that is read. A role address such as hostmaster@ is better than a personal mailbox if more than one person should see it.</li>
+<li>Enter the IP address or the domain. One watch is one target.</li>
+<li>Choose what to follow. <strong>Blacklist listings and delistings</strong> covers the public lists the check uses. <strong>DNS changes for SPF, DMARC, DKIM and MX</strong> covers those records. An IP starts with blacklist only. A domain starts with both. Untick either box if you do not want it. A domain with no mail can stay on DNS only, so you still hear about an MX or a DMARC record appearing.</li>
+<li>Submit the form. ignixip sends a confirmation if that mailbox can receive mail. The form does not tell you whether the address exists. If no message arrives, check the spam folder and the address you typed, then submit again. Alerts do not start until you open the confirmation link. That is the double opt-in. An unfinished signup sends nothing further.</li>
+<li>After you confirm, the address is checked once a day. You get email only when something being watched has changed. A day with no change produces no message.</li>
+</ol>
+<p>You can watch up to ten addresses from one email. The confirmation page, and the link in every later message, lists what that address is watching. Remove one, or remove them all, from there. Removing a watch deletes the email and the target held for it. You can also write to <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a> from that address if you no longer have the link. The <a href="/privacy/#watch">privacy note</a> is the full account of what is stored: the address, the target, and which boxes you ticked. It is not added to a general mailing list.</p>
+
+<h2>When a message arrives</h2>
+<p>Read which target changed, and which kind of change it was. Then check it while the detail is still current.</p>
+<ul>
+<li><strong>A new listing.</strong> Open the <a href="/tools/blacklist-check/">blacklist check</a> for that IP. Identify the list, find the sender, and follow that list's removal process. Do not request removal while the same mail is still going out.</li>
+<li><strong>A delisting.</strong> Note it, and leave the watch in place. The point of keeping it is the next listing, not this clearance.</li>
+<li><strong>An SPF, DMARC, or DKIM change you made.</strong> Compare the new record with what you meant to publish. The <a href="/tools/dns-lookup/">DNS lookup</a> and the <a href="/mail-auth.html">mail authentication check</a> show the published data. A second SPF record or a dropped <code>-all</code> is worth reverting the same day.</li>
+<li><strong>An MX or DNS change you did not make.</strong> Treat the DNS account as the thing to secure. Change the password, check who else has access, and put the records back. Then look at mail that arrived while the MX pointed elsewhere.</li>
+</ul>
+<p>The watch does not edit DNS and it does not submit a delisting. During a mail migration, expect one alert per record you change, and leave the watch on so an extra edit is visible beside the ones you planned.</p>

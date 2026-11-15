@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>How to fix DMARC failures | ignixip</title>
+    <meta name="description" content="How SPF, DKIM and DMARC alignment works, how to read p=none, quarantine and reject, and how to fix the failures reports usually show.">
+    <link rel="canonical" href="https://ignixip.com/guides/fix-dmarc-failures/">
+    <meta property="og:title" content="How to fix DMARC failures | ignixip">
+    <meta property="og:description" content="How SPF, DKIM and DMARC alignment works, how to read p=none, quarantine and reject, and how to fix the failures reports usually show.">
+    <meta property="og:url" content="https://ignixip.com/guides/fix-dmarc-failures/">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta property="article:published_time" content="2026-11-15">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Article", "headline": "How to fix DMARC failures", "description": "How SPF, DKIM and DMARC alignment works, how to read p=none, quarantine and reject, and how to fix the failures reports usually show.", "datePublished": "2026-11-15", "dateModified": "2026-11-15", "inLanguage": "en-GB", "author": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "publisher": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://ignixip.com/guides/fix-dmarc-failures/"}, "url": "https://ignixip.com/guides/fix-dmarc-failures/"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "SPF passed. Why did DMARC fail?", "acceptedAnswer": {"@type": "Answer", "text": "SPF passed for the envelope domain, and that domain is not aligned with the From address. DMARC needs an aligned SPF pass or an aligned DKIM pass."}}, {"@type": "Question", "name": "Should I publish p=reject today?", "acceptedAnswer": {"@type": "Answer", "text": "Only after reports show that mail you send is already passing. Start at p=none with an rua address, then quarantine, then reject."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/guides/" class="on">Guides</a>
+            <a href="/watch/">Watch</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+<article class="guide">
+<p class="guide-crumb"><a href="/guides/">Guides</a></p>
+<h1>How to fix DMARC failures</h1>
+<p class="lead">How SPF, DKIM and DMARC alignment works, how to read p=none, quarantine and reject, and how to fix the failures reports usually show.</p>
+<h2>Three checks, one visible sender</h2>
+<p>Receivers judge the address in the From header, the one a person sees. Three DNS mechanisms answer different questions about it.</p>
+<ul>
+<li><strong>SPF</strong> (<a href="https://www.rfc-editor.org/info/rfc7208/">RFC 7208</a>) lists which IPs may use your domain in the envelope sender, the Return-Path. It does not look at the From header until DMARC joins the two.</li>
+<li><strong>DKIM</strong> (<a href="https://www.rfc-editor.org/info/rfc6376/">RFC 6376</a>) signs the message. The public key is in DNS. The signature's <code>d=</code> tag names the signing domain. A valid signature shows the message passed through a system holding that private key, and that the signed parts were not changed afterwards.</li>
+<li><strong>DMARC</strong> (<a href="https://www.rfc-editor.org/info/rfc7489/">RFC 7489</a>) passes only when SPF or DKIM passed and used a domain aligned with From. The record then says what you would like receivers to do when neither one aligns. It is a TXT record at <code>_dmarc.example.com</code>.</li>
+</ul>
+<p>SPF can pass, and DKIM can pass, while DMARC still fails. That happens when the passing check used some other domain. It is the usual surprise in an aggregate report.</p>
+
+<h2>What alignment means</h2>
+<p>For SPF, DMARC compares the Return-Path domain with From. For DKIM, it compares <code>d=</code> with From. The default is relaxed alignment: <code>news.example.com</code> and <code>example.com</code> align, because they share an organisational domain. Strict alignment (<code>aspf=s</code> or <code>adkim=s</code>) requires the domains to be identical. Keep the default unless you mean to reject mail from your own subdomains.</p>
+<p>One aligned pass is enough. Forwarded mail often fails SPF and still passes DMARC because the signature survived. Mail that fails both, or that passes only on an unrelated domain, fails DMARC. SPF counts towards DMARC only when the result is pass. A soft fail from <code>~all</code> does not. The <a href="/guides/spf-record-explained/">SPF guide</a> covers that qualifier.</p>
+
+<h2>Read p=none, quarantine, and reject</h2>
+<p>The <code>p=</code> tag is a request to receivers. Most large ones follow it. Some also apply their own reputation.</p>
+<ul>
+<li><strong><code>p=none</code></strong> asks receivers to deliver the mail as they otherwise would, and to send reports if you asked for them. Use it while you are still finding every legitimate sender. It does not stop spoofing.</li>
+<li><strong><code>p=quarantine</code></strong> asks receivers to treat failing mail as suspicious, which usually means the spam folder. Move here once reports show that your own mail aligns, and you want a margin before refusing mail outright.</li>
+<li><strong><code>p=reject</code></strong> asks receivers to refuse failing mail in the SMTP session. Use it when you will accept the loss of any legitimate message that still fails, including a forwarder that breaks the signature and any service you forgot.</li>
+</ul>
+<p><code>pct=20</code> with <code>p=reject</code> asks receivers to apply the policy to a fraction of failing mail, so you can test. It is not a substitute for reading reports. <code>sp=</code> sets a different policy for subdomains. If you omit it, they inherit <code>p=</code>. <code>rua=mailto:dmarc@example.com</code> asks for aggregate reports. They arrive as XML, usually zipped, from receivers that support them. They list source IPs and the SPF, DKIM, and DMARC results. They do not include the message body.</p>
+
+<h2>Why legitimate mail fails</h2>
+<h3>A sender you did not add</h3>
+<p>A CRM, a helpdesk, a newsletter tool, invoicing software, or a scanner can all send with your From address. SPF fails when that tool's addresses are missing from the record. DKIM fails when the tool signs with its own domain, or does not sign. DMARC then fails even though a member of staff clicked Send. The report shows the tool's IP. Add the tool, or stop it using your From domain.</p>
+<p>Prefer a DKIM signature with <code>d=</code> on your domain. An SPF <code>include</code> works for mail delivered directly, but each include spends the ten-lookup budget, and SPF breaks when the message is forwarded. An aligned signature survives forwarding unless the forwarder rewrites the signed headers or the body.</p>
+<h3>Forwarding and mailing lists</h3>
+<p>A forwarder sends the message on from its own IP. SPF is checked against that IP, so it fails unless you listed the forwarder. Do not add every personal forward and every alumni server. DKIM still passes if the signed bytes are intact. Lists that add a footer or a subject tag break the signature.</p>
+<p><a href="https://www.rfc-editor.org/info/rfc8617/">ARC</a> is how a forwarder can record the results it saw before rewriting. It is not a record you publish to repair their change. If one list breaks mail under <code>p=reject</code>, accept that loss or stay on a weaker policy until the flow is small enough to drop.</p>
+<h3>Their envelope, your From</h3>
+<p>Some services use a Return-Path on their domain and a From on yours. SPF passes for them, not for you. Unless they also DKIM-sign as you, DMARC fails. Turn on the setting they document, often called custom DKIM, and publish the TXT record they give you. An SPF include on its own does not fix this pattern.</p>
+
+<h2>Fix it in this order</h2>
+<ol>
+<li>Read what is published with the <a href="/mail-auth.html">mail authentication check</a>. It describes SPF, DKIM, and DMARC in plain English. The <a href="/tools/dmarc-check/">DMARC DNS check</a> shows the raw TXT and MX records when you want the text itself.</li>
+<li>List every system that sends as the domain, including the ones staff set up without a ticket.</li>
+<li>Publish one SPF record for those systems, and turn on DKIM so <code>d=</code> is your domain. The public key is the TXT record named by the signature's <code>s=</code> selector.</li>
+<li>Publish DMARC at <code>p=none</code> with an <code>rua</code> mailbox you will read. Google's <a href="https://knowledge.workspace.google.com/admin/security/set-up-dmarc">DMARC setup note</a> walks through the same order for Workspace. The record format is the same on any DNS host.</li>
+<li>Open the aggregate files in the <a href="/dmarc.html">DMARC report tool</a>. It runs in the browser. Rows you recognise, and that fail, need SPF or DKIM. Rows you do not recognise are either spoofing or a sender missing from the list.</li>
+<li>When legitimate sources pass, move to <code>p=quarantine</code>, read another set of reports, then move to <code>p=reject</code> if you can afford the forwarding losses. Change one tag at a time.</li>
+</ol>
+<p>Do not start at <code>p=reject</code> on a domain that already sends mail. You will refuse invoices and password resets along with the forgeries. <code>p=none</code> with reports is how you learn who the senders are.</p>
+<aside class="guide-cta">
+    <div>
+        <p class="guide-kicker">Read the DNS</p>
+        <h2>Check the mail records for a domain</h2>
+        <p>The DMARC check shows the TXT and MX records. The report tool reads an aggregate file in your browser.</p>
+    </div>
+    <a class="ix-btn pri" href="/tools/dmarc-check/">Check DMARC DNS</a>
+</aside>
+<h2>Questions</h2>
+<details><summary>SPF passed. Why did DMARC fail?</summary><p>SPF passed for the envelope domain, and that domain is not aligned with the From address. DMARC needs an aligned SPF pass or an aligned DKIM pass.</p></details>
+<details><summary>Should I publish p=reject today?</summary><p>Only after reports show that mail you send is already passing. Start at p=none with an rua address, then quarantine, then reject.</p></details>
+<h2>Related guides</h2>
+<ul class="guide-related">
+<li><a href="/guides/spf-record-explained/">SPF record explained</a><span>One TXT record, ten lookups, and a qualifier on all that matches what you actually send.</span></li>
+<li><a href="/guides/read-email-headers/">How to read email headers</a><span>Copy the raw header, read Received from the bottom, and trust authentication results from your own server.</span></li>
+</ul>
+</article>
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guides/">Guides</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+</body>
+</html>

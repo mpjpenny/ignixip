@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SPF record explained | ignixip</title>
+    <meta name="description" content="SPF syntax, the ten-lookup limit, the difference between ~all and -all, and why a second SPF record makes receivers return an error.">
+    <link rel="canonical" href="https://ignixip.com/guides/spf-record-explained/">
+    <meta property="og:title" content="SPF record explained | ignixip">
+    <meta property="og:description" content="SPF syntax, the ten-lookup limit, the difference between ~all and -all, and why a second SPF record makes receivers return an error.">
+    <meta property="og:url" content="https://ignixip.com/guides/spf-record-explained/">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta property="article:published_time" content="2026-11-15">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Article", "headline": "SPF record explained", "description": "SPF syntax, the ten-lookup limit, the difference between ~all and -all, and why a second SPF record makes receivers return an error.", "datePublished": "2026-11-15", "dateModified": "2026-11-15", "inLanguage": "en-GB", "author": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "publisher": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://ignixip.com/guides/spf-record-explained/"}, "url": "https://ignixip.com/guides/spf-record-explained/"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I publish two SPF records, one per sender?", "acceptedAnswer": {"@type": "Answer", "text": "No. Two TXT records that start with v=spf1 make the check a permanent error. Put every sender in the same record."}}, {"@type": "Question", "name": "Does ~all authorise other servers?", "acceptedAnswer": {"@type": "Answer", "text": "No. It is a soft fail for everyone not listed. It is not an SPF pass, so it does not satisfy DMARC."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/guides/" class="on">Guides</a>
+            <a href="/watch/">Watch</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+<article class="guide">
+<p class="guide-crumb"><a href="/guides/">Guides</a></p>
+<h1>SPF record explained</h1>
+<p class="lead">SPF syntax, the ten-lookup limit, the difference between ~all and -all, and why a second SPF record makes receivers return an error.</p>
+<h2>What the record is for</h2>
+<p>An SPF record is a TXT record on the domain that sends mail. It names the hosts allowed to use that domain as the envelope sender, which receivers see as the Return-Path. <a href="https://www.rfc-editor.org/info/rfc7208/">RFC 7208</a> is the specification. The record does not mention the From header. DMARC is what later compares the two. A domain that never sends mail should still publish a record that ends in <code>-all</code>, so receivers can reject anyone who tries.</p>
+<p>Look at the live record with the <a href="/tools/dns-lookup/">DNS lookup</a> (TXT on the bare domain) or the <a href="/mail-auth.html">mail authentication check</a>, which explains the same record in sentences. The check you read must be the one in DNS right now. A copy in a hosting panel can be wrong if it was never published, or if a second system also writes TXT records.</p>
+
+<h2>How a record is read</h2>
+<p>A record starts with <code>v=spf1</code> and then a list of mechanisms. Evaluation stops at the first match. The mechanisms you will actually publish:</p>
+<ul>
+<li><code>ip4:203.0.113.10</code> and <code>ip4:203.0.113.0/24</code> match a sending address directly. <code>ip6:</code> does the same for IPv6. Neither one needs a DNS lookup at evaluation time.</li>
+<li><code>a</code> matches the A or AAAA records of the domain. <code>mx</code> matches the addresses of its MX hosts. Both cause lookups.</li>
+<li><code>include:example.net</code> evaluates example.net's SPF record and matches if that record passes. It costs one lookup plus whatever the included record does. It does not match just because the name exists.</li>
+<li><code>exists:</code> is a lookup used as a yes-or-no test. You rarely need it.</li>
+<li><code>all</code> matches everything. It belongs at the end, with a qualifier. Nothing after it is read.</li>
+</ul>
+<p>Do not publish <code>ptr</code>. RFC 7208 says not to: it spends a lookup on a reverse name that is easy to get wrong. Use <code>ip4</code> or <code>ip6</code> for addresses you run. <code>redirect=</code> replaces the rest of the record with another domain's record. It is not a second include.</p>
+
+<h2>The ten-lookup limit</h2>
+<p>RFC 7208 section 4.6.4 requires a receiver to do at most ten DNS lookups while evaluating one SPF check. The mechanisms that count are <code>include</code>, <code>a</code>, <code>mx</code>, <code>ptr</code>, and <code>exists</code>, and the <code>redirect</code> modifier. <code>ip4</code>, <code>ip6</code>, and <code>all</code> do not count. Each <code>include</code> counts as one, and then the included record's own mechanisms count as well.</p>
+<p>That is why a record with three includes can already be over the limit. Google's include and Microsoft's include each contain further includes. Adding a marketing platform, a helpdesk, and a survey tool on top can push a legal-looking record into <code>permerror</code>. A permanent error means the receiver could not tell whether the sender is authorised. DMARC then cannot use SPF. Some receivers treat the error as a failure on their own.</p>
+<p>Prefer fewer includes, DKIM where the service can sign as you, and <code>ip4</code> or <code>ip6</code> for servers you control. Copying a provider's addresses into your record avoids their lookups, then goes stale when they renumber. After every edit, count the nested lookups again. The <a href="/mail-auth.html">mail authentication check</a> shows the record that is actually published.</p>
+
+<h2>~all and -all</h2>
+<p>The character in front of <code>all</code> is the result for every sender that matched nothing earlier.</p>
+<ul>
+<li><code>-all</code> is a fail. Everyone not named above is unauthorised. Publish this when the list of senders is complete. It is also the right ending for a domain that should not send mail at all.</li>
+<li><code>~all</code> is a soft fail. The sender is not in the list, but you are not asking for a hard rejection from SPF alone. It is reasonable while you are still discovering old senders. It does not authorise them. A soft fail is not an SPF pass, so it does not satisfy <a href="/guides/fix-dmarc-failures/">DMARC</a>.</li>
+<li><code>?all</code> is neutral. You are refusing to say. It does not help a receiver decide.</li>
+<li><code>+all</code> is a pass for the entire internet. Do not publish it. It tells every receiver that any host may send as you.</li>
+</ul>
+<p>Moving from <code>~all</code> to <code>-all</code> is safe once you have watched mail for a while and every legitimate source is either named in SPF or signing DKIM with your domain. Do the move on its own, without other DNS edits the same day, so a mistake is obvious.</p>
+
+<h2>Two SPF records</h2>
+<p>A domain must have one TXT record that starts with <code>v=spf1</code>. If evaluation finds more than one, RFC 7208 says the result is <code>permerror</code>. The second record does not add to the first. Receivers do not merge them.</p>
+<p>This happens when two panels both "help". The old host still serves a record, and the new host publishes another. Or someone adds Microsoft beside Google by creating a second TXT instead of editing the first. Delete until one remains, with every sender inside it:</p>
+<pre><code>v=spf1 include:_spf.google.com include:spf.protection.outlook.com -all</code></pre>
+<p>Google documents <code>include:_spf.google.com</code> for Workspace in their <a href="https://knowledge.workspace.google.com/admin/security/set-up-spf">SPF setup guide</a>. Microsoft 365 documents <code>include:spf.protection.outlook.com</code> in their <a href="https://learn.microsoft.com/en-us/defender-office-365/email-authentication-spf-configure">SPF configuration guide</a>. Copy the include from the provider's current document if you are setting that product up. Do not stack a second record beside it.</p>
+<p>Other TXT records on the zone are fine. A DMARC record lives at <code>_dmarc</code>, not on the apex. A site-verification token does not start with <code>v=spf1</code> and is not a second SPF record. Only a second <code>v=spf1</code> string is the mistake.</p>
+
+<h2>Records you can copy</h2>
+<p>One static mail server, and nobody else. <code>203.0.113.10</code> is a documentation address. Replace it with the server's real address.</p>
+<pre><code>v=spf1 ip4:203.0.113.10 -all</code></pre>
+<p>Mail only from a provider, while you confirm nothing else sends:</p>
+<pre><code>v=spf1 include:_spf.google.com ~all</code></pre>
+<p>A domain that must not send:</p>
+<pre><code>v=spf1 -all</code></pre>
+<p>Publish the record on the domain used in the Return-Path. If the envelope sender is <code>bounce.example.com</code>, that name needs the record, not only <code>example.com</code>. Then check the TXT response from a resolver that is not your own office cache. The DNS lookup on this site asks a public resolver from your browser, which avoids a stale internal view.</p>
+<p>When the next service will not fit under ten lookups, sign it with DKIM aligned to the From domain and leave it out of SPF.</p>
+<aside class="guide-cta">
+    <div>
+        <p class="guide-kicker">See the published record</p>
+        <h2>Look up the TXT records</h2>
+        <p>The DNS lookup shows every TXT record on the domain, including the one that starts with v=spf1.</p>
+    </div>
+    <a class="ix-btn pri" href="/tools/dns-lookup/">Look up DNS</a>
+</aside>
+<h2>Questions</h2>
+<details><summary>Can I publish two SPF records, one per sender?</summary><p>No. Two TXT records that start with v=spf1 make the check a permanent error. Put every sender in the same record.</p></details>
+<details><summary>Does ~all authorise other servers?</summary><p>No. It is a soft fail for everyone not listed. It is not an SPF pass, so it does not satisfy DMARC.</p></details>
+<h2>Related guides</h2>
+<ul class="guide-related">
+<li><a href="/guides/fix-dmarc-failures/">How to fix DMARC failures</a><span>Read a DMARC failure, tell alignment from a bad sender, and move from p=none to reject safely.</span></li>
+<li><a href="/guides/monitor-ip-blacklist/">How to monitor an IP blacklist</a><span>A daily check of listings and of SPF, DMARC, DKIM and MX, with email only when the result changes.</span></li>
+</ul>
+</article>
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guides/">Guides</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+</body>
+</html>
