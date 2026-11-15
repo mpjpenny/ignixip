@@ -8,12 +8,21 @@ Edit data/ips.tsv or data/asns.tsv, then run:
 Weekly refresh of ASN names from RDAP (keeps the previous text if RDAP fails):
 
     python3 scripts/build_pages.py --refresh
+
+Add a guide:
+
+    1. Add an object to data/guides/manifest.json (slug, title, description, summary, date, tools, related, cta, optional faqs).
+    2. Add the article body as data/guides/<slug>.html. Aim for 700–1200 words in the rendered article.
+    3. Run this script. It writes guides/<slug>/index.html, guides/index.html, and sitemap.xml.
+    4. Commit the data files and the generated HTML. The pages workflow reruns this script.
 """
 
 import argparse
 import html
 import json
 import csv
+import re
+import shutil
 import sys
 import urllib.request
 from datetime import date
@@ -222,6 +231,7 @@ def footer():
                     <li><a href="/privacy/">Privacy</a></li>
                     <li><a href="https://ignix.co.uk">Ignix</a></li>
                     <li><a href="/api.html">API</a></li>
+                    <li><a href="/guides/">Guides</a></li>
                     <li><a href="/guide.html">Blacklist guide</a></li>
                     <li><a href="/dmarc.html">DMARC reports</a></li>
                     <li><a href="/">Home</a></li>
@@ -234,7 +244,8 @@ def footer():
 """
 
 
-def header():
+def header(current=""):
+    guides_attrs = ' class="on"' if current == "guides" else ""
     return """
 <header>
     <div class="wrap nav">
@@ -243,6 +254,7 @@ def header():
         <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
             <a href="/">Lookup</a>
             <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/guides/"%s>Guides</a>
             <a href="/watch/">Watch</a>
             <a href="/my-ip.html">What is my IP</a>
             <a href="/#faq">FAQ</a>
@@ -251,7 +263,7 @@ def header():
         <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
     </div>
 </header>
-"""
+""" % guides_attrs
 
 
 def json_ld(obj):
@@ -267,7 +279,11 @@ def faq_block(faqs):
     return items, "\n".join(html_bits)
 
 
-def page(title, description, canonical, body, graph, extra_scripts=""):
+def page(title, description, canonical, body, graph, extra_scripts="", og_type="website", current="", include_embed=True, published=""):
+    extra_meta = ""
+    if published:
+        extra_meta = '    <meta property="article:published_time" content="%s">\n' % esc(published)
+    tail = extra_scripts + ('<script src="/embed.js"></script>\n' if include_embed else "")
     return """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -279,9 +295,9 @@ def page(title, description, canonical, body, graph, extra_scripts=""):
     <meta property="og:title" content="%s">
     <meta property="og:description" content="%s">
     <meta property="og:url" content="%s">
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="%s">
     <meta name="twitter:card" content="summary">
-    <link rel="stylesheet" href="/site.css">
+%s    <link rel="stylesheet" href="/site.css">
     <script type="application/ld+json">%s</script>
 </head>
 <body>
@@ -290,10 +306,9 @@ def page(title, description, canonical, body, graph, extra_scripts=""):
 %s
 </div></main>
 %s
-%s<script src="/embed.js"></script>
-</body>
+%s</body>
 </html>
-""" % (esc(title), esc(description), esc(canonical), esc(title), esc(description), esc(canonical), json_ld(graph), header(), body, footer(), extra_scripts)
+""" % (esc(title), esc(description), esc(canonical), esc(title), esc(description), esc(canonical), esc(og_type), extra_meta, json_ld(graph), header(current), body, footer(), tail)
 
 
 def widget(kind, value, placeholder, button, textarea=False, auto=False):
@@ -387,7 +402,22 @@ def asn_page(row):
     return page(title, description, canonical, body, {"@context": "https://schema.org", "@graph": graph})
 
 
-def tool_page(tool):
+def tool_guide_links(slug, guides):
+    matches = [guide for guide in guides if slug in guide.get("tools", [])]
+    if not matches:
+        return ""
+    bits = ['<a href="/guides/%s/">%s</a>' % (esc(guide["slug"]), esc(guide["h1"])) for guide in matches]
+    label = "Guide" if len(matches) == 1 else "Guides"
+    if len(bits) == 1:
+        joined = bits[0]
+    elif len(bits) == 2:
+        joined = "%s and %s" % (bits[0], bits[1])
+    else:
+        joined = "%s and %s" % (", ".join(bits[:-1]), bits[-1])
+    return "<p>%s: %s.</p>\n" % (label, joined)
+
+
+def tool_page(tool, guides):
     canonical = "%s/tools/%s/" % (ORIGIN, tool["slug"])
     title = "%s | ignixip" % tool["title"]
     faq_json, faq_html = faq_block(tool["faqs"])
@@ -395,11 +425,11 @@ def tool_page(tool):
 <h1>%s</h1>
 <p class="lead">%s</p>
 <p>%s</p>
-<h2>Use the tool</h2>
+%s<h2>Use the tool</h2>
 %s
 <h2>Questions</h2>
 %s
-""" % (esc(tool["h1"]), esc(tool["lead"]), esc(tool["body"]), widget(tool["embed"], "", tool["placeholder"], tool["button"], textarea=tool.get("textarea", False), auto=False), faq_html)
+""" % (esc(tool["h1"]), esc(tool["lead"]), esc(tool["body"]), tool_guide_links(tool["slug"], guides), widget(tool["embed"], "", tool["placeholder"], tool["button"], textarea=tool.get("textarea", False), auto=False), faq_html)
     graph = [
         {
             "@type": "WebApplication",
@@ -448,10 +478,201 @@ def write_tsv(path, rows, fields):
         writer.writerows(rows)
 
 
+EXTERNAL_HOSTS = {
+    "www.rfc-editor.org",
+    "check.spamhaus.org",
+    "www.spamhaus.org",
+    "www.barracudacentral.org",
+    "www.spamcop.net",
+    "www.uceprotect.net",
+    "support.google.com",
+    "knowledge.workspace.google.com",
+    "learn.microsoft.com",
+    "support.microsoft.com",
+}
+
+
+def visible_words(fragment):
+    text = re.sub(r"<[^>]+>", " ", fragment)
+    text = html.unescape(text)
+    return len(text.split())
+
+
+def load_guides():
+    manifest = ROOT / "data" / "guides" / "manifest.json"
+    guides = json.loads(manifest.read_text(encoding="utf-8"))
+    slugs = [guide["slug"] for guide in guides]
+    if len(slugs) != len(set(slugs)):
+        raise SystemExit("duplicate guide slug")
+    for guide in guides:
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", guide["slug"]):
+            raise SystemExit("bad guide slug: %s" % guide["slug"])
+        body_path = ROOT / "data" / "guides" / (guide["slug"] + ".html")
+        guide["body"] = body_path.read_text(encoding="utf-8").strip()
+        for slug in guide["related"]:
+            if slug not in slugs or slug == guide["slug"]:
+                raise SystemExit("%s related guide missing: %s" % (guide["slug"], slug))
+        if len(guide["related"]) < 1:
+            raise SystemExit("%s needs a related guide" % guide["slug"])
+    return guides
+
+
+def guide_hrefs(fragment):
+    return re.findall(r'href="([^"]+)"', fragment)
+
+
+def check_guide_link(href, slugs):
+    if href.startswith("mailto:"):
+        if href != "mailto:hello@ignix.co.uk":
+            raise SystemExit("unexpected mailto: %s" % href)
+        return
+    if href.startswith("/"):
+        path = href.split("#", 1)[0]
+        rel = path.strip("/")
+        if path.startswith("/guides/"):
+            slug = rel.split("/")[1] if rel != "guides" else ""
+            if rel == "guides":
+                return
+            if slug not in slugs:
+                raise SystemExit("unknown guide link %s" % href)
+            return
+        file_path = ROOT / rel
+        index_path = ROOT / rel / "index.html"
+        if file_path.is_file() or index_path.is_file():
+            return
+        raise SystemExit("internal link has no file: %s" % href)
+    if href.startswith("https://"):
+        host = href.split("/", 3)[2]
+        if host not in EXTERNAL_HOSTS:
+            raise SystemExit("external link host not allowed: %s" % href)
+        return
+    raise SystemExit("bad href: %s" % href)
+
+
+def guide_article(guide, by_slug):
+    cta = guide["cta"]
+    check_guide_link(cta["href"], set(by_slug))
+    for href in guide_hrefs(guide["body"]):
+        check_guide_link(href, set(by_slug))
+    cta_html = """<aside class="guide-cta">
+    <div>
+        <p class="guide-kicker">%s</p>
+        <h2>%s</h2>
+        <p>%s</p>
+    </div>
+    <a class="ix-btn pri" href="%s">%s</a>
+</aside>""" % (esc(cta["kicker"]), esc(cta["heading"]), esc(cta["text"]), esc(cta["href"]), esc(cta["button"]))
+    faq_json = []
+    faq_html = ""
+    if guide.get("faqs"):
+        bits = []
+        for item in guide["faqs"]:
+            faq_json.append({"@type": "Question", "name": item["q"], "acceptedAnswer": {"@type": "Answer", "text": item["a"]}})
+            bits.append("<details><summary>%s</summary><p>%s</p></details>" % (esc(item["q"]), esc(item["a"])))
+        faq_html = "<h2>Questions</h2>\n" + "\n".join(bits)
+    related_bits = []
+    for slug in guide["related"][:2]:
+        other = by_slug[slug]
+        related_bits.append("<li><a href=\"/guides/%s/\">%s</a><span>%s</span></li>" % (esc(slug), esc(other["h1"]), esc(other["summary"])))
+    related_html = "<h2>Related guides</h2>\n<ul class=\"guide-related\">\n%s\n</ul>" % "\n".join(related_bits)
+    counted = " ".join([
+        guide["h1"],
+        guide["description"],
+        guide["body"],
+        cta["kicker"],
+        cta["heading"],
+        cta["text"],
+        cta["button"],
+    ])
+    for item in guide.get("faqs", []):
+        counted += " " + item["q"] + " " + item["a"]
+    words = visible_words(counted)
+    if not 700 <= words <= 1200:
+        raise SystemExit("%s is %s words; keep guides between 700 and 1200" % (guide["slug"], words))
+    print("guide", guide["slug"], "words", words)
+    body = """<article class="guide">
+<p class="guide-crumb"><a href="/guides/">Guides</a></p>
+<h1>%s</h1>
+<p class="lead">%s</p>
+%s
+%s
+%s
+%s
+</article>""" % (esc(guide["h1"]), esc(guide["description"]), guide["body"], cta_html, faq_html, related_html)
+    return body, faq_json
+
+
+def write_guides(guides):
+    by_slug = {guide["slug"]: guide for guide in guides}
+    guides_root = ROOT / "guides"
+    guides_root.mkdir(parents=True, exist_ok=True)
+    keep = {guide["slug"] for guide in guides}
+    for child in guides_root.iterdir():
+        if child.is_dir() and child.name not in keep:
+            shutil.rmtree(child)
+    urls = []
+    for guide in guides:
+        canonical = "%s/guides/%s/" % (ORIGIN, guide["slug"])
+        body, faq_json = guide_article(guide, by_slug)
+        graph = [{
+            "@type": "Article",
+            "headline": guide["h1"],
+            "description": guide["description"],
+            "datePublished": guide["date"],
+            "dateModified": guide["date"],
+            "inLanguage": "en-GB",
+            "author": {"@type": "Organization", "name": "ignixip", "url": ORIGIN + "/"},
+            "publisher": {"@type": "Organization", "name": "ignixip", "url": ORIGIN + "/"},
+            "mainEntityOfPage": {"@type": "WebPage", "@id": canonical},
+            "url": canonical,
+        }]
+        if faq_json:
+            graph.append({"@type": "FAQPage", "mainEntity": faq_json})
+        write(
+            guides_root / guide["slug"] / "index.html",
+            page(guide["title"], guide["description"], canonical, body, {"@context": "https://schema.org", "@graph": graph}, og_type="article", current="guides", include_embed=False, published=guide["date"]),
+        )
+        urls.append(canonical)
+    index_canonical = ORIGIN + "/guides/"
+    cards = []
+    for guide in guides:
+        cards.append(
+            '<a class="guide-card" href="/guides/%s/"><strong>%s</strong><span>%s</span></a>'
+            % (esc(guide["slug"]), esc(guide["h1"]), esc(guide["summary"]))
+        )
+    index_body = """
+<h1>Guides</h1>
+<p class="lead">Short practical notes for a listed IP, a DMARC failure, an SPF record, a header that does not add up, and an address you want watched.</p>
+<div class="guide-cards">
+%s
+</div>
+""" % "\n".join(cards)
+    index_title = "Guides for IP, DNS and mail | ignixip"
+    index_description = "Short practical guides on blacklist removal, DMARC failures, SPF records, email headers, and watching an address for changes."
+    graph = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "@id": index_canonical,
+        "url": index_canonical,
+        "name": index_title,
+        "description": index_description,
+        "mainEntity": {
+            "@type": "ItemList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": index + 1, "url": ORIGIN + "/guides/%s/" % guide["slug"], "name": guide["h1"]}
+                for index, guide in enumerate(guides)
+            ],
+        },
+    }
+    write(guides_root / "index.html", page(index_title, index_description, index_canonical, index_body, graph, og_type="website", current="guides", include_embed=False))
+    return [index_canonical] + urls
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--refresh", action="store_true", help="Update ASN names from RDAP")
     args = parser.parse_args()
+    guides = load_guides()
     ips = read_tsv(ROOT / "data" / "ips.tsv")
     asns = read_tsv(ROOT / "data" / "asns.tsv")
     if args.refresh:
@@ -471,8 +692,9 @@ def main():
         asn_urls.append(ORIGIN + "/asn/AS%s/" % row["asn"])
     tool_urls = []
     for tool in TOOLS:
-        write(ROOT / "tools" / tool["slug"] / "index.html", tool_page(tool))
+        write(ROOT / "tools" / tool["slug"] / "index.html", tool_page(tool, guides))
         tool_urls.append(ORIGIN + "/tools/%s/" % tool["slug"])
+    guide_urls = write_guides(guides)
     index = {
         "ips": {row["ip"]: True for row in ips},
         "asns": {"AS" + row["asn"]: True for row in asns},
@@ -492,7 +714,7 @@ def main():
         ORIGIN + "/search.html",
         ORIGIN + "/api.html",
     ]
-    locs = static + tool_urls + ip_urls + asn_urls
+    locs = static + guide_urls + tool_urls + ip_urls + asn_urls
     urlset = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for loc in locs:
         urlset.append("  <url><loc>%s</loc><lastmod>%s</lastmod></url>" % (esc(loc), TODAY))
@@ -503,7 +725,7 @@ def main():
     if "Sitemap:" not in text:
         text = text.rstrip() + "\nSitemap: https://ignixip.com/sitemap.xml\n"
     robots.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8")
-    print("ips", len(ips), "asns", len(asns), "tools", len(TOOLS), "urls", len(locs))
+    print("ips", len(ips), "asns", len(asns), "tools", len(TOOLS), "guides", len(guides), "urls", len(locs))
     return 0
 
 

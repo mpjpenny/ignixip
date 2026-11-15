@@ -1,0 +1,137 @@
+[
+  {
+    "slug": "why-is-my-ip-blacklisted",
+    "title": "Why is my IP blacklisted? | ignixip",
+    "h1": "Why is my IP blacklisted?",
+    "description": "What a DNS blacklist listing means, how to check Barracuda, SpamCop and UCEPROTECT, and how to ask each list for removal.",
+    "summary": "Check a listing, ask the right list for removal, and stop the same address being listed again.",
+    "date": "2026-11-15",
+    "tools": ["blacklist-check", "ip-lookup"],
+    "related": ["monitor-ip-blacklist", "fix-dmarc-failures"],
+    "cta": {
+      "kicker": "Check the address",
+      "heading": "See which lists name an IP",
+      "text": "The blacklist check queries SpamCop, Barracuda and UCEPROTECT, plus AbuseIPDB. It does not query Spamhaus.",
+      "href": "/tools/blacklist-check/",
+      "button": "Check a blacklist"
+    },
+    "faqs": [
+      {
+        "q": "Does a clear result on ignixip mean Spamhaus is clear?",
+        "a": "No. ignixip does not query Spamhaus. Use the lookup at check.spamhaus.org before you treat an address as unlisted."
+      },
+      {
+        "q": "Do I have to pay to be removed?",
+        "a": "SpamCop and UCEPROTECT Level 1 expire without a fee once the mail stops. Barracuda's removal form is free. UCEPROTECT also sells an optional faster removal."
+      }
+    ]
+  },
+  {
+    "slug": "fix-dmarc-failures",
+    "title": "How to fix DMARC failures | ignixip",
+    "h1": "How to fix DMARC failures",
+    "description": "How SPF, DKIM and DMARC alignment works, how to read p=none, quarantine and reject, and how to fix the failures reports usually show.",
+    "summary": "Read a DMARC failure, tell alignment from a bad sender, and move from p=none to reject safely.",
+    "date": "2026-11-15",
+    "tools": ["dmarc-check"],
+    "related": ["spf-record-explained", "read-email-headers"],
+    "cta": {
+      "kicker": "Read the DNS",
+      "heading": "Check the mail records for a domain",
+      "text": "The DMARC check shows the TXT and MX records. The report tool reads an aggregate file in your browser.",
+      "href": "/tools/dmarc-check/",
+      "button": "Check DMARC DNS"
+    },
+    "faqs": [
+      {
+        "q": "SPF passed. Why did DMARC fail?",
+        "a": "SPF passed for the envelope domain, and that domain is not aligned with the From address. DMARC needs an aligned SPF pass or an aligned DKIM pass."
+      },
+      {
+        "q": "Should I publish p=reject today?",
+        "a": "Only after reports show that mail you send is already passing. Start at p=none with an rua address, then quarantine, then reject."
+      }
+    ]
+  },
+  {
+    "slug": "spf-record-explained",
+    "title": "SPF record explained | ignixip",
+    "h1": "SPF record explained",
+    "description": "SPF syntax, the ten-lookup limit, the difference between ~all and -all, and why a second SPF record makes receivers return an error.",
+    "summary": "One TXT record, ten lookups, and a qualifier on all that matches what you actually send.",
+    "date": "2026-11-15",
+    "tools": ["dns-lookup", "dmarc-check"],
+    "related": ["fix-dmarc-failures", "monitor-ip-blacklist"],
+    "cta": {
+      "kicker": "See the published record",
+      "heading": "Look up the TXT records",
+      "text": "The DNS lookup shows every TXT record on the domain, including the one that starts with v=spf1.",
+      "href": "/tools/dns-lookup/",
+      "button": "Look up DNS"
+    },
+    "faqs": [
+      {
+        "q": "Can I publish two SPF records, one per sender?",
+        "a": "No. Two TXT records that start with v=spf1 make the check a permanent error. Put every sender in the same record."
+      },
+      {
+        "q": "Does ~all authorise other servers?",
+        "a": "No. It is a soft fail for everyone not listed. It is not an SPF pass, so it does not satisfy DMARC."
+      }
+    ]
+  },
+  {
+    "slug": "read-email-headers",
+    "title": "How to read email headers | ignixip",
+    "h1": "How to read email headers",
+    "description": "Where to find full headers in Gmail, Outlook and Apple Mail, how to read Received and Authentication-Results, and how to spot a forged From.",
+    "summary": "Copy the raw header, read Received from the bottom, and trust authentication results from your own server.",
+    "date": "2026-11-15",
+    "tools": ["header-analyzer"],
+    "related": ["fix-dmarc-failures", "why-is-my-ip-blacklisted"],
+    "cta": {
+      "kicker": "Pick out the addresses",
+      "heading": "List the IPs in a header",
+      "text": "Paste a header block. The analyser finds the IPv4 addresses in your browser so you can open each one.",
+      "href": "/tools/header-analyzer/",
+      "button": "Analyse headers"
+    },
+    "faqs": [
+      {
+        "q": "Which Received line is the sender?",
+        "a": "Read from the bottom. Skip your provider's internal hops at the top. The first external address a server you trust recorded is the one to look up."
+      },
+      {
+        "q": "Can Authentication-Results be forged?",
+        "a": "Yes, by the sender, further down the header. Use the copy added by your own mail server or your provider."
+      }
+    ]
+  },
+  {
+    "slug": "monitor-ip-blacklist",
+    "title": "How to monitor an IP blacklist | ignixip",
+    "h1": "How to monitor an IP blacklist",
+    "description": "Which blacklist and DNS changes are worth an alert, and how to turn on a free daily watch that emails you only when something changes.",
+    "summary": "A daily check of listings and of SPF, DMARC, DKIM and MX, with email only when the result changes.",
+    "date": "2026-11-15",
+    "tools": ["blacklist-check"],
+    "related": ["why-is-my-ip-blacklisted", "fix-dmarc-failures"],
+    "cta": {
+      "kicker": "Free email alert",
+      "heading": "Watch an IP or a domain",
+      "text": "Confirm the mailbox once. ignixip checks daily and writes only when a listing or a mail DNS record changes. Unsubscribe from any message.",
+      "href": "/watch/",
+      "button": "Set up a watch"
+    },
+    "faqs": [
+      {
+        "q": "Will I get a message every day?",
+        "a": "No. The check runs once a day. Mail is sent only after you confirm, and only when a watched listing or DNS record has changed."
+      },
+      {
+        "q": "Does a watch include Spamhaus?",
+        "a": "No. The blacklist watch uses the lists ignixip queries. Check Spamhaus at check.spamhaus.org when you need that result."
+      }
+    ]
+  }
+]

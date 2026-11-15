@@ -1,0 +1,41 @@
+<h2>Get the full header</h2>
+<p>The lines a mail client shows by default are a summary. The header block behind them is the part you can check: who handed the message to whom, and what the receiving system thought of SPF, DKIM, and DMARC. Copy the whole block. A screenshot of the From line is not enough.</p>
+<h3>Gmail</h3>
+<p>Open the message. Use the three-dot menu and choose <strong>Show original</strong>. Gmail opens a page with the authentication summary at the top and the raw header underneath. Copy that raw header. Google's own steps are in <a href="https://support.google.com/mail/answer/29436">Trace an email with its full header</a>.</p>
+<h3>Outlook</h3>
+<p>In classic Outlook for Windows, open the message in its own window, then choose <strong>File</strong>, then <strong>Properties</strong>. The internet headers box is the full block. Copy it out. You cannot read it properly inside that small field. In new Outlook, and in Outlook on the web, open <strong>View</strong> and then the message details or message source. Microsoft documents the menus in <a href="https://support.microsoft.com/en-us/outlook/view-internet-message-headers-in-outlook">View internet message headers in Outlook</a>.</p>
+<h3>Apple Mail</h3>
+<p>On a Mac, open the message and choose <strong>View</strong>, then <strong>Message</strong>, then <strong>Raw Source</strong>. <strong>All Headers</strong> on that menu expands fields in the window, but Raw Source is the block you can paste. iPhone and iPad Mail do not show it. Open the mailbox on a Mac, or in webmail, and copy it there.</p>
+
+<h2>Read Received from the bottom</h2>
+<p>Each server that accepts the message adds a <code>Received</code> line at the top. The earliest hop is the lowest <code>Received</code> line. Read upwards from there. A line looks like this:</p>
+<pre><code>Received: from mail.example.net (mail.example.net [203.0.113.10])
+    by mx.example.com with ESMTPS id abc;
+    Mon, 10 Nov 2025 09:14:02 +0000</code></pre>
+<p>The host after <code>by</code> is the machine that wrote the line. The host after <code>from</code> is who connected to it. The address in brackets is the connecting IP as the receiving machine saw it. Trust the IP that a server you trust wrote down. The name a connecting host claimed, the word after <code>from</code> before the brackets, is not evidence. Anyone can claim a name.</p>
+<p>The top few lines are usually your own provider carrying the message into the mailbox. They are real, and they are rarely the sender you are investigating. Step down until you reach the first hop from outside that provider. The IP on that line is the one to look up. Internal addresses such as <code>127.0.0.1</code> and <code>10.x</code> are the provider's own plumbing. Skip them.</p>
+<p>Dates should move forward as you read upwards, allowing for time zones. A clock that jumps backwards between two adjacent hops means those lines were not one continuous delivery. Trust the chain above the break. Treat the lines below it as something the sender may have written themselves.</p>
+
+<h2>Authentication-Results</h2>
+<p><a href="https://www.rfc-editor.org/info/rfc8601/">RFC 8601</a> defines <code>Authentication-Results</code>. A receiving server adds it to record what it concluded. A useful one names the server that wrote it, then the methods:</p>
+<pre><code>Authentication-Results: mx.example.com;
+    dkim=pass header.d=example.net;
+    spf=fail smtp.mailfrom=example.net;
+    dmarc=pass header.from=example.net</code></pre>
+<p>Read each method on its own. <code>spf=pass</code> means the connecting IP was in the SPF record of <code>smtp.mailfrom</code>. <code>dkim=pass</code> with <code>header.d=example.net</code> means a signature verified and claimed that domain. <code>dmarc=pass</code> means at least one of those passed and was aligned with the From domain. <code>dmarc=fail</code> means neither aligned. <code>none</code> means there was nothing to check, which is different from a fail.</p>
+<p>Trust the <code>Authentication-Results</code> header added by your own server, or by your provider's first external hop. A sender can forge an earlier one. If two disagree, believe the one next to a <code>Received</code> line you recognise.</p>
+<p>The same message's <code>DKIM-Signature</code> header carries <code>d=</code> for the signing domain and <code>s=</code> for the selector. The public key, if you need to compare it with DNS, is the TXT record at <code>selector._domainkey.that-domain</code>. The <a href="/mail-auth.html">mail authentication check</a> reads the published key and the DMARC record for a domain you type.</p>
+
+<h2>Signs the From address is not the sender</h2>
+<p>Spoofing is a From header the sender was not entitled to use. The header block shows it when you compare fields rather than trusting the display name.</p>
+<ul>
+<li><strong>From and Return-Path disagree, and DMARC fails.</strong> The visible sender is one domain. The envelope is another, SPF does not align, and there is no aligned DKIM pass. That is the pattern of a forged From. A mailing list can look similar, so read the List-Id and the Received path before you call it an attack.</li>
+<li><strong>DKIM passes for a different domain.</strong> <code>dkim=pass</code> and <code>header.d=some-other.example</code> only proves that other domain signed the message. It does not prove anything about the From domain. Attackers sign with domains they control. The pass is real, and it is irrelevant to the brand in From unless the domains align.</li>
+<li><strong>The first external IP is implausible.</strong> A message that claims to be from a bank, but whose first external hop is a residential or unrelated hosting address, is not from that bank's mail system. Look the address up. The <a href="/tools/ip-lookup/">IP lookup</a> shows the network. The <a href="/tools/blacklist-check/">blacklist check</a> shows whether SpamCop, Barracuda, or UCEPROTECT currently list it.</li>
+<li><strong>Reply-To points somewhere else.</strong> On its own this is weak. Invoices and contact forms do it on purpose. Combined with a DMARC failure, it tells you where the reply would go.</li>
+</ul>
+<p>Display names are not headers you can trust. <code>From: "Accounts &lt;finance@example.com&gt;" &lt;other@example.net&gt;</code> shows the real address only in the angle brackets. People read the quoted text. The header does not.</p>
+
+<h2>Pull the addresses out</h2>
+<p>Paste the block into the <a href="/tools/header-analyzer/">header analyser</a>. It runs in the browser and lists the IPv4 addresses it finds in the text, so you can open each one. Nothing is uploaded by that page. Start with the earliest public address that is not your provider, using the Received order above, rather than the first address in the list. Then judge the authentication headers yourself. The tool does not decide whether the message was spoofed. It saves you copying addresses by hand.</p>
+<p>If the message is one you sent, and a receiver's header shows your mail failing SPF or DMARC, the fault is in what you publish, not in the Received chain. Follow the <a href="/guides/fix-dmarc-failures/">DMARC guide</a> from the results in that header.</p>

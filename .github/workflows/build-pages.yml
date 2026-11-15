@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "data/**"
+      - "data/**" # includes data/guides, rebuilt into /guides/
       - "scripts/build_pages.py"
       - "embed.js"
       - "site.css"

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>How to monitor an IP blacklist | ignixip</title>
+    <meta name="description" content="Which blacklist and DNS changes are worth an alert, and how to turn on a free daily watch that emails you only when something changes.">
+    <link rel="canonical" href="https://ignixip.com/guides/monitor-ip-blacklist/">
+    <meta property="og:title" content="How to monitor an IP blacklist | ignixip">
+    <meta property="og:description" content="Which blacklist and DNS changes are worth an alert, and how to turn on a free daily watch that emails you only when something changes.">
+    <meta property="og:url" content="https://ignixip.com/guides/monitor-ip-blacklist/">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta property="article:published_time" content="2026-11-15">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Article", "headline": "How to monitor an IP blacklist", "description": "Which blacklist and DNS changes are worth an alert, and how to turn on a free daily watch that emails you only when something changes.", "datePublished": "2026-11-15", "dateModified": "2026-11-15", "inLanguage": "en-GB", "author": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "publisher": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://ignixip.com/guides/monitor-ip-blacklist/"}, "url": "https://ignixip.com/guides/monitor-ip-blacklist/"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Will I get a message every day?", "acceptedAnswer": {"@type": "Answer", "text": "No. The check runs once a day. Mail is sent only after you confirm, and only when a watched listing or DNS record has changed."}}, {"@type": "Question", "name": "Does a watch include Spamhaus?", "acceptedAnswer": {"@type": "Answer", "text": "No. The blacklist watch uses the lists ignixip queries. Check Spamhaus at check.spamhaus.org when you need that result."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/guides/" class="on">Guides</a>
+            <a href="/watch/">Watch</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+<article class="guide">
+<p class="guide-crumb"><a href="/guides/">Guides</a></p>
+<h1>How to monitor an IP blacklist</h1>
+<p class="lead">Which blacklist and DNS changes are worth an alert, and how to turn on a free daily watch that emails you only when something changes.</p>
+<h2>Why watch at all</h2>
+<p>A blacklist listing and a DNS change both sit there until something else breaks. Mail starts bouncing, or a domain begins to fail DMARC, and the first you hear of it is a colleague forwarding an error. Checking the address once, on the day you set the server up, does not tell you what it looks like next Tuesday.</p>
+<p>You need a note when the result differs from the last check. A daily "still fine" message trains people to ignore the one that matters. Watch the server and the domain you send from. A tool on someone else's platform is their address to watch.</p>
+
+<h2>What is worth alerting on</h2>
+<h3>Listings and delistings</h3>
+<p>A new listing is the event. Which list, and the address it names, decide the work. SpamCop clearing itself after a day is a different job from a listing that is still there after you have cleaned a machine. A delisting matters too. It tells you the removal worked, or that an expiry happened, so you can stop chasing that list. The <a href="/guides/why-is-my-ip-blacklisted/">blacklist guide</a> is the sequence: confirm the list, stop the cause, then use that list's own removal page. Spamhaus is not in the ignixip check. Keep using <a href="https://check.spamhaus.org/">Spamhaus's lookup</a> when you need that answer. A watch on this site does not add it.</p>
+<h3>SPF, DMARC, DKIM, and MX</h3>
+<p>These four are the DNS records that decide whether mail is accepted, and where it is delivered.</p>
+<ul>
+<li><strong>SPF</strong> changes when someone edits the TXT record. A good edit adds a sender. A bad edit publishes a second record, drops the only mail server, or sets <code>+all</code>. Any of those can be a mistake in a control panel. Any of them can also be an account on the DNS host that you did not mean to share.</li>
+<li><strong>DMARC</strong> changes when the policy tag changes. Moving from <code>p=none</code> to <code>p=reject</code> before senders align will refuse real mail. A record that disappears is a change as well.</li>
+<li><strong>DKIM</strong> is the TXT record at a selector under <code>_domainkey</code>. If the key changes and the sender still signs with the old private key, verification fails. If the record disappears, signatures fail closed.</li>
+<li><strong>MX</strong> changes where inbound mail goes. A new host you did not add is a delivery problem and, if you did not request it, a reason to treat the DNS account as exposed.</li>
+</ul>
+<p>Watching the website's A record is a separate problem. The mail watch is these four, plus blacklist state. Match the alert to the record. An MX change is not fixed by editing SPF.</p>
+
+<h2>Set up a free watch</h2>
+<p>The form is at <a href="/watch/">ignixip.com/watch</a>. It is free, and it is separate from any account you might use for bulk lookups.</p>
+<ol>
+<li>Enter the email address that should receive the alert. Use a mailbox that is read. A role address such as hostmaster@ is better than a personal mailbox if more than one person should see it.</li>
+<li>Enter the IP address or the domain. One watch is one target.</li>
+<li>Choose what to follow. <strong>Blacklist listings and delistings</strong> covers the public lists the check uses. <strong>DNS changes for SPF, DMARC, DKIM and MX</strong> covers those records. An IP starts with blacklist only. A domain starts with both. Untick either box if you do not want it. A domain with no mail can stay on DNS only, so you still hear about an MX or a DMARC record appearing.</li>
+<li>Submit the form. ignixip sends a confirmation if that mailbox can receive mail. The form does not tell you whether the address exists. If no message arrives, check the spam folder and the address you typed, then submit again. Alerts do not start until you open the confirmation link. That is the double opt-in. An unfinished signup sends nothing further.</li>
+<li>After you confirm, the address is checked once a day. You get email only when something being watched has changed. A day with no change produces no message.</li>
+</ol>
+<p>You can watch up to ten addresses from one email. The confirmation page, and the link in every later message, lists what that address is watching. Remove one, or remove them all, from there. Removing a watch deletes the email and the target held for it. You can also write to <a href="mailto:hello@ignix.co.uk">hello@ignix.co.uk</a> from that address if you no longer have the link. The <a href="/privacy/#watch">privacy note</a> is the full account of what is stored: the address, the target, and which boxes you ticked. It is not added to a general mailing list.</p>
+
+<h2>When a message arrives</h2>
+<p>Read which target changed, and which kind of change it was. Then check it while the detail is still current.</p>
+<ul>
+<li><strong>A new listing.</strong> Open the <a href="/tools/blacklist-check/">blacklist check</a> for that IP. Identify the list, find the sender, and follow that list's removal process. Do not request removal while the same mail is still going out.</li>
+<li><strong>A delisting.</strong> Note it, and leave the watch in place. The point of keeping it is the next listing, not this clearance.</li>
+<li><strong>An SPF, DMARC, or DKIM change you made.</strong> Compare the new record with what you meant to publish. The <a href="/tools/dns-lookup/">DNS lookup</a> and the <a href="/mail-auth.html">mail authentication check</a> show the published data. A second SPF record or a dropped <code>-all</code> is worth reverting the same day.</li>
+<li><strong>An MX or DNS change you did not make.</strong> Treat the DNS account as the thing to secure. Change the password, check who else has access, and put the records back. Then look at mail that arrived while the MX pointed elsewhere.</li>
+</ul>
+<p>The watch does not edit DNS and it does not submit a delisting. During a mail migration, expect one alert per record you change, and leave the watch on so an extra edit is visible beside the ones you planned.</p>
+<aside class="guide-cta">
+    <div>
+        <p class="guide-kicker">Free email alert</p>
+        <h2>Watch an IP or a domain</h2>
+        <p>Confirm the mailbox once. ignixip checks daily and writes only when a listing or a mail DNS record changes. Unsubscribe from any message.</p>
+    </div>
+    <a class="ix-btn pri" href="/watch/">Set up a watch</a>
+</aside>
+<h2>Questions</h2>
+<details><summary>Will I get a message every day?</summary><p>No. The check runs once a day. Mail is sent only after you confirm, and only when a watched listing or DNS record has changed.</p></details>
+<details><summary>Does a watch include Spamhaus?</summary><p>No. The blacklist watch uses the lists ignixip queries. Check Spamhaus at check.spamhaus.org when you need that result.</p></details>
+<h2>Related guides</h2>
+<ul class="guide-related">
+<li><a href="/guides/why-is-my-ip-blacklisted/">Why is my IP blacklisted?</a><span>Check a listing, ask the right list for removal, and stop the same address being listed again.</span></li>
+<li><a href="/guides/fix-dmarc-failures/">How to fix DMARC failures</a><span>Read a DMARC failure, tell alignment from a bad sender, and move from p=none to reject safely.</span></li>
+</ul>
+</article>
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guides/">Guides</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+</body>
+</html>
