@@ -1,18 +1,18 @@
 asn	name	country	about
-15169	Google	United States	Google's network, including Google Public DNS.
-13335	Cloudflare	United States	Cloudflare's anycast network and the 1.1.1.1 resolver.
-16509	Amazon.com	United States	Amazon Web Services primary network.
-14618	Amazon.com	United States	Amazon infrastructure network.
-7224	Amazon.com	United States	Amazon.com services network.
+15169	GOOGLE	United States	GOOGLE operates AS15169. Registry name: GOOGLE.
+13335	CLOUDFLARENET	United States	CLOUDFLARENET operates AS13335. Registry name: CLOUDFLARENET.
+16509	AMAZON-02	United States	AMAZON-02 operates AS16509. Registry name: AMAZON-02.
+14618	AMAZON-AES	United States	AMAZON-AES operates AS14618. Registry name: AMAZON-AES.
+7224	AMAZON-AS	United States	AMAZON-AS operates AS7224. Registry name: AMAZON-AS.
 8987	Amazon	Ireland	Amazon's European network.
-8075	Microsoft	United States	Microsoft, including Azure and Microsoft 365.
-32934	Meta	United States	Meta's network for Facebook, Instagram, and WhatsApp.
-714	Apple	United States	Apple's network for Apple services.
-2906	Netflix	United States	Netflix streaming network.
-40027	Netflix	United States	Netflix Open Connect caches.
-20940	Akamai	United States	Akamai content delivery network.
-16625	Akamai	United States	Akamai CDN delivery network.
-54113	Fastly	United States	Fastly edge cloud.
+8075	MICROSOFT-CORP-MSN-AS-BLOCK	United States	MICROSOFT-CORP-MSN-AS-BLOCK operates AS8075. Registry name: MICROSOFT-CORP-MSN-AS-BLOCK.
+32934	FACEBOOK	United States	FACEBOOK operates AS32934. Registry name: FACEBOOK.
+714	APPLE-ENGINEERING	United States	APPLE-ENGINEERING operates AS714. Registry name: APPLE-ENGINEERING.
+2906	AS-SSI	United States	AS-SSI operates AS2906. Registry name: AS-SSI.
+40027	NETFLIX-ASN	United States	NETFLIX-ASN operates AS40027. Registry name: NETFLIX-ASN.
+20940	AKAMAI-ASN1	United States	AKAMAI-ASN1 operates AS20940. Registry name: AKAMAI-ASN1.
+16625	AKAMAI-AS	United States	AKAMAI-AS operates AS16625. Registry name: AKAMAI-AS.
+54113	FASTLY	United States	FASTLY operates AS54113. Registry name: FASTLY.
 3356	Lumen	United States	Lumen global backbone, formerly Level 3.
 1299	Arelion	Sweden	Arelion global transit, formerly Telia Carrier.
 174	Cogent	United States	Cogent Communications transit network.
