@@ -35,6 +35,14 @@
 
 <main class="seo"><div class="wrap">
 
+<script>
+if (/[?&]q=/.test(location.search)) {
+    var shareRobots = document.createElement('meta');
+    shareRobots.name = 'robots';
+    shareRobots.content = 'noindex, follow';
+    document.head.appendChild(shareRobots);
+}
+</script>
 <h1>DNS lookup</h1>
 <p class="lead">Query public DNS for a domain and read the records that mail and web servers use.</p>
 <p>DNS lookup shows the addresses, mail servers, name servers, and text records published for a domain. ignixip asks a public resolver from your browser and lists the answers it receives.</p>
@@ -104,6 +112,8 @@
 </footer>
 
 <script src="/watch-cta.js"></script>
+<script src="/indexed.js"></script>
+<script src="/share.js"></script>
 <script src="/embed.js"></script>
 </body>
 </html>

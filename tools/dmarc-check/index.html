@@ -35,6 +35,14 @@
 
 <main class="seo"><div class="wrap">
 
+<script>
+if (/[?&]q=/.test(location.search)) {
+    var shareRobots = document.createElement('meta');
+    shareRobots.name = 'robots';
+    shareRobots.content = 'noindex, follow';
+    document.head.appendChild(shareRobots);
+}
+</script>
 <h1>DMARC check</h1>
 <p class="lead">Enter a domain to read the TXT and MX records that mail authentication depends on.</p>
 <p>DMARC and SPF are published as DNS TXT records. This page loads the domain&#x27;s TXT and MX records so you can see whether a policy is present. For a plain-English reading of an aggregate report file, use the DMARC report tool.</p>
@@ -104,6 +112,8 @@
 </footer>
 
 <script src="/watch-cta.js"></script>
+<script src="/indexed.js"></script>
+<script src="/share.js"></script>
 <script src="/embed.js"></script>
 </body>
 </html>

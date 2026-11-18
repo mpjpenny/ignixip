@@ -1,5 +1,19 @@
 /* Small client lookup used by the pre-generated SEO pages. */
 (function () {
+    function shareApi() {
+        return window.ignixShare || null;
+    }
+    function finishShare(root, kind, value) {
+        var share = shareApi();
+        var box = root.querySelector('[data-results]');
+        if (!share || !box) return;
+        var path = share.embedQuery(kind, value, location.pathname);
+        if (!path) return;
+        box.insertAdjacentHTML('beforeend', share.barHtml(share.absolute(path)));
+        if (location.pathname + location.search !== path) history.replaceState({}, '', path);
+        var canonical = path.indexOf('?') === -1 ? '' : share.embedCanonical(kind, value, window.IGNIX_INDEX);
+        share.applyMeta(path, canonical);
+    }
     function esc(s) {
         return String(s == null ? '' : s)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -27,6 +41,7 @@
         );
         html += '<p class="seo-note"><a href="' + fullLink('ip', ip) + '">Open the full ignixip report</a></p>';
         box.innerHTML = html;
+        finishShare(box.parentNode, 'ip', ip);
     }
 
     function runIp(root, ip) {
@@ -58,6 +73,7 @@
                 var name = (d && d.name) || 'Unknown';
                 box.innerHTML = card('Live RDAP', row('ASN', 'AS' + esc(num)) + row('Name', esc(name)) + row('Handle', esc((d && d.handle) || '—'))) +
                     '<p class="seo-note"><a href="/?tab=asn&asn=AS' + encodeURIComponent(num) + '&full=1">Open the full ASN lookup</a></p>';
+                finishShare(root, 'asn', 'AS' + num);
             })
             .catch(function () {
                 box.innerHTML = '<div class="error-card">ASN lookup failed.</div>';
@@ -92,6 +108,7 @@
             box.innerHTML = (html || '<div class="error-card">No records returned.</div>') +
                 '<p class="seo-note"><a href="/?tab=dns&q=' + encodeURIComponent(host) + '&full=1">Open the full DNS lookup</a></p>' +
                 watch;
+            finishShare(root, root.getAttribute('data-embed') === 'dmarc' ? 'dmarc' : 'dns', host);
         });
     }
 
@@ -130,6 +147,7 @@
                     }).join('') + row('AbuseIPDB', score == null ? '—' : esc(score + '%'));
                     box.innerHTML = card('Quick blacklist check', inner) +
                         '<p class="seo-note">Spamhaus is not queried on this page. <a href="' + fullLink('bl', ip) + '">Open the full blacklist check</a>.</p>';
+                    finishShare(root, 'blacklist', ip);
                 });
         });
     }
@@ -139,6 +157,15 @@
         var input = el.querySelector('[data-query]');
         var button = el.querySelector('button');
         function go(value) {
+            var share = shareApi();
+            if (share && kind !== 'headers' && kind !== 'bulk') {
+                var path = share.embedQuery(kind, value, location.pathname);
+                if (path) {
+                    if (location.pathname + location.search !== path) history.replaceState({}, '', path);
+                    var canonical = path.indexOf('?') === -1 ? '' : share.embedCanonical(kind, value, window.IGNIX_INDEX);
+                    share.applyMeta(path, canonical);
+                }
+            }
             if (kind === 'ip' || kind === 'blacklist') runIpOrBl(kind, el, value);
             else if (kind === 'asn') runAsn(el, value);
             else if (kind === 'dns' || kind === 'dmarc') runDns(el, value);
@@ -155,7 +182,37 @@
                 go(input ? input.value.trim() : '');
             });
         }
-        if (el.getAttribute('data-auto') === '1' && input && input.value.trim()) go(input.value.trim());
+        var share = shareApi();
+        var fromUrl = '';
+        var rejectUrl = false;
+        if (share && (kind === 'headers' || kind === 'bulk')) {
+            var note = document.createElement('p');
+            note.className = 'share-note';
+            note.textContent = share.unavailableNote(kind);
+            var form = el.querySelector('form');
+            if (form) form.insertAdjacentElement('afterend', note);
+            if (new URLSearchParams(location.search).get('q')) {
+                history.replaceState({}, '', location.pathname);
+                share.clearNoindex();
+            }
+        } else if (share && input) {
+            var rawQuery = new URLSearchParams(location.search).get('q');
+            if (rawQuery) {
+                var cleaned = share.normalizeEmbed(kind, rawQuery);
+                if (!cleaned) {
+                    var box = el.querySelector('[data-results]');
+                    if (box) box.innerHTML = '<div class="error-card">That link does not contain a valid lookup.</div>';
+                    if (location.search) history.replaceState({}, '', location.pathname);
+                    share.clearNoindex();
+                    rejectUrl = true;
+                } else {
+                    input.value = cleaned;
+                    fromUrl = cleaned;
+                }
+            }
+        }
+        if (fromUrl) go(fromUrl);
+        else if (!rejectUrl && el.getAttribute('data-auto') === '1' && input && input.value.trim()) go(input.value.trim());
         if (button && !el.querySelector('form')) button.addEventListener('click', function () { go(input ? input.value.trim() : ''); });
     }
 

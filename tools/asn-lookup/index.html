@@ -35,6 +35,14 @@
 
 <main class="seo"><div class="wrap">
 
+<script>
+if (/[?&]q=/.test(location.search)) {
+    var shareRobots = document.createElement('meta');
+    shareRobots.name = 'robots';
+    shareRobots.content = 'noindex, follow';
+    document.head.appendChild(shareRobots);
+}
+</script>
 <h1>ASN lookup</h1>
 <p class="lead">Enter an ASN such as AS15169 to see the name published in the registry.</p>
 <p>An autonomous system number identifies a network on the public Internet. This page reads the registration name from RDAP. The static ASN pages on ignixip add a short description and a country for the operators we publish.</p>
@@ -102,6 +110,8 @@
     </div>
 </footer>
 
+<script src="/indexed.js"></script>
+<script src="/share.js"></script>
 <script src="/embed.js"></script>
 </body>
 </html>

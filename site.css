@@ -187,6 +187,11 @@ footer li a:hover { color: var(--acc2); }
     .widget .search { flex-direction: column; }
 }
 .seo-note { color: var(--mut); margin: 12px 0 0; }
+.share-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 0; }
+.share-bar .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--text); font: 600 14px 'JetBrains Mono', ui-monospace, monospace; cursor: pointer; }
+.share-bar .action-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+.share-bar .action-btn.is-copied { color: var(--ok); border-color: var(--ok); }
+.share-note { color: var(--mut); font-size: 15px; line-height: 1.5; margin: 8px 0 0; }
 .seo details { border: 1px solid var(--line); background: var(--card); border-radius: 12px; margin-bottom: 10px; }
 .seo summary { cursor: pointer; padding: 16px 18px; font-weight: 600; list-style: none; }
 .seo summary::-webkit-details-marker { display: none; }

@@ -284,7 +284,9 @@ def page(title, description, canonical, body, graph, extra_scripts="", og_type="
     extra_meta = ""
     if published:
         extra_meta = '    <meta property="article:published_time" content="%s">\n' % esc(published)
-    tail = extra_scripts + ('<script src="/embed.js"></script>\n' if include_embed else "")
+    tail = extra_scripts
+    if include_embed:
+        tail += '<script src="/indexed.js"></script>\n<script src="/share.js"></script>\n<script src="/embed.js"></script>\n'
     return """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -424,6 +426,14 @@ def tool_page(tool, guides):
     faq_json, faq_html = faq_block(tool["faqs"])
     body_html = tool["body"] if tool.get("body_html") else esc(tool["body"])
     body = """
+<script>
+if (/[?&]q=/.test(location.search)) {
+    var shareRobots = document.createElement('meta');
+    shareRobots.name = 'robots';
+    shareRobots.content = 'noindex, follow';
+    document.head.appendChild(shareRobots);
+}
+</script>
 <h1>%s</h1>
 <p class="lead">%s</p>
 <p>%s</p>

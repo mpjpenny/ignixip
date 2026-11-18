@@ -35,6 +35,14 @@
 
 <main class="seo"><div class="wrap">
 
+<script>
+if (/[?&]q=/.test(location.search)) {
+    var shareRobots = document.createElement('meta');
+    shareRobots.name = 'robots';
+    shareRobots.content = 'noindex, follow';
+    document.head.appendChild(shareRobots);
+}
+</script>
 <h1>Email header analyser</h1>
 <p class="lead">Paste a header block. The page lists IPv4 addresses it finds so you can look each one up.</p>
 <p>Received headers record the path an email took. The useful part for a reputation check is often an IP address in those lines. This page extracts IPv4 addresses locally in your browser. Nothing is uploaded.</p>
@@ -103,6 +111,8 @@
     </div>
 </footer>
 
+<script src="/indexed.js"></script>
+<script src="/share.js"></script>
 <script src="/embed.js"></script>
 </body>
 </html>
