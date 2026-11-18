@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Why is my VPN IP blacklisted? | ignixip</title>
+    <meta name="description" content="Why a shared VPN exit ends up on blacklists, what you can do about it, and why a VPN does not clear a mail server&#x27;s own listing.">
+    <link rel="canonical" href="https://ignixip.com/guides/why-is-my-vpn-ip-blacklisted/">
+    <meta property="og:title" content="Why is my VPN IP blacklisted? | ignixip">
+    <meta property="og:description" content="Why a shared VPN exit ends up on blacklists, what you can do about it, and why a VPN does not clear a mail server&#x27;s own listing.">
+    <meta property="og:url" content="https://ignixip.com/guides/why-is-my-vpn-ip-blacklisted/">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta property="article:published_time" content="2026-11-18">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Article", "headline": "Why is my VPN IP blacklisted?", "description": "Why a shared VPN exit ends up on blacklists, what you can do about it, and why a VPN does not clear a mail server's own listing.", "datePublished": "2026-11-18", "dateModified": "2026-11-18", "inLanguage": "en-GB", "author": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "publisher": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://ignixip.com/guides/why-is-my-vpn-ip-blacklisted/"}, "url": "https://ignixip.com/guides/why-is-my-vpn-ip-blacklisted/"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Will a VPN hide a mail server that is already listed?", "acceptedAnswer": {"@type": "Answer", "text": "No. Receivers see the IP that opens the SMTP connection. A VPN on the computer you read mail from does not change that address."}}, {"@type": "Question", "name": "Does a clear result mean the exit is safe to send from?", "acceptedAnswer": {"@type": "Answer", "text": "No. Spamhaus is not queried, and sites block shared exits for reasons that are not a DNSBL. The same exit can be listed again the same day."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/guides/" class="on">Guides</a>
+            <a href="/watch/">Watch</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+<article class="guide">
+<p class="guide-crumb"><a href="/guides/">Guides</a></p>
+<h1>Why is my VPN IP blacklisted?</h1>
+<p class="lead">Why a shared VPN exit ends up on blacklists, what you can do about it, and why a VPN does not clear a mail server&#x27;s own listing.</p>
+<h2>A shared exit</h2>
+<p>A VPN sends your traffic out through an address that belongs to the operator, not to you. That address is an exit. It is not the address your ISP assigned, and it is rarely yours alone. Many people can use the same exit at once. Websites, mail servers, and blocklists see that shared address. They cannot see which customer made a given connection.</p>
+<p>When one of those users sends spam, hosts a phishing page, or scans the internet, the lists record the exit. The next person handed that address inherits the listing. The sharing does not stop, so the listing comes back. The <a href="/guides/why-is-my-ip-blacklisted/">guide to a listed IP</a> is what to do when you operate the address. This page is the case where you do not.</p>
+
+<h2>What the block actually is</h2>
+<p>A DNS blacklist, also called a DNSBL, publishes addresses through DNS. A mail server builds a query from the connecting address. If the list answers, the server can refuse the message, defer it, or file it. <a href="https://www.rfc-editor.org/info/rfc5782/">RFC 5782</a> describes that query. There is no single global list. A hit on one says nothing about the others.</p>
+<p>Websites block exits for a different reason. Banks, shops, and login forms treat a shared datacentre address as a fraud risk, whether or not a DNSBL names it. A block page is not proof of a listing. A listing is not proof that your computer is infected. On a shared exit the reports usually belong to someone else.</p>
+<p>Some lists cover a range rather than one address. UCEPROTECT Level 2 is one of those, and ignixip does check it, so another address in the same block can still be covered. Spamhaus is not in this check. Its rows say <strong>Not checked</strong>. A datacentre range is often on a Spamhaus policy list, which is not a spam verdict. Read the zone name at <a href="https://check.spamhaus.org/">Spamhaus's own lookup</a> before you treat it as abuse.</p>
+
+<h2>What you can do</h2>
+<h3>Switch server</h3>
+<p>Another location is a different address. Check it before you rely on it. It is still shared, so it may already be listed, and someone else can list it again tomorrow. Switching helps when a site will not load. It does not remove the old address from any list.</p>
+<h3>An operator that retires bad exits</h3>
+<p>Some operators take abuse reports, disconnect the customers who caused them, and stop handing out an exit that stays listed. Judge the exit you were given: is it listed today, and is it still listed after you have sent nothing? Ask what they do with a listed exit. Do not pay a third party that promises to clear every list.</p>
+<h3>An address only you use</h3>
+<p>A dedicated address, sometimes sold as a static exit, is allocated to your account. Other customers no longer land on it, so a new listing is much more likely to be yours. You can stop the cause. Removal is still requested by the network that holds the address: a list wants that operator, not a person on a shared pool. The <a href="/guides/why-is-my-ip-blacklisted/">removal steps</a> are what that operator follows.</p>
+<p>Dedicated does not mean clean. The address can arrive listed from the previous tenant, and a range listing can still cover it. It remains a datacentre address, which some sites block with no DNSBL hit at all. If you send mail from it, it also needs matching reverse DNS. That check is the <a href="/guides/reverse-dns-for-email/">reverse DNS guide</a>.</p>
+
+<h2>Why a VPN does not clear your mail server</h2>
+<p>A bounce names the IP that opened the SMTP connection. That is the mail server, or the provider's smarthost, not the laptop that submitted the message in a browser. A VPN on that laptop changes the address websites see when you read mail. It does not change the address in the bounce. The <a href="/guides/read-email-headers/">header guide</a> shows how to pick the connecting address out of a <code>Received</code> line. Trust the address a server you trust wrote down.</p>
+<p>Sending the server's own mail out through a VPN swaps its address for a shared exit. Receivers then see an address that is more likely to be listed, and that you cannot get removed, because you do not operate it. The server's own address stays listed for anyone who connects to it directly. Fix that address with the removal guide, or stop sending from it and use the provider's mail host. A home connection, and many datacentre ranges, are not supposed to send on port 25 at all.</p>
+
+<h2>Check the address you have now</h2>
+<p>Connect to the exit you want to test. Disconnect first if you want the address your ISP assigned.</p>
+<ol>
+<li>Open <a href="/my-ip.html">What is my IP</a> and copy the address. That is the one this site sees. The full-report link on that page is a static page, and this site only publishes those for a fixed set of addresses, so paste yours into the check instead.</li>
+<li>Open the blacklist check. A link has the form <a href="/?tab=bl&amp;ip=8.8.8.8"><code>/?tab=bl&amp;ip=8.8.8.8</code></a>. Replace <code>8.8.8.8</code> with the address you copied. For an IPv4 address it queries Barracuda BRBL, SpamCop, SORBS SPAM, SORBS HTTP, UCEPROTECT L1, UCEPROTECT L2, Abuse.ch SSLBL, and NordSpam, plus AbuseIPDB when that service answers. Spamhaus is marked <strong>Not checked</strong>. A clear result is not a Spamhaus clearance. Those eight lists are not queried for an IPv6 address. A website can still block an exit that no list names.</li>
+<li>The shorter <a href="/tools/blacklist-check/">blacklist check</a> asks SpamCop, Barracuda, and UCEPROTECT Level 1 only. Use the link above for all eight. The IP lookup at <a href="/?tab=ip&amp;ip=8.8.8.8&amp;full=1"><code>/?tab=ip&amp;ip=8.8.8.8&amp;full=1</code></a> names the network and, when that source answers, whether the address is flagged as a VPN, a proxy, or Tor. Replace the example with your address. A hosting network is normal for an exit.</li>
+<li>If you will keep the address, watch it. <a href="/watch/?target=8.8.8.8&amp;kinds=blacklist">This watch link</a> is filled in for <code>8.8.8.8</code>. Replace that address, leave <strong>Blacklist listings and delistings</strong> ticked, and submit. ignixip emails a confirmation. Alerts start after you open it, and only when a listing changes. The <a href="/guides/monitor-ip-blacklist/">monitoring guide</a> covers removing a watch. A watch does not follow you to a new exit. Add the new address when you switch.</li>
+</ol>
+<p>Do not request removal for a shared exit. The list asks for the operator. A request from a customer on the pool is refused, and the next user would list the address again.</p>
+<aside class="guide-cta">
+    <div>
+        <p class="guide-kicker">Check the exit</p>
+        <h2>See which lists name an IP</h2>
+        <p>Paste the address from What is my IP. The check covers eight IPv4 DNSBLs plus AbuseIPDB. Spamhaus is marked not checked.</p>
+    </div>
+    <a class="ix-btn pri" href="/?tab=bl">Open the blacklist check</a>
+</aside>
+<h2>Questions</h2>
+<details><summary>Will a VPN hide a mail server that is already listed?</summary><p>No. Receivers see the IP that opens the SMTP connection. A VPN on the computer you read mail from does not change that address.</p></details>
+<details><summary>Does a clear result mean the exit is safe to send from?</summary><p>No. Spamhaus is not queried, and sites block shared exits for reasons that are not a DNSBL. The same exit can be listed again the same day.</p></details>
+<h2>Related guides</h2>
+<ul class="guide-related">
+<li><a href="/guides/why-is-my-ip-blacklisted/">Why is my IP blacklisted?</a><span>Check a listing, ask the right list for removal, and stop the same address being listed again.</span></li>
+<li><a href="/guides/monitor-ip-blacklist/">How to monitor an IP blacklist</a><span>A daily check of listings and of SPF, DMARC, DKIM and MX, with email only when the result changes.</span></li>
+</ul>
+</article>
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guides/">Guides</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+</body>
+</html>
