@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reverse DNS for email | ignixip</title>
+    <meta name="description" content="What a PTR record is, why mail servers want forward-confirmed reverse DNS, how to look it up, and who actually publishes it.">
+    <link rel="canonical" href="https://ignixip.com/guides/reverse-dns-for-email/">
+    <meta property="og:title" content="Reverse DNS for email | ignixip">
+    <meta property="og:description" content="What a PTR record is, why mail servers want forward-confirmed reverse DNS, how to look it up, and who actually publishes it.">
+    <meta property="og:url" content="https://ignixip.com/guides/reverse-dns-for-email/">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta property="article:published_time" content="2026-11-18">
+    <link rel="stylesheet" href="/site.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Article", "headline": "Reverse DNS for email", "description": "What a PTR record is, why mail servers want forward-confirmed reverse DNS, how to look it up, and who actually publishes it.", "datePublished": "2026-11-18", "dateModified": "2026-11-18", "inLanguage": "en-GB", "author": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "publisher": {"@type": "Organization", "name": "ignixip", "url": "https://ignixip.com/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://ignixip.com/guides/reverse-dns-for-email/"}, "url": "https://ignixip.com/guides/reverse-dns-for-email/"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "I added a PTR next to my SPF record. Why is there still no reverse DNS?", "acceptedAnswer": {"@type": "Answer", "text": "The reverse zone belongs to the network that holds the IP, not to your domain's DNS host, unless that zone was delegated to you. A PTR at the domain host is not the record receivers query."}}, {"@type": "Question", "name": "Does a confirmed PTR make DMARC pass?", "acceptedAnswer": {"@type": "Answer", "text": "No. DMARC passes on aligned SPF or aligned DKIM. Forward-confirmed reverse DNS is a separate check on the connecting IP. You want both."}}]}]}</script>
+</head>
+<body>
+
+<header>
+    <div class="wrap nav">
+        <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-links" onclick="var open=document.body.classList.toggle('nav-open');this.setAttribute('aria-expanded',open?'true':'false')">Menu</button>
+        <nav class="links" id="site-links" onclick="document.body.classList.remove('nav-open')">
+            <a href="/">Lookup</a>
+            <a href="/tools/ip-lookup/">Tools</a>
+            <a href="/guides/" class="on">Guides</a>
+            <a href="/watch/">Watch</a>
+            <a href="/my-ip.html">What is my IP</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/api.html">API</a>
+        </nav>
+        <a class="nav-cta" href="/tools/bulk-check/">Bulk check — free</a>
+    </div>
+</header>
+
+<main class="seo"><div class="wrap">
+<article class="guide">
+<p class="guide-crumb"><a href="/guides/">Guides</a></p>
+<h1>Reverse DNS for email</h1>
+<p class="lead">What a PTR record is, why mail servers want forward-confirmed reverse DNS, how to look it up, and who actually publishes it.</p>
+<h2>What a PTR record is</h2>
+<p>Forward DNS answers which address a name uses. An <code>A</code> record does that for IPv4, and an <code>AAAA</code> record for IPv6. Reverse DNS asks which name an address claims. The record type is PTR. <a href="https://www.rfc-editor.org/info/rfc1035/">RFC 1035</a> puts IPv4 reverse names under <code>in-addr.arpa</code>, with the octets reversed. For the documentation address <code>203.0.113.10</code> the query is <code>10.113.0.203.in-addr.arpa</code>. IPv6 reverses the nibbles under <code>ip6.arpa</code>, as <a href="https://www.rfc-editor.org/info/rfc3596/">RFC 3596</a> defines.</p>
+<p>Publish one hostname you control, such as <code>mail.example.com</code>. If several PTRs exist, the lookup on this site shows the first answer it receives.</p>
+
+<h2>Why a receiving server looks</h2>
+<p>Many mail servers refuse or slow mail when the connecting address has no PTR, or when that name does not point back at the address. The second step is forward-confirmed reverse DNS. Look up the PTR, then look up <code>A</code> or <code>AAAA</code> for the name it returned. The original address has to be one of those answers. <a href="https://www.rfc-editor.org/info/rfc1912/">RFC 1912</a> says the PTR and the address record should match. A name that points somewhere else fails in the same way as a missing record.</p>
+<p><a href="https://support.google.com/mail/answer/81126">Gmail's sender guidelines</a> require a PTR whose hostname resolves back to the sending address. The <a href="https://support.google.com/mail/answer/14229414">sender FAQ</a> uses <code>4.7.23</code> when Gmail rate-limits a missing or mismatched PTR, and <code>5.7.25</code> when it refuses the message. That rejection often never appears in a DMARC report, because the session ended first.</p>
+<p>SMTP does not require that refusal. <a href="https://www.rfc-editor.org/info/rfc5321/">RFC 5321</a> says the EHLO name must be a primary hostname, a name with an address record, or an address literal when the host has none. A server may check that the name matches the client address, but it must not refuse the message only because that match failed. Refusing for a missing PTR is the receiver's own policy, which many operators apply.</p>
+
+<h2>Look it up</h2>
+<p>Use the sending address from the bounce, not the computer you read mail on. The full IP lookup prints a Reverse DNS row.</p>
+<ul>
+<li><strong>A name and FCrDNS.</strong> A PTR was found, and a forward lookup of that name returned this address.</li>
+<li><strong>A name and "no forward match".</strong> A PTR was found, and the name did not return this address.</li>
+<li><strong>No PTR record.</strong> The reverse query returned nothing.</li>
+</ul>
+<p>The check uses a public resolver. IPv4 is confirmed with <code>A</code>, IPv6 with <code>AAAA</code>. See the row on a known address: <a href="/?tab=ip&amp;ip=8.8.8.8&amp;full=1"><code>/?tab=ip&amp;ip=8.8.8.8&amp;full=1</code></a>. <code>8.8.8.8</code> is a public resolver, not a mail server. Replace it with your sending address. <code>full=1</code> keeps you on that report. Without it, an address this site already publishes opens as its own page, which does not show the forward-confirmed mark. Then read the hostname with the <a href="/tools/dns-lookup/">DNS lookup</a>, for example <a href="/?tab=dns&amp;q=dns.google"><code>/?tab=dns&amp;q=dns.google</code></a>. The name in the PTR needs an <code>A</code> or <code>AAAA</code> that is the sending address. The short <a href="/tools/ip-lookup/">IP lookup</a> can show a hostname. It does not show the FCrDNS mark.</p>
+
+<h2>Who sets it, and how to fix it</h2>
+<p>The reverse zone belongs to the network that holds the address: the host, the VPS provider, or the ISP. It is not your domain's zone. A PTR typed in next to SPF, at the company that hosts <code>example.com</code>, does nothing unless they also hold the address and have delegated the reverse zone to you. That delegation is uncommon.</p>
+<ol>
+<li>Choose a hostname in a zone you control, usually <code>mail.example.com</code>. Gmail asks for a reverse name in your domain, not only a name the provider generated.</li>
+<li>Publish the forward record at your DNS host first. For IPv4 that is <code>mail.example.com. A 203.0.113.10</code>, with your address instead of the documentation address. Add <code>AAAA</code> if the server connects over IPv6. Many providers refuse the PTR until this record already points at the address. Check it with the DNS lookup.</li>
+<li>Ask the IP provider to set the PTR to that hostname. The panel may say rDNS, reverse DNS, or PTR. This is a ticket on the server account, not a record at your DNS host.</li>
+<li>Set the server's EHLO name to that hostname. Receivers compare the announced name with the PTR. A PTR that confirms under a different name still fails them.</li>
+<li>After the TTL, open the IP lookup again and look for FCrDNS. A new cloud address needs the PTR set again.</li>
+</ol>
+<p>If the provider will not set a PTR, which is normal on a home connection and on some shared hosts, you cannot repair it in your DNS. Send through a host that already has reverse DNS. Editing SPF will not clear the rejection. The <a href="/guides/why-is-my-ip-blacklisted/">blacklist guide</a> reaches the same conclusion for a policy range: that address should not be the one opening port 25.</p>
+
+<h2>SPF, DKIM, DMARC, and the HELO name</h2>
+<p>A correct PTR does not make the other checks pass. A pass on the others does not satisfy a receiver that requires forward-confirmed reverse DNS.</p>
+<ul>
+<li><strong>The PTR</strong> names the connecting address. It does not authorise a domain.</li>
+<li><strong>SPF</strong> lists addresses allowed to use a domain in the envelope. It does not read the PTR. The <code>ptr</code> mechanism inside an SPF record is a different thing, and <a href="https://www.rfc-editor.org/info/rfc7208/">RFC 7208</a> says not to use it. The <a href="/guides/spf-record-explained/">SPF guide</a> covers that. Adding it does not publish a PTR.</li>
+<li><strong>An empty envelope sender</strong> is how a bounce is sent. RFC 7208 then treats the MAIL FROM identity as <code>postmaster</code> at the EHLO hostname. That name needs an SPF record which includes this server, or the bounce fails SPF while ordinary mail passes. <code>v=spf1 a -all</code> is enough when the name's own address is the server.</li>
+<li><strong>DKIM</strong> signs the message. It does not look at the PTR. A rejection for a missing PTR can happen before the signature is checked.</li>
+<li><strong>DMARC</strong> passes only when SPF or DKIM passed and aligned with From. The <a href="/guides/fix-dmarc-failures/">DMARC guide</a> is that rule. Gmail asks for the DNS match and for authentication. Neither replaces the other.</li>
+<li><strong>The EHLO name</strong>, still often called HELO, should be the PTR name. The <a href="/guides/read-email-headers/">header guide</a> shows where a receiver recorded the name the client claimed. That claim is not the PTR. When they differ, change the server so it announces the PTR name.</li>
+</ul>
+<p>The <a href="/mail-auth.html">mail authentication check</a> describes SPF, DKIM, and DMARC. It does not read the reverse zone. Use the IP lookup for the PTR.</p>
+<aside class="guide-cta">
+    <div>
+        <p class="guide-kicker">Read the PTR</p>
+        <h2>See reverse DNS for an address</h2>
+        <p>The full IP lookup shows the PTR name and whether it points back at the address. 8.8.8.8 is a working example. Use your mail server&#x27;s address for the real check.</p>
+    </div>
+    <a class="ix-btn pri" href="/?tab=ip&amp;ip=8.8.8.8&amp;full=1">Look up 8.8.8.8</a>
+</aside>
+<h2>Questions</h2>
+<details><summary>I added a PTR next to my SPF record. Why is there still no reverse DNS?</summary><p>The reverse zone belongs to the network that holds the IP, not to your domain&#x27;s DNS host, unless that zone was delegated to you. A PTR at the domain host is not the record receivers query.</p></details>
+<details><summary>Does a confirmed PTR make DMARC pass?</summary><p>No. DMARC passes on aligned SPF or aligned DKIM. Forward-confirmed reverse DNS is a separate check on the connecting IP. You want both.</p></details>
+<h2>Related guides</h2>
+<ul class="guide-related">
+<li><a href="/guides/spf-record-explained/">SPF record explained</a><span>One TXT record, ten lookups, and a qualifier on all that matches what you actually send.</span></li>
+<li><a href="/guides/fix-dmarc-failures/">How to fix DMARC failures</a><span>Read a DMARC failure, tell alignment from a bad sender, and move from p=none to reject safely.</span></li>
+</ul>
+</article>
+</div></main>
+
+<footer>
+    <div class="wrap">
+        <div class="fgrid">
+            <div>
+                <a class="logo" href="/"><span class="ix">IX</span>ignixip</a>
+                <p class="footer-blurb">Free IP, DNS and blacklist intelligence. A community tool by Ignix.</p>
+            </div>
+            <div>
+                <h4>Tools</h4>
+                <ul>
+                    <li><a href="/tools/ip-lookup/">IP lookup</a></li>
+                    <li><a href="/tools/dns-lookup/">DNS lookup</a></li>
+                    <li><a href="/tools/asn-lookup/">ASN lookup</a></li>
+                    <li><a href="/tools/blacklist-check/">Blacklist check</a></li>
+                    <li><a href="/tools/dmarc-check/">DMARC check</a></li>
+                    <li><a href="/tools/header-analyzer/">Header analyser</a></li>
+                    <li><a href="/tools/bulk-check/">Bulk check</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Network</h4>
+                <ul>
+                    <li><a href="/ip/8.8.8.8/">8.8.8.8</a></li>
+                    <li><a href="/ip/1.1.1.1/">1.1.1.1</a></li>
+                    <li><a href="/asn/AS15169/">AS15169 Google</a></li>
+                    <li><a href="/asn/AS13335/">AS13335 Cloudflare</a></li>
+                    <li><a href="/my-ip.html">What is my IP</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/watch/">Watch</a></li>
+                    <li><a href="/privacy/">Privacy</a></li>
+                    <li><a href="https://ignix.co.uk">Ignix</a></li>
+                    <li><a href="/api.html">API</a></li>
+                    <li><a href="/guides/">Guides</a></li>
+                    <li><a href="/guide.html">Blacklist guide</a></li>
+                    <li><a href="/dmarc.html">DMARC reports</a></li>
+                    <li><a href="/">Home</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal"><span>© 2026 Ignix. All rights reserved.</span><span>Data sources: public DNS, RDAP, AbuseIPDB</span></div>
+    </div>
+</footer>
+
+</body>
+</html>

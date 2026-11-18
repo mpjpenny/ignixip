@@ -133,5 +133,59 @@
         "a": "No. The blacklist watch uses the lists ignixip queries. Check Spamhaus at check.spamhaus.org when you need that result."
       }
     ]
+  },
+  {
+    "slug": "why-is-my-vpn-ip-blacklisted",
+    "title": "Why is my VPN IP blacklisted? | ignixip",
+    "h1": "Why is my VPN IP blacklisted?",
+    "description": "Why a shared VPN exit ends up on blacklists, what you can do about it, and why a VPN does not clear a mail server's own listing.",
+    "summary": "A shared exit collects other people's listings. Switch server, or use an address only you use.",
+    "date": "2026-11-18",
+    "tools": ["blacklist-check", "ip-lookup"],
+    "related": ["why-is-my-ip-blacklisted", "monitor-ip-blacklist"],
+    "cta": {
+      "kicker": "Check the exit",
+      "heading": "See which lists name an IP",
+      "text": "Paste the address from What is my IP. The check covers eight IPv4 DNSBLs plus AbuseIPDB. Spamhaus is marked not checked.",
+      "href": "/?tab=bl",
+      "button": "Open the blacklist check"
+    },
+    "faqs": [
+      {
+        "q": "Will a VPN hide a mail server that is already listed?",
+        "a": "No. Receivers see the IP that opens the SMTP connection. A VPN on the computer you read mail from does not change that address."
+      },
+      {
+        "q": "Does a clear result mean the exit is safe to send from?",
+        "a": "No. Spamhaus is not queried, and sites block shared exits for reasons that are not a DNSBL. The same exit can be listed again the same day."
+      }
+    ]
+  },
+  {
+    "slug": "reverse-dns-for-email",
+    "title": "Reverse DNS for email | ignixip",
+    "h1": "Reverse DNS for email",
+    "description": "What a PTR record is, why mail servers want forward-confirmed reverse DNS, how to look it up, and who actually publishes it.",
+    "summary": "The PTR is set by the network that holds the IP, and it has to match the name the server announces.",
+    "date": "2026-11-18",
+    "tools": ["ip-lookup", "dns-lookup"],
+    "related": ["spf-record-explained", "fix-dmarc-failures"],
+    "cta": {
+      "kicker": "Read the PTR",
+      "heading": "See reverse DNS for an address",
+      "text": "The full IP lookup shows the PTR name and whether it points back at the address. 8.8.8.8 is a working example. Use your mail server's address for the real check.",
+      "href": "/?tab=ip&ip=8.8.8.8&full=1",
+      "button": "Look up 8.8.8.8"
+    },
+    "faqs": [
+      {
+        "q": "I added a PTR next to my SPF record. Why is there still no reverse DNS?",
+        "a": "The reverse zone belongs to the network that holds the IP, not to your domain's DNS host, unless that zone was delegated to you. A PTR at the domain host is not the record receivers query."
+      },
+      {
+        "q": "Does a confirmed PTR make DMARC pass?",
+        "a": "No. DMARC passes on aligned SPF or aligned DKIM. Forward-confirmed reverse DNS is a separate check on the connecting IP. You want both."
+      }
+    ]
   }
 ]

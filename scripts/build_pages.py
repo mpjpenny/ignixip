@@ -539,7 +539,8 @@ def check_guide_link(href, slugs):
             raise SystemExit("unexpected mailto: %s" % href)
         return
     if href.startswith("/"):
-        path = href.split("#", 1)[0]
+        # Query strings are how the lookup and watch pages take a target.
+        path = href.split("#", 1)[0].split("?", 1)[0] or "/"
         rel = path.strip("/")
         if path.startswith("/guides/"):
             slug = rel.split("/")[1] if rel != "guides" else ""
@@ -654,13 +655,13 @@ def write_guides(guides):
         )
     index_body = """
 <h1>Guides</h1>
-<p class="lead">Short practical notes for a listed IP, a DMARC failure, an SPF record, a header that does not add up, and an address you want watched.</p>
+<p class="lead">Short practical notes for a listed IP, a shared VPN address, reverse DNS on a mail server, a DMARC failure, an SPF record, a header that does not add up, and an address you want watched.</p>
 <div class="guide-cards">
 %s
 </div>
 """ % "\n".join(cards)
     index_title = "Guides for IP, DNS and mail | ignixip"
-    index_description = "Short practical guides on blacklist removal, DMARC failures, SPF records, email headers, and watching an address for changes."
+    index_description = "Short practical guides on blacklist removal, shared VPN addresses, reverse DNS, DMARC failures, SPF records, email headers, and watching an address for changes."
     graph = {
         "@context": "https://schema.org",
         "@type": "CollectionPage",
