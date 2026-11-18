@@ -136,6 +136,7 @@
             <span class="domain-name" id="result-domain"></span>
             <span class="ns-info" id="ns-info"></span>
         </div>
+        <div id="share-slot"></div>
 
         <!-- DMARC card -->
         <div class="card" id="dmarc-card">
@@ -219,6 +220,7 @@
     </div>
 </footer>
 
+<script src="/share.js"></script>
 <script src="/watch-cta.js"></script>
 <script>
 const API_BASE = 'https://tools.ignixip.com';
@@ -281,9 +283,21 @@ function renderResults(data) {
         nsInfo.classList.remove('authoritative');
     }
 
-    renderDmarc(data.dmarc);
+        renderDmarc(data.dmarc);
     renderSpf(data.spf);
     renderDkim(data.dkim_selectors_found, data.dkim_selectors_probed);
+    var shareSlot = document.getElementById('share-slot');
+    if (shareSlot && window.ignixShare) {
+        var selectorNow = document.getElementById('selector-input').value.trim();
+        var hash = window.ignixShare.mailAuthHash(domainInput.value, selectorNow, authToggle.checked);
+        if (hash) {
+            var shareUrl = location.origin + location.pathname + hash;
+            if (location.hash !== hash) history.replaceState({}, '', location.pathname + location.search + hash);
+            shareSlot.innerHTML = window.ignixShare.barHtml(shareUrl);
+        } else {
+            shareSlot.innerHTML = '';
+        }
+    }
     var watchSlot = document.getElementById('watch-slot');
     if (watchSlot && window.ignixWatch) {
         watchSlot.innerHTML = window.ignixWatch.cta(data.domain);
@@ -428,13 +442,15 @@ function truncate(s, n) {
 }
 
 // Optional: pre-fill from URL hash like #domain=eon.co.uk&selector=foo
-const hashDomain = window.location.hash.match(/domain=([^&]+)/);
-const hashSelector = window.location.hash.match(/selector=([^&]+)/);
-if (hashDomain) {
-    domainInput.value = decodeURIComponent(hashDomain[1]);
-    if (hashSelector) {
-        document.getElementById('selector-input').value = decodeURIComponent(hashSelector[1]);
-    }
+const mailLink = window.ignixShare ? window.ignixShare.readMailAuthHash(window.location.hash) : null;
+if (window.location.hash && window.location.hash.indexOf('domain=') !== -1 && !mailLink) {
+    errorBox.textContent = 'That link does not contain a valid domain.';
+    errorBox.classList.add('show');
+    history.replaceState({}, '', location.pathname + location.search);
+} else if (mailLink) {
+    domainInput.value = mailLink.domain;
+    document.getElementById('selector-input').value = mailLink.selector;
+    authToggle.checked = mailLink.authoritative;
     form.dispatchEvent(new Event('submit'));
 }
 </script>

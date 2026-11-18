@@ -35,6 +35,14 @@
 
 <main class="seo"><div class="wrap">
 
+<script>
+if (/[?&]q=/.test(location.search)) {
+    var shareRobots = document.createElement('meta');
+    shareRobots.name = 'robots';
+    shareRobots.content = 'noindex, follow';
+    document.head.appendChild(shareRobots);
+}
+</script>
 <h1>IP blacklist check</h1>
 <p class="lead">See whether an address is listed on the DNS blacklists this page can query, and what AbuseIPDB currently reports.</p>
 <p>A blacklist check asks DNS-based lists whether they publish the address. This page queries 8 DNSBLs: Barracuda BRBL, SpamCop, SORBS SPAM, SORBS HTTP, UCEPROTECT L1, UCEPROTECT L2, Abuse.ch SSLBL and NordSpam, plus AbuseIPDB. Spamhaus requires a licensed feed and is not checked here, so a clear result is not a Spamhaus clearance. Use <a href="https://check.spamhaus.org/">Spamhaus's free lookup</a>.</p>
@@ -103,6 +111,8 @@
     </div>
 </footer>
 
+<script src="/indexed.js"></script>
+<script src="/share.js"></script>
 <script src="/embed.js"></script>
 </body>
 </html>

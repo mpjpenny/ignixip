@@ -15,6 +15,14 @@
     <meta name="twitter:title" content="ignixip — Free IP Address Lookup & Blacklist Check">
     <meta name="twitter:description" content="Look up any IP address or domain. Geolocation, DNS records, blacklist checking. Free and fast.">
     <link rel="canonical" href="https://ignixip.com">
+    <script>
+        if (/[?&](?:q|ip|asn)=/.test(location.search)) {
+            var shareRobots = document.createElement('meta');
+            shareRobots.name = 'robots';
+            shareRobots.content = 'noindex, follow';
+            document.head.appendChild(shareRobots);
+        }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -227,6 +235,7 @@
         .action-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
         .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--text-muted); font-size: 14px; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.2s; }
         .action-btn:hover { border-color: var(--blue); color: var(--text); background: var(--surface2); }
+        .action-btn.is-copied { color: var(--green); border-color: var(--green); }
         .action-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
 
         /* Toast notification */
@@ -502,6 +511,7 @@
 
     <!-- Bulk Lookup Tab -->
     <div class="tab-pane" id="tab-bulk">
+        <p class="search-hint">There isn&rsquo;t a share link for a list of addresses. A link would have to include the whole list. Open one address and share that result.</p>
         <div id="bulk-auth-area"></div>
         <div id="bulk-input-area" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -510,9 +520,9 @@
             </div>
             <textarea id="bulk-ips" style="width:100%;height:160px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);resize:vertical;outline:none;" placeholder="Paste IP addresses here — one per line, comma-separated, or raw log text&#10;&#10;Example:&#10;8.8.8.8&#10;1.1.1.1&#10;185.220.101.34"></textarea>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;margin-bottom:16px;">
-                <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;">
-                    Up to 25 IPs per lookup &middot; <span id="bulk-count">0</span> IPs detected
-                </div>
+            <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;">
+                Up to 25 IPs per lookup &middot; <span id="bulk-count">0</span> IPs detected
+            </div>
                 <div style="display:flex;gap:8px;">
                     <button class="action-btn" onclick="clearBulk()">Clear</button>
                     <button class="search-btn" id="bulk-btn" onclick="runBulkLookup()">Look Up All</button>
@@ -549,7 +559,8 @@
         <textarea id="headers-input" style="width:100%;height:200px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);resize:vertical;outline:none;margin-bottom:10px;" placeholder="Paste raw email headers here...&#10;&#10;Copy the full headers from your email client:&#10;  Gmail: Open email → ⋮ → Show original&#10;  Outlook: Open email → File → Properties → Internet Headers&#10;  Thunderbird: View → Headers → All"></textarea>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
             <div style="font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;">
-                Extracts IPs from Received: headers and checks each one
+                Extracts IPs from Received: headers and checks each one.
+                There isn&rsquo;t a share link for pasted headers &mdash; the block can contain private addresses, and a URL would publish it. Look up one address from the result if you want a link to send.
             </div>
             <div style="display:flex;gap:8px;">
                 <button class="action-btn" onclick="clearHeaders()">Clear</button>
@@ -756,6 +767,7 @@
 <script src="/reputation.js"></script>
 <script src="/ask.js"></script>
 <script src="/indexed.js"></script>
+<script src="/share.js"></script>
 <script>
 // ── DNSBL list (shared by IP Lookup risk score and Blacklist tab) ────────────
 var DNSBL_LISTS = [
@@ -787,9 +799,18 @@ function navTo(url) {
     history.pushState({}, '', url);
 }
 
+function restoreHomeMeta() {
+    if (window.ignixShare) window.ignixShare.clearNoindex();
+    var canon = document.querySelector('link[rel="canonical"]');
+    if (canon) canon.setAttribute('href', 'https://ignixip.com');
+    var og = document.querySelector('meta[property="og:url"]');
+    if (og) og.setAttribute('content', 'https://ignixip.com');
+}
+
 function switchTab(tab, opts) {
     opts = opts || {};
     clearAskMode();
+    restoreHomeMeta();
     var pane = document.getElementById('tab-' + tab);
     if (!pane) return;
     document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
@@ -886,10 +907,7 @@ function heroSearch(raw) {
     if (input) input.value = q;
     var kind = classifyQuery(q);
     updateHeroDetect();
-    if (!kind) {
-        history.replaceState({}, '', '/?q=' + encodeURIComponent(q));
-        return false;
-    }
+    if (!kind) return false;
     if ((kind.tab === 'ip' || kind.tab === 'asn') && goIndexable(q)) return false;
     if (kind.tab === 'urlcheck' || kind.tab === 'emailcheck') {
         switchTab(kind.tab, { silent: true });
@@ -899,10 +917,8 @@ function heroSearch(raw) {
         else checkEmail();
         var ws = document.getElementById('workspace');
         if (ws) ws.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        history.replaceState({}, '', '/?q=' + encodeURIComponent(q));
     } else {
         setAndLookup(kind.tab, q);
-        history.replaceState({}, '', '/?q=' + encodeURIComponent(q));
     }
     return false;
 }
@@ -1038,6 +1054,7 @@ function openTool(e, tab) {
 
 function closeWorkspace() {
     clearAskMode();
+    restoreHomeMeta();
     var ws = document.getElementById('workspace');
     if (ws) ws.classList.add('is-hidden');
     document.querySelectorAll('.tool[data-tool]').forEach(function(el) { el.classList.remove('on'); });
@@ -1152,6 +1169,7 @@ function lookupIP() {
     var query = ipInput.value.trim();
     setWatchSlot('ip-watch', '');
     if (!query || query === 'detecting...') return;
+    publishLookup('ip', query);
     ipBtn.disabled = true;
     ipBtn.textContent = 'Looking up...';
     ipResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying IP intelligence</span></div>';
@@ -1250,7 +1268,7 @@ function doIPLookup(ip, originalDomain) {
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (d.error) {
-                ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>';
+                ipResults.innerHTML = '<div class="error-card">Could not look up "' + ip + '" — ' + (d.error.message || 'invalid IP') + '</div>' + shareBarHtml('ip', ip);
             } else {
                 d.originalDomain = originalDomain;
                 Promise.all([vpnPromise, rdapPromise, abusePromise, dnsblPromise, ptrPromise, geoPromise]).then(function(extra) {
@@ -1260,7 +1278,7 @@ function doIPLookup(ip, originalDomain) {
             ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
         })
         .catch(function() {
-            ipResults.innerHTML = '<div class="error-card">Lookup failed — check your connection</div>';
+            ipResults.innerHTML = '<div class="error-card">Lookup failed — check your connection</div>' + shareBarHtml('ip', ip);
             ipBtn.disabled = false; ipBtn.textContent = 'Look Up';
         });
 }
@@ -1646,7 +1664,7 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
     html += '<button class="action-btn" onclick="copyReport()"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy Report</button>';
     html += '<button class="action-btn" onclick="exportJSON()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON</button>';
     html += '<button class="action-btn" onclick="generateAbuseReport()"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Report Abuse</button>';
-    html += '<button class="action-btn" onclick="copyShareLink()"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Share Link</button>';
+    html += window.ignixShare ? window.ignixShare.actionButtons(window.ignixShare.absolute(window.ignixShare.homepageQuery('ip', d.originalDomain || ip))) : '';
     html += '<button class="action-btn" onclick="showReportForm(\'' + ip + '\')"><svg viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg>Report IP</button>';
     html += '</div>';
 
@@ -1740,7 +1758,6 @@ function renderIPResults(d, vpnData, rdapData, abuseData, dnsblResults, ptrData,
 
     ipResults.innerHTML = html;
     setWatchSlot('ip-watch', (d.originalDomain && window.ignixWatch && window.ignixWatch.isWatchable(d.originalDomain)) ? d.originalDomain : ip);
-    if (new URLSearchParams(location.search).get('full') !== '1') navTo('/?q=' + encodeURIComponent(d.originalDomain || ip));
 
     // Log lookup to tools server for stats (fire and forget)
     try {
@@ -1817,16 +1834,21 @@ function routeFromPath(pathname) {
     return { tab: tab, value: value };
 }
 
+function publishLookup(tab, value) {
+    if (window.askSuppressHistory || !window.ignixShare) return;
+    var path = window.ignixShare.homepageQuery(tab, value);
+    if (!path) return;
+    var here = (location.pathname === '/index.html' ? '/' : location.pathname) + location.search;
+    if (here !== path) history.replaceState({}, '', path);
+    window.ignixShare.applyMeta(path, window.ignixShare.canonicalFor(tab, value, window.IGNIX_INDEX));
+}
+
 function prettyPath(tab, value) {
-    tab = tab || 'ip';
-    if (value === undefined || value === null || value === '') return '/?tab=' + encodeURIComponent(tab);
-    if (tab === 'ip' || tab === 'asn') {
-        var indexed = indexablePath(value);
-        if (indexed) return indexed;
-        return '/?q=' + encodeURIComponent(value);
+    if (window.ignixShare) {
+        var path = window.ignixShare.homepageQuery(tab, value);
+        if (path) return path;
     }
-    if (tab === 'dns' || tab === 'whois') return '/' + tab + '/' + encodeURIComponent(value);
-    return '/?tab=' + encodeURIComponent(tab) + '&q=' + encodeURIComponent(value);
+    return '/?tab=' + encodeURIComponent(tab || 'ip');
 }
 
 function runRoutedLookup(tab, value) {
@@ -1845,6 +1867,12 @@ function runRoutedLookup(tab, value) {
         if (value) { asnInput.value = value; lookupASN(); }
     } else if (tab === 'tools') {
         if (value) { toolsInput.value = value; runTools(); }
+    } else if (tab === 'urlcheck') {
+        var urlField = document.getElementById('url-input');
+        if (value && urlField) { urlField.value = value; checkURL(); }
+    } else if (tab === 'emailcheck') {
+        var emailField = document.getElementById('email-input');
+        if (value && emailField) { emailField.value = value; checkEmail(); }
     }
 }
 
@@ -1858,14 +1886,17 @@ function shareUrl(tab, value) {
 }
 
 function copyShareLink(tab, value) {
-    var url = shareUrl(tab, value);
-    navigator.clipboard.writeText(url).then(function() { showToast('Link copied to clipboard'); });
+    if (!window.ignixShare) return;
+    if (value === undefined || value === null || value === '') {
+        if (lastLookupData) value = lastLookupData.originalDomain || lastLookupData.ip;
+    }
+    var path = window.ignixShare.homepageQuery(tab || 'ip', value);
+    window.ignixShare.copyUrl(window.ignixShare.absolute(path), document.activeElement);
 }
 
 function shareBarHtml(tab, value) {
-    return '<div class="action-bar fade-in"><button type="button" class="action-btn" onclick="copyShareLink(' +
-        JSON.stringify(tab) + ',' + JSON.stringify(value) +
-        ')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Share Link</button></div>';
+    if (!window.ignixShare) return '';
+    return window.ignixShare.barHtml(window.ignixShare.absolute(window.ignixShare.homepageQuery(tab, value)));
 }
 
 // ── DNS Lookup ───────────────────────────────────────────────────────────────
@@ -1883,6 +1914,7 @@ function lookupDNS() {
         dnsResults.innerHTML = '<div class="error-card">DNS lookup is for domain names. For IP addresses use the IP Lookup tab.</div>';
         return;
     }
+    publishLookup('dns', domain);
     dnsBtn.disabled = true;
     dnsBtn.textContent = 'Looking up...';
     dnsResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying DNS records</span></div>';
@@ -1897,7 +1929,6 @@ function lookupDNS() {
         renderDNSResults(domain, results);
         dnsBtn.disabled = false;
         dnsBtn.textContent = 'Look Up';
-        navTo('/?tab=dns&q=' + encodeURIComponent(domain));
         var prevCerts = document.querySelectorAll('.cert-section');
         prevCerts.forEach(function(el) { el.remove(); });
         fetch('https://crt.sh/?q=' + encodeURIComponent(domain) + '&output=json')
@@ -1980,6 +2011,7 @@ function checkBlacklist() {
         blResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
         return;
     }
+    publishLookup('bl', ip);
     blBtn.disabled = true;
     blBtn.textContent = 'Checking...';
     blResults.innerHTML = '<div class="loading"><span class="loading-dots">Checking blacklists</span></div>';
@@ -1994,7 +2026,6 @@ function checkBlacklist() {
         renderBlacklistResults(ip, results, abuseData);
         blBtn.disabled = false;
         blBtn.textContent = 'Check';
-        navTo('/?tab=bl&ip=' + encodeURIComponent(ip));
     });
 }
 
@@ -2093,6 +2124,7 @@ function lookupWHOIS() {
     var query = whoisInput.value.trim();
     setWatchSlot('whois-watch', '');
     if (!query) return;
+    publishLookup('whois', query);
     whoisBtn.disabled = true;
     whoisBtn.textContent = 'Looking up...';
     whoisResults.innerHTML = '<div class="loading"><span class="loading-dots">Looking up WHOIS</span></div>';
@@ -2115,7 +2147,6 @@ function lookupWHOIS() {
             }
             whoisBtn.disabled = false;
             whoisBtn.textContent = 'Look Up';
-            navTo('/?tab=whois&q=' + encodeURIComponent(query));
         })
         .catch(function(err) {
             whoisResults.innerHTML = '<div class="error-card">WHOIS lookup failed - ' + (err.message || 'please check input and try again') + '</div>';
@@ -2257,10 +2288,10 @@ function runTools() {
         toolsResults.innerHTML = '<div class="error-card">Please enter a valid IPv4 or IPv6 address</div>';
         return;
     }
+    publishLookup('tools', ip);
     toolsBtn.disabled = true;
     toolsBtn.textContent = 'Running...';
     toolsResults.innerHTML = '<div class="loading"><span class="loading-dots">Running ping, port scan and traceroute</span></div>';
-    navTo('/?tab=tools&ip=' + encodeURIComponent(ip));
 
     var pingPromise = fetch('https://tools.ignixip.com/ping/' + encodeURIComponent(ip))
         .then(function(r) { return r.json(); }).catch(function() { return null; });
@@ -2384,6 +2415,7 @@ function lookupASN() {
     var raw = asnInput.value.trim();
     var num = raw.replace(/^AS/i, '');
     if (!num) return;
+    publishLookup('asn', raw);
     asnBtn.disabled = true;
     asnBtn.textContent = 'Looking up...';
     asnResults.innerHTML = '<div class="loading"><span class="loading-dots">Querying ASN data</span></div>';
@@ -2396,7 +2428,6 @@ function lookupASN() {
         renderASN('AS' + num, res[0], res[1]);
         asnBtn.disabled = false;
         asnBtn.textContent = 'Look Up';
-        if (new URLSearchParams(location.search).get('full') !== '1') navTo('/?q=' + encodeURIComponent('AS' + num));
     });
 }
 
@@ -3405,6 +3436,7 @@ function checkURL() {
     var url = document.getElementById('url-input').value.trim();
     setWatchSlot('url-watch', '');
     if (!url) return;
+    publishLookup('urlcheck', url);
     var btn = document.getElementById('url-btn');
     var results = document.getElementById('url-results');
     btn.disabled = true;
@@ -3567,6 +3599,7 @@ function checkURL() {
             html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
         }
 
+        html += shareBarHtml('urlcheck', url);
         // Report button
         html += '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;">';
         html += '<button class="action-btn" onclick="showDomainReportForm(\'' + domain + '\', \'url\')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg> Report this URL</button>';
@@ -3600,6 +3633,7 @@ function checkEmail() {
     var input = document.getElementById('email-input').value.trim();
     setWatchSlot('email-watch', '');
     if (!input) return;
+    publishLookup('emailcheck', input);
     var btn = document.getElementById('email-btn');
     var results = document.getElementById('email-results');
     btn.disabled = true;
@@ -3787,6 +3821,7 @@ function checkEmail() {
             html += '<div style="margin-top:10px;text-align:center;"><a onclick="setAndLookup(\'ip\',\'' + resolvedIP + '\')" style="color:var(--blue-bright);cursor:pointer;text-decoration:none;font-size:13px;font-family:JetBrains Mono,monospace;">Full IP report for ' + resolvedIP + ' →</a></div>';
         }
 
+        html += shareBarHtml('emailcheck', input);
         // Report button
         html += '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;">';
         html += '<button class="action-btn" onclick="showDomainReportForm(\'' + domain + '\', \'sender\')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 9v2m0 4h.01M5.07 19H19a2.12 2.12 0 001.83-3.19L13.83 4.65a2.12 2.12 0 00-3.66 0L3.24 15.81A2.12 2.12 0 005.07 19z"/></svg> Report this sender</button>';
@@ -4086,6 +4121,19 @@ function loadNewsBanner() {
         });
 }
 
+function showRouteError(tab) {
+    var ids = { ip: 'ip-results', dns: 'dns-results', bl: 'bl-results', whois: 'whois-results', asn: 'asn-results', tools: 'tools-results', urlcheck: 'url-results', emailcheck: 'email-results' };
+    var el = document.getElementById(ids[tab] || '');
+    if (el) el.innerHTML = '<div class="error-card">That link does not contain a valid lookup.</div>';
+}
+
+function openCleanTab(tab) {
+    if (window.ignixShare) window.ignixShare.clearNoindex();
+    history.replaceState({}, '', '/?tab=' + encodeURIComponent(tab));
+    switchTab(tab, { silent: true });
+    showRouteError(tab);
+}
+
 window.addEventListener('load', function() {
     loadNewsBanner();
     var params = new URLSearchParams(window.location.search);
@@ -4093,20 +4141,22 @@ window.addEventListener('load', function() {
         askIgnixip(params.get('ask'));
         return;
     }
-    if (params.get('q') && !params.get('tab') && params.get('full') !== '1') {
-        heroSearch(params.get('q'));
-        return;
-    }
 
     var carried = routeFromPath(params.get('path') || '');
     if (carried) {
-        history.replaceState({}, '', prettyPath(carried.tab, carried.value));
-        runRoutedLookup(carried.tab, carried.value);
+        var carriedValue = window.ignixShare ? window.ignixShare.normalize(carried.tab, carried.value) : '';
+        if (!carriedValue) {
+            openCleanTab(carried.tab);
+            return;
+        }
+        history.replaceState({}, '', window.ignixShare.homepageQuery(carried.tab, carriedValue));
+        runRoutedLookup(carried.tab, carriedValue);
         return;
     }
     var direct = routeFromPath(location.pathname);
     if (direct) {
-        runRoutedLookup(direct.tab, direct.value);
+        var directValue = window.ignixShare ? window.ignixShare.normalize(direct.tab, direct.value) : '';
+        if (directValue) runRoutedLookup(direct.tab, directValue);
         return;
     }
 
@@ -4119,26 +4169,42 @@ window.addEventListener('load', function() {
         return;
     }
 
-    var tab = params.get('tab');
-    if (!tab) return;
-
-    if (tab === 'bulk' || tab === 'headers' || tab === 'urlcheck' || tab === 'emailcheck') {
-        switchTab(tab, { silent: true });
+    if (params.get('q') && !params.get('tab') && params.get('full') !== '1') {
+        var heroValue = window.ignixShare ? window.ignixShare.normalizeHero(params.get('q')) : '';
+        if (!heroValue) {
+            if (window.ignixShare) window.ignixShare.clearNoindex();
+            history.replaceState({}, '', '/');
+            return;
+        }
+        heroSearch(heroValue);
         return;
     }
 
-    var value = null;
-    if (tab === 'ip') value = params.get('ip');
-    else if (tab === 'dns') value = params.get('q');
-    else if (tab === 'bl') value = params.get('ip');
-    else if (tab === 'whois') value = params.get('q') || params.get('ip');
-    else if (tab === 'asn') value = params.get('asn');
-    else if (tab === 'tools') value = params.get('ip');
+    var tab = params.get('tab');
+    if (!tab) return;
+
+    if (tab === 'bulk' || tab === 'headers') {
+        switchTab(tab, { silent: true });
+        if (params.get('q') || params.get('ip') || params.get('asn')) {
+            if (window.ignixShare) window.ignixShare.clearNoindex();
+            history.replaceState({}, '', '/?tab=' + encodeURIComponent(tab));
+        }
+        return;
+    }
 
     if (!document.getElementById('tab-' + tab)) return;
-    if (value && params.get('full') !== '1' && (tab === 'ip' || tab === 'asn') && goIndexable(value)) return;
-    if (value && params.get('full') !== '1') history.replaceState({}, '', '/?q=' + encodeURIComponent(value));
-    runRoutedLookup(tab, value);
+    var raw = window.ignixShare ? window.ignixShare.readTabValue(params, tab) : '';
+    if (!raw) {
+        switchTab(tab, { silent: true });
+        return;
+    }
+    var cleaned = window.ignixShare.normalize(tab, raw);
+    if (!cleaned) {
+        openCleanTab(tab);
+        return;
+    }
+    if (params.get('full') !== '1' && (tab === 'ip' || tab === 'asn') && goIndexable(cleaned)) return;
+    runRoutedLookup(tab, cleaned);
 });
 </script>
 </body>

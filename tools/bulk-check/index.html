@@ -35,6 +35,14 @@
 
 <main class="seo"><div class="wrap">
 
+<script>
+if (/[?&]q=/.test(location.search)) {
+    var shareRobots = document.createElement('meta');
+    shareRobots.name = 'robots';
+    shareRobots.content = 'noindex, follow';
+    document.head.appendChild(shareRobots);
+}
+</script>
 <h1>Bulk IP check</h1>
 <p class="lead">Paste addresses. This page previews the first five. The full tool handles up to 25.</p>
 <p>Bulk check is for a short list of addresses from a log or a header, not a whole spam feed. The preview asks for the published organisation of up to five addresses. A free account on the full tool raises that to 25.</p>
@@ -103,6 +111,8 @@
     </div>
 </footer>
 
+<script src="/indexed.js"></script>
+<script src="/share.js"></script>
 <script src="/embed.js"></script>
 </body>
 </html>
